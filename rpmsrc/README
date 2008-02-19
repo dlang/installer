@@ -1,0 +1,11 @@
+To generate DEB packages for DMD:
+
+Execute the command:
+	VER=<version> sudo make
+
+   example:
+	VER=2.009 sudo make
+
+   
+
+

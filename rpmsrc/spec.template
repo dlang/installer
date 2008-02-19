@@ -1,0 +1,110 @@
+Summary: Digital Mars D Compiler
+#////////////////////////////////////////////////////////////////
+Name: dmd
+Version: @VERSION
+Release: @DATE
+License: Proprietary
+Group: Applications/Programming
+
+Source: ftp://digitalmars.com/dmd.@VERSION.zip
+URL: http://www.digitalmars.com/
+
+Vendor: DigitalMars
+Packager: <cristian@zerobugs.org>
+
+Prefix: /usr/local
+Requires: libstdc++5
+
+#////////////////////////////////////////////////////////////////
+%description
+Compiler for the D Programming language
+
+#////////////////////////////////////////////////////////////////
+#Preparatory Section
+%prep
+
+#make sure that /usr/local/bin and /usr/local/man exist
+mkdir -p /usr/local/bin
+mkdir -p /usr/local/man/man1
+
+#start with a clean build dir:
+rm -rf $RPM_BUILD_DIR/dm
+rm -rf $RPM_BUILD_DIR/dmd
+cd $RPM_BUILD_DIR && unzip $RPM_SOURCE_DIR/dmd.@VERSION.zip
+#
+# more prep stuff goes here
+#
+
+#////////////////////////////////////////////////////////////////
+%build
+#
+# nothing to build at this time
+#
+#////////////////////////////////////////////////////////////////
+#
+# install the code into directories on the build machine
+#
+%install
+
+cp $RPM_BUILD_DIR/dmd/bin/dmd /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/bin/obj2asm /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/bin/dumpobj /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/bin/dmd.conf /usr/local/bin/
+chmod 755 /usr/local/bin/dmd
+chmod 755 /usr/local/bin/dumpobj
+chmod 755 /usr/local/bin/obj2asm
+
+#
+# install libphobos or libphobos2 (whichever is found)
+#
+cp $RPM_BUILD_DIR/dmd/lib/libphobos.a /usr/local/lib/libphobos.a 2>/dev/null || \
+cp $RPM_BUILD_DIR/dmd/lib/libphobos2.a /usr/local/lib/
+
+chmod 644 /usr/local/lib/libphobos.a  2>/dev/null || \
+chmod 644 /usr/local/lib/libphobos2.a
+
+cp -r $RPM_BUILD_DIR/dmd/src/phobos /usr/local/src/phobos
+chmod 755 /usr/local/src/phobos
+
+find /usr/local/src/phobos -type d -exec chmod 755 "{}" ";"
+find /usr/local/src/phobos -type f -exec chmod 644 "{}" ";"
+
+cp $RPM_BUILD_DIR/dmd/man/man1/dmd.1 /usr/local/man/man1/dmd.1
+chmod 644 /usr/local/man/man1/dmd.1
+
+
+#////////////////////////////////////////////////////////////////
+%files
+#
+# list all files that need to be copied here
+#
+/usr/local/bin/dmd
+/usr/local/bin/dmd.conf
+/usr/local/lib/libphobos*
+/usr/local/src/phobos/
+/usr/local/man/man1/dmd.1
+
+%clean
+#convert to DEB if alien is detected
+ALIEN=""
+if which alien; then
+    ALIEN=`which alien 2>/dev/null`
+fi
+if test -n "$ALIEN"; then
+    if test -z $RPM_RPMS_DIR; then
+        RPM_RPMS_DIR=`readlink -f "$RPM_BUILD_DIR/../RPMS"`
+    fi
+    cd $RPM_RPMS_DIR/%_arch/
+    $ALIEN -k --scripts $RPM_RPMS_DIR/%_arch/dmd-%{version}-@DATE.%_arch.rpm
+
+    cp $RPM_RPMS_DIR/%_arch/dmd_%{version}-@DATE_*.deb $MY_WORK_DIR
+fi
+cp $RPM_RPMS_DIR/%_arch/dmd-%{version}-@DATE.%_arch.rpm $MY_WORK_DIR
+
+#%pre
+#if test -z "$RPM_INSTALL_PREFIX"; then
+#    RPM_INSTALL_PREFIX=/usr/local
+#fi
+
+#%post
+
