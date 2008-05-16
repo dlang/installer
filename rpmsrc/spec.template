@@ -24,12 +24,10 @@ Compiler for the D Programming language
 %prep
 
 #make sure that /usr/local/bin and /usr/local/man exist
-mkdir -p /usr/local/bin
-mkdir -p /usr/local/man/man1
+mkdir -p /usr/local/bin /usr/local/src /usr/local/lib /usr/local/man/man1 
 
 #start with a clean build dir:
-rm -rf $RPM_BUILD_DIR/dm
-rm -rf $RPM_BUILD_DIR/dmd
+rm -rf $RPM_BUILD_DIR/dm $RPM_BUILD_DIR/dmd
 cd $RPM_BUILD_DIR && unzip $RPM_SOURCE_DIR/dmd.@VERSION.zip
 #
 # more prep stuff goes here
