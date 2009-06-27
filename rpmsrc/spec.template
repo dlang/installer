@@ -44,10 +44,10 @@ cd $RPM_BUILD_DIR && unzip $RPM_SOURCE_DIR/dmd.@VERSION.zip
 #
 %install
 
-cp $RPM_BUILD_DIR/dmd/bin/dmd /usr/local/bin/
-cp $RPM_BUILD_DIR/dmd/bin/obj2asm /usr/local/bin/
-cp $RPM_BUILD_DIR/dmd/bin/dumpobj /usr/local/bin/
-cp $RPM_BUILD_DIR/dmd/bin/dmd.conf /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/linux/bin/dmd /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/linux/bin/obj2asm /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/linux/bin/dumpobj /usr/local/bin/
+cp $RPM_BUILD_DIR/dmd/linux/bin/dmd.conf /usr/local/bin/
 chmod 755 /usr/local/bin/dmd
 chmod 755 /usr/local/bin/dumpobj
 chmod 755 /usr/local/bin/obj2asm
@@ -55,8 +55,8 @@ chmod 755 /usr/local/bin/obj2asm
 #
 # install libphobos or libphobos2 (whichever is found)
 #
-cp $RPM_BUILD_DIR/dmd/lib/libphobos.a /usr/local/lib/libphobos.a 2>/dev/null || \
-cp $RPM_BUILD_DIR/dmd/lib/libphobos2.a /usr/local/lib/
+cp $RPM_BUILD_DIR/dmd/linux/lib/libphobos.a /usr/local/lib/libphobos.a 2>/dev/null || \
+cp $RPM_BUILD_DIR/dmd/linux/lib/libphobos2.a /usr/local/lib/
 
 chmod 644 /usr/local/lib/libphobos.a  2>/dev/null || \
 chmod 644 /usr/local/lib/libphobos2.a
