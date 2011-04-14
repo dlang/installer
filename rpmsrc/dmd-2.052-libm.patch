@@ -1,0 +1,11 @@
+--- D-Programming-Language-dmd-df42e28/src/linux.mak	2011-02-17 17:16:01.000000000 -0700
++++ D-Programming-Language-dmd-df42e28/src/linux.mak	2011-04-11 13:56:37.086344210 -0600
+@@ -94,7 +94,7 @@
+ all: dmd
+ 
+ dmd: $(DMD_OBJS)
+-	gcc $(MODEL) -lstdc++ -lpthread $(COV) $(DMD_OBJS) -o dmd
++	gcc $(MODEL) -lstdc++ -lpthread -lm $(COV) $(DMD_OBJS) -o dmd
+ 
+ clean:
+ 	rm -f $(DMD_OBJS) dmd optab.o id.o impcnvgen idgen id.c id.h \
