@@ -131,10 +131,14 @@ cp $RPM_SOURCE_DIR/d-completion.sh $RPM_BUILD_ROOT/etc/bash_completion.d/
 #%post
 
 %changelog
-* Wed Apr 13 2020 Kai Meyer <kai@gnukai.com>
+* Thu Apr 14 2010 Kai Meyer <kai@gnukai.com>
+- Removed the if statement around the arch restrictions, and limit to just i386 period.
+
+* Wed Apr 13 2010 Kai Meyer <kai@gnukai.com>
 - Added a 'wget' for the source files if they don't exist during "prep". This takes us one step closer to building completely from the spec file.
 
-* Tue Apr 12 2020 Kai Meyer <kai@gnukai.com>
+* Tue Apr 12 2010 Kai Meyer <kai@gnukai.com>
 - Initial hack at the rpm. Build works, all files appear to be in-place. Some of my non-trivial D projects compile and work fine.
 - There are currently no dependancies on the build or resulting package. 
 - This generates one monolithic RPM, and it appears obvious we could generate one for dmd, one for phobos, and one for druntime, and keep them updated separately.
+
