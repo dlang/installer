@@ -23,13 +23,7 @@ Packager: <kai@gnukai.com>
 
 #Prefix: /usr/local
 #Requires: libstdc++5
-%if 0%{?fedora} > 11 || 0%{?rhel} > 5
-ExclusiveArch: i686
-%else 0%{?fedora} == 11
-ExclusiveArch: i586
-%else
 ExclusiveArch: i386
-%endif
 
 %description
 Compiler for the D Programming language
