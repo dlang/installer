@@ -1,0 +1,30 @@
+
+
+"dmd_deb.sh"
+============
+Script to create deb packages for debian like systems.
+Just run it with the version argument and You'll get a deb for that version in the same folder of the script.
+If running on a 32 bit system, you will get a 32 bits package, if in 64 bit system, a 64 bit package.
+Resulting package should be installable on any debian like system (tested on debian, ubuntu and linuxmint).
+If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
+If "d-completion.sh" file is in the script folder, will be included in the package.
+Works only with dmd 1.068/2.053 and newer.
+
+
+
+"dmd_rpm.sh"
+============
+Script to create rpm packages (only fedora and openSUSE supported).
+Just run it with the version argument and You'll get an rpm for that version in the same folder of the script.
+If running on a 32 bit system, you will get a 32 bits package, if in 64 bit system, a 64 bit package.
+If running on fedora, you'll get a fedora specific rpm package.
+  (rmp like systems do not share the same nomenclature for the package names)
+  (In other words, one rpm package for fedora can become not installable in openSUSE due to dependencies)
+If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
+If "d-completion.sh" file is in the script folder, will be included in the package.
+Works only with dmd 1.068/2.053 and newer.
+
+
+
+Any error/comment please send to Jordi Sayol - g.sayol at yahoo dot es
+
