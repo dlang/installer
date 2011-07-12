@@ -14,7 +14,7 @@ ferror(){
 }
 
 
-# test if in debian like system
+# check if in debian like system
 if test ! -f /etc/debian_version ; then
 	ferror "Refusing to build on a non-debian like system" "Exiting..."
 fi
@@ -29,11 +29,11 @@ if test -z $1 ;then
 	echo
 	echo "Options:"
 	echo "  -v       dmd version (mandatory)"
-	exit 1
+	exit
 fi
 
 
-# too many parameters
+# check if too many parameters
 if test $# -gt 1 ;then
 	ferror "Too many arguments" "Exiting..."
 fi
@@ -45,9 +45,9 @@ if test "${1:0:2}" != "-v" ;then
 elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
 	ferror "Incorrect version number" "Exiting..."
 elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "68" ;then
-	ferror "For \"dmd v1.068\" and newer" "Exiting..."
+	ferror "For \"dmd v1.068\" and newer only" "Exiting..."
 elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "53" ;then
-	ferror "For \"dmd v2.053\" or newer" "Exiting..."
+	ferror "For \"dmd v2.053\" and newer only" "Exiting..."
 fi
 
 
@@ -117,13 +117,13 @@ unzip $DESTDIR"/"$ZIPFILE -d $BASEDIR
 # add d-completion.sh if present
 if test -f $DESTDIR"/"d-completion.sh ;then
 	mkdir -p $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/"
-	cp $DESTDIR"/"d-completion.sh $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/"
+	cp $DESTDIR"/"d-completion.sh $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
 fi
 
 
 # change unzipped folders and files permissions
 chmod -R 0755 $BASEDIR/$UNZIPDIR/*
-chmod 0644 $(find $BASEDIR/$UNZIPDIR ! -type d)
+chmod 0644 $(find -L $BASEDIR/$UNZIPDIR ! -type d)
 
 
 # switch to temp dir
@@ -134,18 +134,24 @@ pushd $BASEDIR"/"$DMDDIR
 mkdir -p usr/bin
 if test "$ARCH" = "amd64" ;then
 	cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd} usr/bin
-else
+elif test "$ARCH" = "i386" ;then
 	cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd} usr/bin
 fi
 
 
 # install libraries
-mkdir -p usr/lib32
-mkdir -p usr/lib64
+mkdir -p usr/lib
+if test "$ARCH" = "amd64" ;then
+	ln -s lib usr/lib64
+	mkdir -p usr/lib32
+elif test "$ARCH" = "i386" ;then
+	ln -s lib usr/lib32
+	mkdir -p usr/lib64
+fi
 if [ "$UNZIPDIR" = "dmd2" ]; then
 	cp -f ../$UNZIPDIR/linux/lib32/libphobos2.a usr/lib32
 	cp -f ../$UNZIPDIR/linux/lib64/libphobos2.a usr/lib64
-else
+elif [ "$UNZIPDIR" = "dmd" ]; then
 	cp -f ../$UNZIPDIR/linux/lib32/libphobos.a usr/lib32
 	cp -f ../$UNZIPDIR/linux/lib64/libphobos.a usr/lib64
 fi
@@ -191,6 +197,45 @@ cat ../$UNZIPDIR/license.txt >> usr/share/doc/dmd/copyright
 ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
 
 
+# create /etc/dmd.conf file
+echo '; ' > etc/dmd.conf
+echo '; dmd.conf file for dmd' >> etc/dmd.conf
+echo '; ' >> etc/dmd.conf
+echo '; dmd will look for dmd.conf in the following sequence of directories:' >> etc/dmd.conf
+echo ';   - current working directory' >> etc/dmd.conf
+echo ';   - directory specified by the HOME environment variable' >> etc/dmd.conf
+echo ';   - directory dmd resides in' >> etc/dmd.conf
+echo ';   - /etc directory' >> etc/dmd.conf
+echo '; ' >> etc/dmd.conf
+echo '; Names enclosed by %% are searched for in the existing environment and inserted' >> etc/dmd.conf
+echo '; ' >> etc/dmd.conf
+echo '; The special name %@P% is replaced with the path to this file' >> etc/dmd.conf
+echo '; ' >> etc/dmd.conf
+echo >> etc/dmd.conf
+echo '[Environment]' >> etc/dmd.conf
+echo >> etc/dmd.conf
+echo -n 'DFLAGS=-I/usr/include/d/dmd/phobos' >> etc/dmd.conf
+if [ "$UNZIPDIR" = "dmd2" ]; then
+	echo -n ' -I/usr/include/d/dmd/druntime/import' >> etc/dmd.conf
+fi
+if [ "$ARCH" = "amd64" ]; then
+	echo -n ' -L-L/usr/lib64 -L-L/usr/lib32' >> etc/dmd.conf
+elif [ "$ARCH" = "i386" ]; then
+	echo -n ' -L-L/usr/lib32 -L-L/usr/lib64' >> etc/dmd.conf
+fi
+echo -n ' -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
+if [ "$UNZIPDIR" = "dmd2" ]; then
+	echo -n ' -L-lrt' >> etc/dmd.conf
+fi
+echo >> etc/dmd.conf
+
+
+# create conffiles file
+mkdir -p DEBIAN
+echo "/etc/dmd.conf" > DEBIAN/conffiles
+echo "/etc/bash_completion.d/dmd" >> DEBIAN/conffiles
+
+
 # find deb package dependencies
 mkdir -p debian/dmd/{DEBIAN,usr/bin/}
 echo 'Source: dmd' > debian/control
@@ -200,7 +245,6 @@ rm -Rf debian
 
 
 # create control file
-mkdir -p DEBIAN
 echo -e 'Package: dmd
 Version: '$VERSION'-'$RELEASE'
 Architecture: '$ARCH'
@@ -236,103 +280,11 @@ if test -d etc/ ;then
 	find etc/ -type f -print0 | xargs -0 md5sum >> DEBIAN/md5sum
 fi
 
-# create postinst file
-echo -e '#!/bin/bash
-
-F=\0047/etc/dmd.conf\0047
-
-if [ ! -f $F ]; then' > DEBIAN/postinst
-if [ "$UNZIPDIR" = "dmd2" ]; then
-	if [ "$ARCH" = "amd64" ]; then
-		echo '	echo -e "\n[Environment]\n\nDFLAGS= -I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import -L-L/usr/lib64 -L-L/usr/lib32 -L--no-warn-search-mismatch -L--export-dynamic -L-lrt" > $F' >> DEBIAN/postinst
-	else
-		echo '	echo -e "\n[Environment]\n\nDFLAGS= -I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import -L-L/usr/lib32 -L-L/usr/lib64 -L--no-warn-search-mismatch -L--export-dynamic -L-lrt" > $F' >> DEBIAN/postinst
-	fi
-else
-	if [ "$ARCH" = "amd64" ]; then
-		echo '	echo -e "\n[Environment]\n\nDFLAGS= -I/usr/include/d/dmd/phobos -L-L/usr/lib64 -L-L/usr/lib32 -L--no-warn-search-mismatch -L--export-dynamic" > $F' >> DEBIAN/postinst
-	else
-		echo '	echo -e "\n[Environment]\n\nDFLAGS= -I/usr/include/d/dmd/phobos -L-L/usr/lib32 -L-L/usr/lib64 -L--no-warn-search-mismatch -L--export-dynamic" > $F' >> DEBIAN/postinst
-	fi
-fi
-echo -e 'else
-	sed -i \0047s/-L-L\/usr\/lib32\>//\0047 $F
-	sed -i \0047s/-L-L\/usr\/lib64\>//\0047 $F
-	sed -i \0047s/-I\/usr\/include\/d\/dmd\/phobos\>//\0047 $F
-	sed -i \0047s/-L--no-warn-search-mismatch\>//\0047 $F
-	sed -i \0047s/-L--export-dynamic\>//\0047 $F' >> DEBIAN/postinst
-if [ "$UNZIPDIR" = "dmd2" ]; then
-echo -e '	sed -i \0047s/-I\/usr\/include\/d\/dmd\/druntime\/import\>//\0047 $F
-	sed -i \0047s/-L-lrt\>//\0047 $F' >> DEBIAN/postinst
-fi
-echo -e '
-
-	L=`sed -n \0047/DFLAGS=/=\0047 $F`
-
-	sed -i $L\0047s/$/ -I\/usr\/include\/d\/dmd\/phobos/\0047 $F
-' >> DEBIAN/postinst
-if [ "$UNZIPDIR" = "dmd2" ]; then
-	echo -e '	sed -i $L\0047s/$/ -I\/usr\/include\/d\/dmd\/druntime\/import/\0047 $F
-' >> DEBIAN/postinst
-fi
-if [ "$ARCH" = "amd64" ]; then
-	echo -e '	sed -i $L\0047s/$/ -L-L\/usr\/lib64/\0047 $F
-
-	sed -i $L\0047s/$/ -L-L\/usr\/lib32/\0047 $F
-' >> DEBIAN/postinst
-else
-	echo -e '	sed -i $L\0047s/$/ -L-L\/usr\/lib32/\0047 $F
-
-	sed -i $L\0047s/$/ -L-L\/usr\/lib64/\0047 $F
-' >> DEBIAN/postinst
-fi
-echo -e '	sed -i $L\0047s/$/ -L--no-warn-search-mismatch/\0047 $F
-
-	sed -i $L\0047s/$/ -L--export-dynamic/\0047 $F
-' >> DEBIAN/postinst
-
-if [ "$UNZIPDIR" = "dmd2" ]; then
-echo -e '	sed -i $L\0047s/$/ -L-lrt/\0047 $F
-' >> DEBIAN/postinst
-fi
-
-echo -e '	sed -i \0047s/ \+/ /g\0047 $F
-
-fi' >> DEBIAN/postinst
-
-
-# create postrm file
-echo -e '#!/bin/bash
-
-F=\0047/etc/dmd.conf\0047
-
-if [ -f $F ]; then
-
-	if [ $1 = "purge" ]; then
-		rm $F
-		exit
-	fi
-
-	sed -i \0047s/-L-L\/usr\/lib32\>//\0047 $F
-	sed -i \0047s/-L-L\/usr\/lib64\>//\0047 $F
-	sed -i \0047s/-I\/usr\/include\/d\/dmd\/phobos\>//\0047 $F
-	sed -i \0047s/-L--no-warn-search-mismatch\>//\0047 $F
-	sed -i \0047s/-L--export-dynamic\>//\0047 $F' > DEBIAN/postrm
-if [ "$UNZIPDIR" = "dmd2" ]; then
-echo -e '	sed -i \0047s/-I\/usr\/include\/d\/dmd\/druntime\/import\>//\0047 $F
-	sed -i \0047s/-L-lrt\>//\0047 $F' >> DEBIAN/postrm
-fi
-echo -e '
-	sed -i \0047s/ \+/ /g\0047 $F
-
-fi' >> DEBIAN/postrm
-
 
 # change folders and files permissions
 chmod -R 0755 *
-chmod 0644 $(find . ! -type d)
+chmod 0644 $(find -L . ! -type d)
 chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd}
-chmod 0755 DEBIAN/{postinst,postrm}
 
 
 # create deb package
