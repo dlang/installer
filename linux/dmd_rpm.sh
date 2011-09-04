@@ -54,8 +54,8 @@ elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7
 	ferror "Incorrect version number" "Exiting..."
 elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "68" ;then
 	ferror "For \"dmd v1.068\" and newer only" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "53" ;then
-	ferror "For \"dmd v2.053\" and newer only" "Exiting..."
+elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "55" ;then
+	ferror "For \"dmd v2.055\" and newer only" "Exiting..."
 fi
 
 
@@ -143,8 +143,14 @@ pushd $BASEDIR"/"$DMDDIR
 mkdir -p usr/bin
 if test "$ARCH" = "x86_64" ;then
 	cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd} usr/bin
+    if [ "$UNZIPDIR" = "dmd2" ]; then
+        cp -f ../$UNZIPDIR/linux/bin64/dman usr/bin
+    fi
 else
 	cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd} usr/bin
+    if [ "$UNZIPDIR" = "dmd2" ]; then
+        cp -f ../$UNZIPDIR/linux/bin32/dman usr/bin
+    fi
 fi
 
 
@@ -206,6 +212,7 @@ ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
 
 
 # create /etc/dmd.conf file
+mkdir -p etc/
 echo '; ' > etc/dmd.conf
 echo '; dmd.conf file for dmd' >> etc/dmd.conf
 echo '; ' >> etc/dmd.conf
@@ -240,6 +247,9 @@ echo >> etc/dmd.conf
 chmod -R 0755 *
 chmod 0644 $(find . ! -type d)
 chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd}
+if [ "$UNZIPDIR" = "dmd2" ]; then
+    chmod 0755 usr/bin/dman
+fi
 
 
 # find deb package dependencies
@@ -300,7 +310,7 @@ find $BASEDIR/$DMDDIR/ -type l | sed 's:'$BASEDIR'/'$DMDDIR':":' | sed 's:$:":' 
 
 # mark as %config files
 sed -i 's:^"/etc/dmd.conf"$:%config "/etc/dmd.conf":' dmd.spec
-sed -i 's:^"/etc/bash_completion.d/dmd.sh"$:%config "/etc/bash_completion.d/dmd":' dmd.spec
+sed -i 's:^"/etc/bash_completion.d/dmd"$:%config "/etc/bash_completion.d/dmd":' dmd.spec
 
 
 # create rpm file
