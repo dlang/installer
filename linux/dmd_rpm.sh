@@ -54,8 +54,8 @@ elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7
 	ferror "Incorrect version number" "Exiting..."
 elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "68" ;then
 	ferror "For \"dmd v1.068\" and newer only" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "55" ;then
-	ferror "For \"dmd v2.055\" and newer only" "Exiting..."
+elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "56" ;then
+	ferror "For \"dmd v2.056\" and newer only" "Exiting..."
 fi
 
 
@@ -236,11 +236,7 @@ fi
 if [ "$ARCH" = "x86_64" ]; then
 	echo -n ' -L-L/usr/lib64' >> etc/dmd.conf
 fi
-echo -n ' -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
-if [ "$UNZIPDIR" = "dmd2" ]; then
-	echo -n ' -L-lrt' >> etc/dmd.conf
-fi
-echo >> etc/dmd.conf
+echo ' -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
 
 
 # change folders and files permissions
