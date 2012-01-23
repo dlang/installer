@@ -141,17 +141,14 @@ fi
 # install libraries
 mkdir -p usr/lib
 if [ "$UNZIPDIR" = "dmd2" ]; then
-	if test "$ARCH" = "x86_64" ;then
-		cp -f ../$UNZIPDIR/linux/lib64/libphobos2.a usr/lib
-	else
-		cp -f ../$UNZIPDIR/linux/lib32/libphobos2.a usr/lib
-	fi
+	PHNAME="libphobos2.a"
 elif [ "$UNZIPDIR" = "dmd" ]; then
-	if test "$ARCH" = "x86_64" ;then
-		cp -f ../$UNZIPDIR/linux/lib64/libphobos.a usr/lib
-	else
-		cp -f ../$UNZIPDIR/linux/lib32/libphobos.a usr/lib
-	fi
+	PHNAME="libphobos.a"
+fi
+if test "$ARCH" = "x86_64" ;then
+	cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib
+else
+	cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib
 fi
 
 
@@ -199,6 +196,9 @@ packager = '$MAINTAINER'
 size = '`du -bs . | awk '{print $1}'`'
 license = custom
 depend = gcc' >.PKGINFO
+if test "$UNZIPDIR" = "dmd2" ;then
+	echo "depend = xdg-utils" >>.PKGINFO
+fi
 if test "$ARCH" = "x86_64" ;then
 	echo "arch = x86_64" >>.PKGINFO
 else

@@ -147,19 +147,19 @@ fi
 
 # install libraries
 mkdir -p usr/lib
-if test "$ARCH" = "amd64" ;then
-	ln -s lib usr/lib64
-	mkdir -p usr/lib32
-elif test "$ARCH" = "i386" ;then
-	ln -s lib usr/lib32
-	mkdir -p usr/lib64
-fi
 if [ "$UNZIPDIR" = "dmd2" ]; then
-	cp -f ../$UNZIPDIR/linux/lib32/libphobos2.a usr/lib32
-	cp -f ../$UNZIPDIR/linux/lib64/libphobos2.a usr/lib64
+	PHNAME="libphobos2.a"
 elif [ "$UNZIPDIR" = "dmd" ]; then
-	cp -f ../$UNZIPDIR/linux/lib32/libphobos.a usr/lib32
-	cp -f ../$UNZIPDIR/linux/lib64/libphobos.a usr/lib64
+	PHNAME="libphobos.a"
+fi
+if test "$ARCH" = "amd64" ;then
+	mkdir -p usr/lib32
+	cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib32
+	cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib
+elif test "$ARCH" = "i386" ;then
+	mkdir -p usr/lib64
+	cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib
+	cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib64
 fi
 
 
@@ -226,9 +226,9 @@ if [ "$UNZIPDIR" = "dmd2" ]; then
 	echo -n ' -I/usr/include/d/dmd/druntime/import' >> etc/dmd.conf
 fi
 if [ "$ARCH" = "amd64" ]; then
-	echo -n ' -L-L/usr/lib64 -L-L/usr/lib32' >> etc/dmd.conf
+	echo -n ' -L-L/usr/lib -L-L/usr/lib32' >> etc/dmd.conf
 elif [ "$ARCH" = "i386" ]; then
-	echo -n ' -L-L/usr/lib32 -L-L/usr/lib64' >> etc/dmd.conf
+	echo -n ' -L-L/usr/lib -L-L/usr/lib64' >> etc/dmd.conf
 fi
 echo ' -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
 
@@ -247,6 +247,9 @@ echo 'Source: dmd' > debian/control
 cp usr/bin/* debian/dmd/usr/bin/
 DEPEND=`dpkg-shlibdeps debian/dmd/usr/bin/* -O | sed 's/shlibs:Depends=/libc6-dev, gcc, gcc-multilib, /'`
 rm -Rf debian
+if test "$UNZIPDIR" = "dmd2" ;then
+	DEPEND=$DEPEND", xdg-utils"
+fi
 
 
 # create control file

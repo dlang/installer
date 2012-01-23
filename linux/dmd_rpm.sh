@@ -157,17 +157,14 @@ fi
 # install libraries
 mkdir -p usr/lib
 if [ "$UNZIPDIR" = "dmd2" ]; then
-	cp -f ../$UNZIPDIR/linux/lib32/libphobos2.a usr/lib
-	if test "$ARCH" = "x86_64" ;then
-		mkdir -p usr/lib64
-		cp -f ../$UNZIPDIR/linux/lib64/libphobos2.a usr/lib64
-	fi
+	PHNAME="libphobos2.a"
 elif [ "$UNZIPDIR" = "dmd" ]; then
-	cp -f ../$UNZIPDIR/linux/lib32/libphobos.a usr/lib
-	if test "$ARCH" = "x86_64" ;then
-		mkdir -p usr/lib64
-		cp -f ../$UNZIPDIR/linux/lib64/libphobos.a usr/lib64
-	fi
+	PHNAME="libphobos.a"
+fi
+cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib
+if test "$ARCH" = "x86_64" ;then
+	mkdir -p usr/lib64
+	cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib64
 fi
 
 
@@ -259,6 +256,9 @@ elif test "$DNAME" = "openSUSE" ;then
 	fi
 fi
 
+if test "$UNZIPDIR" = "dmd2" ;then
+	DEPEND=$DEPEND", xdg-utils"
+fi
 
 # create dmd.spec file
 cd ..
