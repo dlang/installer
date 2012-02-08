@@ -94,7 +94,7 @@ CRCCheck force
 ; registry entries, etc.
 ;--------------------------------------------------------
 
-Section "D 1" Dmd1Files
+Section /o "D 1" Dmd1Files
 
     ; This section is mandatory
     ;SectionIn RO
