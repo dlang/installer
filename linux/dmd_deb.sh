@@ -46,8 +46,8 @@ elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7
 	ferror "Incorrect version number" "Exiting..."
 elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "68" ;then
 	ferror "For \"dmd v1.068\" and newer only" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "56" ;then
-	ferror "For \"dmd v2.056\" and newer only" "Exiting..."
+elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "58" ;then
+	ferror "For \"dmd v2.058\" and newer only" "Exiting..."
 fi
 
 
@@ -135,12 +135,12 @@ mkdir -p usr/bin
 if test "$ARCH" = "amd64" ;then
 	cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd} usr/bin
     if [ "$UNZIPDIR" = "dmd2" ]; then
-        cp -f ../$UNZIPDIR/linux/bin64/dman usr/bin
+        cp -f ../$UNZIPDIR/linux/bin64/{ddemangle,dman} usr/bin
     fi
 elif test "$ARCH" = "i386" ;then
 	cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd} usr/bin
     if [ "$UNZIPDIR" = "dmd2" ]; then
-        cp -f ../$UNZIPDIR/linux/bin32/dman usr/bin
+        cp -f ../$UNZIPDIR/linux/bin32/{ddemangle,dman} usr/bin
     fi
 fi
 
@@ -193,7 +193,7 @@ mkdir -p usr/share/doc/dmd
 echo 'This package was debianized by '$MAINTAINER'
 on '`date -R`'
 
-It was downloaded from http://www.digitalmars.com/d/
+It was downloaded from http://d-programming-language.org/
 
 ' > usr/share/doc/dmd/copyright
 cat ../$UNZIPDIR/license.txt >> usr/share/doc/dmd/copyright
@@ -261,6 +261,7 @@ Installed-Size: '`du -ks usr/| awk '{print $1}'`'
 Depends: '$DEPEND'
 Section: devel
 Priority: optional
+Homepage: http://d-programming-language.org/
 Description: Digital Mars D Compiler
  D is a systems programming language. Its focus is on combining the power and
  high performance of C and C++ with the programmer productivity of modern
@@ -278,7 +279,7 @@ Description: Digital Mars D Compiler
  .
  Main designer: Walter Bright
  .
- Homepage: http://www.digitalmars.com/d/
+ Homepage: http://d-programming-language.org/
  .' > DEBIAN/control
 
 
@@ -294,7 +295,7 @@ chmod -R 0755 *
 chmod 0644 $(find -L . ! -type d)
 chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd}
 if [ "$UNZIPDIR" = "dmd2" ]; then
-    chmod 0755 usr/bin/dman
+    chmod 0755 usr/bin/{ddemangle,dman}
 fi
 
 

@@ -40,8 +40,8 @@ elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7
 	ferror "Incorrect version number" "Exiting..."
 elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "68" ;then
 	ferror "For \"dmd v1.068\" and newer only" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "57" ;then
-	ferror "For \"dmd v2.057\" and newer only" "Exiting..."
+elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "58" ;then
+	ferror "For \"dmd v2.058\" and newer only" "Exiting..."
 fi
 
 
@@ -128,12 +128,12 @@ mkdir -p usr/bin
 if test "$ARCH" = "x86_64" ;then
 	cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd} usr/bin
     if [ "$UNZIPDIR" = "dmd2" ]; then
-        cp -f ../$UNZIPDIR/linux/bin64/dman usr/bin
+        cp -f ../$UNZIPDIR/linux/bin64/{ddemangle,dman} usr/bin
     fi
 elif test "$ARCH" = "i386" ;then
 	cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd} usr/bin
     if [ "$UNZIPDIR" = "dmd2" ]; then
-        cp -f ../$UNZIPDIR/linux/bin32/dman usr/bin
+        cp -f ../$UNZIPDIR/linux/bin32/{ddemangle,dman} usr/bin
     fi
 fi
 
@@ -238,7 +238,7 @@ chmod -R 0755 *
 chmod 0644 $(find -L . ! -type d)
 chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd}
 if [ "$UNZIPDIR" = "dmd2" ]; then
-    chmod 0755 usr/bin/dman
+    chmod 0755 usr/bin/{ddemangle,dman}
 fi
 
 

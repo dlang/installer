@@ -3,37 +3,37 @@
 "dmd_deb.sh"
 ============
 Script to create deb packages for debian like systems.
-Just run it with the version argument and You'll get a deb with that version in the same folder of the script.
-If running on a 32 bit system, you will get a 32 bits package, if in 64 bit system, a 64 bit package.
+Just run it with the dmd version as argument and you'll get a deb in the same folder of the script.
+If running on a 32 bit system, you'll get a 32 bits package, if on a 64 bit system, a 64 bit package.
 Resulting package should be installable on any debian like system (tested on debian, ubuntu and linuxmint).
 If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
 If "d-completion.sh" file is in the script folder, will be included in the package.
-Works only with dmd 1.068/2.056 and newer.
+Works with dmd 1.068/2.058 and newer.
 
 
 
 "dmd_rpm.sh"
 ============
 Script to create rpm packages (only fedora and openSUSE supported).
-Just run it with the version argument and You'll get an rpm with that version in the same folder of the script.
-If running on a 32 bit system, you will get a 32 bits package, if in 64 bit system, a 64 bit package.
+Just run it with the dmd version as argument and you'll get an rpm in the same folder of the script.
+If running on a 32 bit system, you'll get a 32 bits package, if on a 64 bit system, a 64 bit package.
 If running on fedora, you'll get a fedora specific rpm package.
   (rmp like systems do not share the same nomenclature for the package names)
   (In other words, one rpm package for fedora can become not installable in openSUSE due to dependencies)
 If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
 If "d-completion.sh" file is in the script folder, will be included in the package.
-Works only with dmd 1.068/2.056 and newer.
+Works with dmd 1.068/2.058 and newer.
 
 
 
 "dmd_arch.sh"
 ============
 Script to create installable packages for Arch Linux.
-Just run it with the version argument and You'll get a package with that version in the same folder of the script.
-If running on a 32 bit system, you will get a 32 bits package, if in 64 bit system, a 64 bit package.
+Just run it with the dmd version as argument and you'll get a package in the same folder of the script.
+If running on a 32 bit system, you'll get a 32 bits package, if on a 64 bit system, a 64 bit package.
 If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
 If "d-completion.sh" file is in the script folder, will be included in the package.
-Works only with dmd 1.068/2.057 and newer.
+Works with dmd 1.068/2.058 and newer.
 
 
 
