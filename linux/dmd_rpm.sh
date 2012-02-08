@@ -226,7 +226,7 @@ echo '; ' >> etc/dmd.conf
 echo >> etc/dmd.conf
 echo '[Environment]' >> etc/dmd.conf
 echo  >> etc/dmd.conf
-echo -n 'DFLAGS=-I/usr/include/d/dmd/phobos' >> etc/dmd.conf
+echo -n 'DFLAGS=-I/usr/include/d -I/usr/include/d/dmd/phobos' >> etc/dmd.conf
 if [ "$UNZIPDIR" = "dmd2" ]; then
 	echo -n ' -I/usr/include/d/dmd/druntime/import' >> etc/dmd.conf
 fi

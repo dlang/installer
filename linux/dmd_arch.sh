@@ -227,9 +227,9 @@ echo -e ';
 [Environment]
 ' > etc/dmd.conf
 if [ "$UNZIPDIR" = "dmd2" ]; then
-	echo "DFLAGS=-I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
+	echo "DFLAGS=-I/usr/include/d -I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
 else
-	echo "DFLAGS=-I/usr/include/d/dmd/phobos -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
+	echo "DFLAGS=-I/usr/include/d -I/usr/include/d/dmd/phobos -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
 fi
 
 
