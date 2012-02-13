@@ -216,7 +216,19 @@ SectionEnd
 
 Section "Start Menu Shortcuts" StartMenuShortcuts
     CreateDirectory "$SMPROGRAMS\D"
-    CreateShortCut "$SMPROGRAMS\D\Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+
+    ; install dmd 1 documentation
+    SectionGetFlags ${Dmd1Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+		CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+
+	; install dmd 2 documentation
+    SectionGetFlags ${Dmd2Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+		CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+
     CreateShortCut "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 SectionEnd
 
@@ -258,7 +270,8 @@ Section "Uninstall"
     Delete $INSTDIR\uninstall.exe
     
     ; Remove shortcuts
-    Delete "$SMPROGRAMS\D\Documentation.lnk"
+    Delete "$SMPROGRAMS\D\D1 Documentation.lnk"
+    Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
     Delete "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk"
 
     ; Remove used directories
