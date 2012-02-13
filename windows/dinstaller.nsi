@@ -52,6 +52,9 @@ CRCCheck force
 ; Confirmation when exiting the installer
 !define MUI_ABORTWARNING
 
+!define MUI_ICON "installer-icon.ico"
+!define MUI_UNICON "uninstaller-icon.ico"
+
 ;--------------------------------------------------------
 ; Langauge selection dialog settings
 ;--------------------------------------------------------
@@ -65,6 +68,7 @@ CRCCheck force
 ; Installer pages
 ;--------------------------------------------------------
 
+!define MUI_WELCOMEFINISHPAGE_BITMAP "installer_image.bmp"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
