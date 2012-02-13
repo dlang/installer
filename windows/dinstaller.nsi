@@ -52,6 +52,9 @@ CRCCheck force
 ; Confirmation when exiting the installer
 !define MUI_ABORTWARNING
 
+!define MUI_ICON "installer-icon.ico"
+!define MUI_UNICON "uninstaller-icon.ico"
+
 ;--------------------------------------------------------
 ; Langauge selection dialog settings
 ;--------------------------------------------------------
