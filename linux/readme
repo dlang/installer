@@ -1,39 +1,35 @@
-
+All scripts only works on a debian like systems.
 
 "dmd_deb.sh"
 ============
 Script to create deb packages for debian like systems.
-Just run it with the dmd version as argument and you'll get a deb in the same folder of the script.
-If running on a 32 bit system, you'll get a 32 bits package, if on a 64 bit system, a 64 bit package.
-Resulting package should be installable on any debian like system (tested on debian, ubuntu and linuxmint).
+Run it with the dmd version as argument and you'll get two deb packages (32-bit and 64-bit) in the same folder of the script.
+Resulting package should be installable on any debian like system (debian, ubuntu, linuxmint, etc.).
 If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
-If "d-completion.sh" file is in the script folder, will be included in the package.
-Works with dmd 1.068/2.058 and newer.
+If "dmd-completion" file is in the script folder, will be included in the package.
+Works with dmd 1.073/2.058 and newer.
 
 
 
 "dmd_rpm.sh"
 ============
-Script to create rpm packages (only fedora and openSUSE supported).
-Just run it with the dmd version as argument and you'll get an rpm in the same folder of the script.
-If running on a 32 bit system, you'll get a 32 bits package, if on a 64 bit system, a 64 bit package.
-If running on fedora, you'll get a fedora specific rpm package.
-  (rmp like systems do not share the same nomenclature for the package names)
-  (In other words, one rpm package for fedora can become not installable in openSUSE due to dependencies)
+Script to create rpm packages for fedora and openSUSE.
+Run it with the dmd version as argument and you'll get four rpm packages in the same folder of the script.
+Resulting package should be installable on fedora/centos and openSUSE, for 32-bit and 64-bit.
 If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
-If "d-completion.sh" file is in the script folder, will be included in the package.
-Works with dmd 1.068/2.058 and newer.
+If "dmd-completion" file is in the script folder, will be included in the package.
+Works with dmd 1.073/2.058 and newer.
 
 
 
 "dmd_arch.sh"
 ============
 Script to create installable packages for Arch Linux.
-Just run it with the dmd version as argument and you'll get a package in the same folder of the script.
-If running on a 32 bit system, you'll get a 32 bits package, if on a 64 bit system, a 64 bit package.
+Run it with the dmd version as argument and you'll get two package (32-bit and 64-bit) in the same folder of the script.
+Resulting package should be installable on an Arch Linux system.
 If "dmd.x.xxx.zip" already exist in the script folder, will be used, if not, will try to download first.
-If "d-completion.sh" file is in the script folder, will be included in the package.
-Works with dmd 1.068/2.058 and newer.
+If "dmd-completion" file is in the script folder, will be included in the package.
+Works with dmd 1.073/2.058 and newer.
 
 
 

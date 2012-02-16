@@ -1,0 +1,127 @@
+_filedir_dmd()
+{
+    cur=$(echo "${cur}" | sed 's:^'${1}'::')
+    if test "${2}" == "(*)" ;then
+        _filedir
+    else
+        _filedir '@'${2}
+    fi
+    cur="${1}${cur}"
+    J=0
+    F=0
+    for I in ${COMPREPLY[@]}
+    do
+        if test -d ${I} ;then
+            COMPREPLY[${J}]="${1}${I}/"
+        else
+            COMPREPLY[${J}]="${1}${I}"
+            F=1
+        fi
+        J=$((J + 1))
+    done
+    if test ${F} -eq 1 -a ${J} -eq 1 ;then
+        compopt +o nospace
+    fi
+}
+
+
+_dmd()
+{
+    _dmd_opts="$(dmd --help 2>&1 | sed -n 's/^\s*\(-\+\w*=*-*\).*/\1/p' | \
+               sed 's/filename\|docdir\|directory\|path\|linkerflag\|objdir//g')"
+    _ld_opts_dmd="$(ld --help 2>&1 | sed -n 's/.*\(--[-a-z0-9]\{1,\}\).*/-L\1/p')"
+    _env_vars_dmd="$(printenv | cut -d = -f 1 | sort -u)"
+
+    COMPREPLY=()
+    local cur
+    _get_comp_words_by_ref -n = cur
+    local IFS=$'\t\n'
+
+    case "${cur}" in
+        -L-L*) # match linker paths
+            compopt -o nospace
+            _filedir_dmd "-L-L" "(/)"
+            ;;
+        -L--*) # match linker options
+            COMPREPLY=( $( compgen -W "${_ld_opts_dmd}" -- ${cur} ) )
+            ;;
+        -L*) # match linker options
+            local opts=$(echo -e "-L-L\n-L--") 
+            COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+            ;;
+        -*) # match dmd options
+            compopt -o nospace
+            if [[ "${cur}" == "-Dd"* ]] ;then
+                _filedir_dmd "-Dd" "(/)"
+            elif [[ "${cur}" == "-Df"* ]] ;then
+                _filedir_dmd "-Df" "(*)"
+            elif [[ "${cur}" == "-debug="* ]] ;then
+                cur=${cur#*=}
+            elif [[ "${cur}" == "-debuglib="* ]] ;then
+                cur=${cur#*=}
+                _filedir
+                if [ ${#COMPREPLY[@]} -eq 1 ] && [ -f ${COMPREPLY[@]} ] ;then
+                    compopt +o nospace
+                fi
+            elif [[ "${cur}" == "-defaultlib="* ]] ;then
+                cur=${cur#*=}
+                _filedir
+                if [ ${#COMPREPLY[@]} -eq 1 ] && [ -f ${COMPREPLY[@]} ] ;then
+                    compopt +o nospace
+                fi
+            elif [[ "${cur}" == "-deps="* ]] ;then
+                cur=${cur#*=}
+                _filedir
+                if [ ${#COMPREPLY[@]} -eq 1 ] && [ -f ${COMPREPLY[@]} ] ;then
+                    compopt +o nospace
+                fi
+            elif [[ "${cur}" == "-Hd"* ]] ;then
+                _filedir_dmd "-Hd" "(/)"
+            elif [[ "${cur}" == "-Hf"* ]] ;then
+                _filedir_dmd "-Hf" "(*)"
+            elif [[ "${cur}" == "-I"* ]] ;then
+                _filedir_dmd "-I" "(/)"
+            elif [[ "${cur}" == "-J"* ]] ;then
+                _filedir_dmd "-J" "(/)"
+            elif [[ "${cur}" == "-od"* ]] ;then
+                _filedir_dmd "-od" "(/)"
+            elif [[ "${cur}" == "-of"* ]] ;then
+                _filedir_dmd "-of" "(*)"
+            elif [[ "${cur}" == "-version="* ]] ;then
+                cur=${cur#*=}
+            elif [[ "${cur}" == "-Xf"* ]] ;then
+                _filedir_dmd "-Xf" "(*)"
+            else
+                COMPREPLY=( $(compgen -W "${_dmd_opts}" -- ${cur}) )
+                C='\n'
+                L=$(echo -e "-cov${C}-fPIC${C}-gc${C}-gs${C}--help${C}-ignore\
+                    ${C}-inline${C}-lib${C}-m32${C}-m64${C}-man${C}-map\
+                    ${C}-noboundscheck${C}-nofloat${C}-O${C}-o-${C}-op\
+                    ${C}-profile${C}-quiet${C}-release${C}-run${C}-unittest\
+                    ${C}-vtls${C}-wi" | sed 's: ::g')
+                if test ${#COMPREPLY[@]} -eq 1 ;then
+                    for I in ${L}
+                    do
+                        if test "${COMPREPLY[@]}" == "$I" ; then
+                            compopt +o nospace
+                        fi
+                    done
+                fi
+            fi
+            ;;
+        @*) # match arguments variable/file
+            compopt -o nospace
+            TMP=( $(compgen -W "${_env_vars_dmd}" -P "@" -- ${cur#@}) )
+            _filedir_dmd "@" "(*)"
+            COMPREPLY=( "${TMP[@]}" "${COMPREPLY[@]}" )
+            if test ${#COMPREPLY[@]} -eq 1 ;then  compopt +o nospace ; fi
+            ;;
+        *) # match d files
+            _filedir '@(d|dd|di|o|a|/)'
+            ;;
+    esac
+    return 0
+}
+
+
+complete -F _dmd dmd
