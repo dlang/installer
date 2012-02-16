@@ -52,6 +52,9 @@ CRCCheck force
 ; Confirmation when exiting the installer
 !define MUI_ABORTWARNING
 
+!define MUI_ICON "installer-icon.ico"
+!define MUI_UNICON "uninstaller-icon.ico"
+
 ;--------------------------------------------------------
 ; Langauge selection dialog settings
 ;--------------------------------------------------------
@@ -65,6 +68,7 @@ CRCCheck force
 ; Installer pages
 ;--------------------------------------------------------
 
+!define MUI_WELCOMEFINISHPAGE_BITMAP "installer_image.bmp"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
@@ -94,7 +98,7 @@ CRCCheck force
 ; registry entries, etc.
 ;--------------------------------------------------------
 
-Section "D 1" Dmd1Files
+Section /o "D 1" Dmd1Files
 
     ; This section is mandatory
     ;SectionIn RO
@@ -216,7 +220,19 @@ SectionEnd
 
 Section "Start Menu Shortcuts" StartMenuShortcuts
     CreateDirectory "$SMPROGRAMS\D"
-    CreateShortCut "$SMPROGRAMS\D\Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+
+    ; install dmd 1 documentation
+    SectionGetFlags ${Dmd1Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+		CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+
+	; install dmd 2 documentation
+    SectionGetFlags ${Dmd2Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+		CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+
     CreateShortCut "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 SectionEnd
 
@@ -258,7 +274,8 @@ Section "Uninstall"
     Delete $INSTDIR\uninstall.exe
     
     ; Remove shortcuts
-    Delete "$SMPROGRAMS\D\Documentation.lnk"
+    Delete "$SMPROGRAMS\D\D1 Documentation.lnk"
+    Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
     Delete "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk"
 
     ; Remove used directories

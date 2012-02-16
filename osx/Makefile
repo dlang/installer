@@ -7,7 +7,7 @@
 #
 
 # Externals
-VERSIONS=2.057 1.072
+VERSIONS=2.058 1.073
 TARGET_SITE=d-programming@digitalmars.com
 TARGET_DIR=data/
 # TARGET_SITE=erdani.com
