@@ -259,8 +259,8 @@ do
 	echo " quality assurance, documentation, management, portability and reliability." >> DEBIAN/control
 	echo " ." >> DEBIAN/control
 	echo " The D language is statically typed and compiles directly to machine code." >> DEBIAN/control
-	echo " It\0047s multiparadigm, supporting many programming styles: imperative," >> DEBIAN/control
-	echo " object oriented, and metaprogramming. It\0047s a member of the C syntax" >> DEBIAN/control
+	echo " It's multiparadigm, supporting many programming styles: imperative," >> DEBIAN/control
+	echo " object oriented, and metaprogramming. It's a member of the C syntax" >> DEBIAN/control
 	echo " family, and its appearance is very similar to that of C++." >> DEBIAN/control
 	echo " ." >> DEBIAN/control
 	echo " It is not governed by a corporate agenda or any overarching theory of" >> DEBIAN/control
