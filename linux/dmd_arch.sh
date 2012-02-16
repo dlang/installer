@@ -82,7 +82,7 @@ do
 	fi
 	MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 	RELEASE=0
-	DESTDIR=`dirname $0`
+	DESTDIR=`pwd`
 	BASEDIR='/tmp/'`date +"%s%N"`
 	ZIPFILE=`basename $DMDURL`
 	ARCHFILE="dmd-"$VERSION"-"$RELEASE"-"$ARCH".pkg.tar.xz"
@@ -186,15 +186,15 @@ do
 
 
 	# create .PKGINFO file
-	echo -e 'pkgname = dmd
-	pkgver = '$VERSION'-'$RELEASE'
-	pkgdesc = Digital Mars D Compiler
-	url = http://d-programming-language.org/
-	builddate = '`date +%s`'
-	packager = '$MAINTAINER'
-	size = '`du -bs . | awk '{print $1}'`'
-	license = custom
-	depend = gcc' >.PKGINFO
+	echo "pkgname = dmd" >.PKGINFO
+	echo "pkgver = $VERSION-$RELEASE" >>.PKGINFO
+	echo "pkgdesc = Digital Mars D Compiler" >>.PKGINFO
+	echo "url = http://d-programming-language.org/" >>.PKGINFO
+	echo "builddate = `date +%s`" >>.PKGINFO
+	echo "packager = $MAINTAINER" >>.PKGINFO
+	echo "size = `du -bs . | awk '{print $1}'`" >>.PKGINFO
+	echo "license = custom" >>.PKGINFO
+	echo "depend = gcc" >>.PKGINFO
 	if test "$UNZIPDIR" = "dmd2" ;then
 		echo "depend = xdg-utils" >>.PKGINFO
 	fi
@@ -209,22 +209,23 @@ do
 
 
 	# create dmd.conf
-	echo -e '; 
-	; dmd.conf file for dmd
-	; 
-	; dmd will look for dmd.conf in the following sequence of directories:
-	;   - current working directory
-	;   - directory specified by the HOME environment variable
-	;   - directory dmd resides in
-	;   - /etc directory
-	; 
-	; Names enclosed by %% are searched for in the existing environment and inserted
-	; 
-	; The special name %@P% is replaced with the path to this file
-	; 
-
-	[Environment]
-	' > etc/dmd.conf
+	mkdir -p etc
+	echo "; " > etc/dmd.conf
+	echo "; dmd.conf file for dmd" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo "; dmd will look for dmd.conf in the following sequence of directories:" >> etc/dmd.conf
+	echo ";   - current working directory" >> etc/dmd.conf
+	echo ";   - directory specified by the HOME environment variable" >> etc/dmd.conf
+	echo ";   - directory dmd resides in" >> etc/dmd.conf
+	echo ";   - /etc directory" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo "; Names enclosed by %% are searched for in the existing environment and inserted" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo "; The special name %@P% is replaced with the path to this file" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo >> etc/dmd.conf
+	echo "[Environment]" >> etc/dmd.conf
+	echo >> etc/dmd.conf
 	if [ "$UNZIPDIR" = "dmd2" ]; then
 		echo "DFLAGS=-I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
 	else

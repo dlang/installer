@@ -89,7 +89,7 @@ do
 		MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 		VERSION=${1:2}
 		RELEASE=0
-		DESTDIR=`dirname $0`
+		DESTDIR=`pwd`
 		BASEDIR='/tmp/'`date +"%s%N"`
 		DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
 		ZIPFILE=`basename $DMDURL`
