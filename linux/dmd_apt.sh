@@ -4,19 +4,30 @@
 set -e -o pipefail
 
 
+# set variables
+SIGNKEY="dmd-apt"
+VERSION=${1:2}
+RELEASE=0
+DESTDIR=`pwd`
+APTDIR="apt"
+DEB32="dmd_"$VERSION"-"$RELEASE"_i386.deb"
+DEB64="dmd_"$VERSION"-"$RELEASE"_amd64.deb"
+F="Package Source Version Section Priority Architecture"
+F="$F Essential Depends Recommends Suggests Enhances"
+F="$F Pre-Depends Installed-Size Maintainer Homepage"
+
+
 # error function
 ferror(){
-	echo "=========================================================="
+	echo -n "error: "
 	echo $1
-	echo $2
-	echo "=========================================================="
 	exit 1
 }
 
 
 # check if in debian like system
 if test ! -f /etc/debian_version ; then
-	ferror "Refusing to build on a non-debian like system" "Exiting..."
+	ferror "refusing to build on a non-debian like system"
 fi
 
 
@@ -35,73 +46,97 @@ fi
 
 # check if too many parameters
 if test $# -gt 1 ;then
-	ferror "Too many arguments" "Exiting..."
+	ferror "too many arguments"
 fi
 
 
 # check version parameter
 if test "${1:0:2}" != "-v" ;then
-	ferror "Unknown argument" "Exiting..."
-elif test `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
-	ferror "Incorrect version number" "Exiting..."
-elif test "${1:0:4}" != "-v2." -o "${1:4}" -lt "58" ;then
-	ferror "For dmd v2.058 and newer only" "Exiting..."
+	ferror "unknown argument"
+elif ! [[ $1 =~ ^"-v"[0-9]"."[0-9][0-9][0-9]$ ]] ;then
+	ferror "incorrect version number"
+elif test ${1:2:1}${1:4} -lt 2058 ;then
+	ferror "dmd v2.058 and newer only"
 fi
 
 
-# set variables
-SIGNKEY="dmd-apt"
-VERSION=${1:2}
-RELEASE=0
-DESTDIR=`pwd`
-DEB32=$DESTDIR"/dmd_"$VERSION"-"$RELEASE"_i386.deb"
-DEB64=$DESTDIR"/dmd_"$VERSION"-"$RELEASE"_amd64.deb"
-F="Package Source Version Section Priority Architecture"
-F="$F Essential Depends Recommends Suggests Enhances"
-F="$F Pre-Depends Installed-Size Maintainer Homepage"
-
-
-# check if two deb packages exist
-if test ! -f $DEB32 -o ! -f $DEB64 ;then
-	ferror "Missing Debian packages for dmd v$VERSION" "Exiting..."
+# needed commands function
+E=0
+fcheck(){
+	if ! `which $1 1>/dev/null 2>&1` ;then
+		LIST=$LIST" "$1
+		E=1
+	fi
+}
+fcheck gzip
+fcheck gpg
+fcheck md5sum
+fcheck sha1sum
+fcheck sha256sum
+fcheck dpkg-deb
+if [ $E -eq 1 ]; then
+    ferror "missing commands: $LIST"
 fi
+
+
+# check if deb packages exist
+if test ! -f $DESTDIR/$DEB32 -o ! -f $DESTDIR/$DEB64 ;then
+	ferror "missing Debian packages for dmd v$VERSION"
+fi
+
+
+# reset and enter apt dir
+rm -rf $APTDIR
+mkdir -p $APTDIR
+cd $APTDIR
+
+
+# export public key if exist
+gpg -k $SIGNKEY >/dev/null
+gpg --export -a $SIGNKEY >$SIGNKEY.key
+
+
+# create links to deb packages
+ln -s ../$DEB32 $DEB32
+ln -s ../$DEB64 $DEB64
+
 
 # remove files
-rm -f $DESTDIR/Packages $DESTDIR/Packages.gz $DESTDIR/Release $DESTDIR/Release.gpg
+#rm -f Packages Packages.gz Release Release.gpg
 
 
 # create "Packages" file
 for I in $DEB32 $DEB64
 do
-	dpkg-deb -f $I $F >>$DESTDIR/Packages
-	echo "Filename: "`basename $I` >>$DESTDIR/Packages
-	echo "Size: "`du -b -D $I | awk '{print $1}'`  >>$DESTDIR/Packages
-	echo "SHA256: "`sha256sum $I | awk '{print $1}'` >>$DESTDIR/Packages
-	echo "SHA1: "`sha1sum $I | awk '{print $1}'` >>$DESTDIR/Packages
-	echo "MD5sum: "`md5sum $I | awk '{print $1}'` >>$DESTDIR/Packages
-	echo -n "Description: " >>$DESTDIR/Packages
-	dpkg-deb -f $I Description >>$DESTDIR/Packages
-	echo >>$DESTDIR/Packages
+	dpkg-deb -f $I $F >>Packages
+	echo "Filename: "`basename $I` >>Packages
+	echo "Size: "`du -b -D $I | awk '{print $1}'`  >>Packages
+	echo "SHA256: "`sha256sum $I | awk '{print $1}'` >>Packages
+	echo "SHA1: "`sha1sum $I | awk '{print $1}'` >>Packages
+	echo "MD5sum: "`md5sum $I | awk '{print $1}'` >>Packages
+	echo -n "Description: " >>Packages
+	dpkg-deb -f $I Description >>Packages
+	echo >>Packages
 done
 
 
 # create "Packages.gz" file
-gzip -c $DESTDIR/Packages >$DESTDIR/Packages.gz
+gzip -c Packages >Packages.gz
 
 
 # create "Release" file
-echo "Architectures: i386 amd64" >$DESTDIR/Release
-echo "MD5Sum:" >>$DESTDIR/Release
-md5sum $DESTDIR/Packages | sed "s#^# #;s#  # $(du -b $DESTDIR/Packages)#;s#\t$DESTDIR/Packages$DESTDIR/# #" >>$DESTDIR/Release
-md5sum $DESTDIR/Packages.gz | sed "s#^# #;s#  # $(du -b $DESTDIR/Packages.gz)#;s#\t$DESTDIR/Packages.gz$DESTDIR/# #" >>$DESTDIR/Release
-echo "SHA1:" >>$DESTDIR/Release
-sha1sum $DESTDIR/Packages | sed "s#^# #;s#  # $(du -b $DESTDIR/Packages)#;s#\t$DESTDIR/Packages$DESTDIR/# #" >>$DESTDIR/Release
-sha1sum $DESTDIR/Packages.gz | sed "s#^# #;s#  # $(du -b $DESTDIR/Packages.gz)#;s#\t$DESTDIR/Packages.gz$DESTDIR/# #" >>$DESTDIR/Release
-echo "SHA256:" >>$DESTDIR/Release
-sha256sum $DESTDIR/Packages | sed "s#^# #;s#  # $(du -b $DESTDIR/Packages)#;s#\t$DESTDIR/Packages$DESTDIR/# #" >>$DESTDIR/Release
-sha256sum $DESTDIR/Packages.gz | sed "s#^# #;s#  # $(du -b $DESTDIR/Packages.gz)#;s#\t$DESTDIR/Packages.gz$DESTDIR/# #" >>$DESTDIR/Release
+echo "Architectures: i386 amd64" >Release
+echo "MD5Sum:" >>Release
+md5sum Packages | sed "s/^/ /;s/  / $(du -b Packages)/;s/\tPackages/ /" >>Release
+md5sum Packages.gz | sed "s/^/ /;s/  / $(du -b Packages.gz)/;s/\tPackages.gz/ /" >>Release
+echo "SHA1:" >>Release
+sha1sum Packages | sed "s/^/ /;s/  / $(du -b Packages)/;s/\tPackages/ /" >>Release
+sha1sum Packages.gz | sed "s/^/ /;s/  / $(du -b Packages.gz)/;s/\tPackages.gz/ /" >>Release
+echo "SHA256:" >>Release
+sha256sum Packages | sed "s/^/ /;s/  / $(du -b Packages)/;s/\tPackages/ /" >>Release
+sha256sum Packages.gz | sed "s/^/ /;s/  / $(du -b Packages.gz)/;s/\tPackages.gz/ /" >>Release
 
 
 # create "Release.gpg" file
-gpg --output $DESTDIR/Release.gpg -ba -u $SIGNKEY $DESTDIR/Release
+gpg --output Release.gpg -ba -u $SIGNKEY Release
 

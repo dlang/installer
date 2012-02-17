@@ -107,9 +107,9 @@ do
 
 
 	# add dmd-completion if present
-	if test -f $DESTDIR"/"dmd-completion ;then
+	if test -f `dirname $0`"/"dmd-completion ;then
 		mkdir -p $BASEDIR"/root/etc/bash_completion.d/"
-		cp $DESTDIR"/"dmd-completion $BASEDIR"/root/etc/bash_completion.d/dmd"
+		cp `dirname $0`"/"dmd-completion $BASEDIR"/root/etc/bash_completion.d/dmd"
 	fi
 
 
