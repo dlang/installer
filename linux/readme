@@ -1,10 +1,10 @@
 
-All scripts works only on a debian like systems.
+All of these scripts works only on debian like systems.
 
 "dmd_deb.sh"
 ============
 Script to create deb packages for debian like systems.
-Run it with the dmd version as argument and you'll get two deb packages (32-bit and 64-bit) in the current directory.
+Run it with dmd version as argument and you'll get two deb packages (32-bit and 64-bit) in the current directory.
 Resulting package should be installable on any debian like system (debian, ubuntu, linuxmint, etc.).
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
@@ -15,7 +15,7 @@ Works with dmd 1.073/2.058 and newer.
 "dmd_rpm.sh"
 ============
 Script to create rpm packages for fedora and openSUSE.
-Run it with the dmd version as argument and you'll get four rpm packages in the current directory.
+Run it with dmd version as argument and you'll get four rpm packages in the current directory.
 Resulting package should be installable on fedora/centos and openSUSE, for 32-bit and 64-bit.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
@@ -26,7 +26,7 @@ Works with dmd 1.073/2.058 and newer.
 "dmd_arch.sh"
 ============
 Script to create installable packages for Arch Linux.
-Run it with the dmd version as argument and you'll get two package (32-bit and 64-bit) in the current directory.
+Run it with dmd version as argument and you'll get two package (32-bit and 64-bit) in the current directory.
 Resulting package should be installable on an Arch Linux system.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
@@ -37,11 +37,19 @@ Works with dmd 1.073/2.058 and newer.
 "dmd_apt.sh"
 ============
 Script to build a minimalist apt server for dmd in a single directory.
-Run it with the dmd version as argument.
+Run it with dmd version as argument.
 Requires both (32-bit and 64-bit) dmd deb files in the current directory, and a PGP key.
 Create an apt folder in the current directory and generate these files in it:
 Packages, Packages.gz, Release, Release.gpg, <public_key>.key, and symbolic links to both deb packages.
 Works with dmd v2.058 and newer.
+
+
+
+"build_all.sh"
+==============
+Script to build all deb/rpm packages, and all apt server files.
+Run it with dmd1 and dmd2 version as arguments, and all scripts will be executed with these arguments.
+Works with dmd 1.073/2.058 and newer.
 
 
 
