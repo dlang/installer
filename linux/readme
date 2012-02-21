@@ -4,7 +4,7 @@ All of these scripts works only on debian like systems.
 "dmd_deb.sh"
 ============
 Script to create deb packages for debian like systems.
-Run it with dmd version as argument and you'll get two deb packages (32-bit and 64-bit) in the current directory.
+Run it with dmd version and model as argument and you'll get a deb packages in the current directory.
 Resulting package should be installable on any debian like system (debian, ubuntu, linuxmint, etc.).
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
@@ -15,8 +15,8 @@ Works with dmd 1.073/2.058 and newer.
 "dmd_rpm.sh"
 ============
 Script to create rpm packages for fedora and openSUSE.
-Run it with dmd version as argument and you'll get four rpm packages in the current directory.
-Resulting package should be installable on fedora/centos and openSUSE, for 32-bit and 64-bit.
+Run it with dmd version and model as argument and you'll get two rpm packages in the current directory.
+Resulting package should be installable on fedora/centos and openSUSE.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
 Works with dmd 1.073/2.058 and newer.
@@ -26,7 +26,7 @@ Works with dmd 1.073/2.058 and newer.
 "dmd_arch.sh"
 ============
 Script to create installable packages for Arch Linux.
-Run it with dmd version as argument and you'll get two package (32-bit and 64-bit) in the current directory.
+Run it with dmd version and model as argument and you'll get a package in the current directory.
 Resulting package should be installable on an Arch Linux system.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
