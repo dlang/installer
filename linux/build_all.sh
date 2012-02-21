@@ -28,16 +28,17 @@ if test $# -eq 0 ;then
 	echo "Script to build all deb/rpm packages, and all apt server files."
 	echo
 	echo "Usage:"
-	echo "  build_all.sh \"dmd1_version\" \"dmd2_version\"" 
+	echo "  build_all.sh \"dmd1_version\" \"dmd2_version\" [ -f ]" 
 	echo
 	echo "Options:"
-	echo "  (both arguments are mandatory)"
+	echo "  (first and second arguments are mandatory)"
+	echo "  -f       force to rebuild"
 	exit
 fi
 
 
 # check number of parameters
-if test $# -gt 2 ;then
+if test $# -gt 3 ;then
 	ferror "too many arguments"
 elif test $# -lt 2 ;then
 	ferror "too few arguments"
@@ -57,32 +58,39 @@ elif test ${2:0:1}${2:2} -lt 2058 -o ${2:0:1} -gt 2 ;then
 fi
 
 
+# check forced build parameter
+if test $# -eq 3 -a "$3" != "-f" ;then
+	ferror "unknown third argument"
+fi
+
+
 # run all scripts with arguments
 echo "$DESTDIR/dmd_deb.sh -v$1" >$LOGFILE
-#$DESTDIR/dmd_deb.sh -v$1
+$DESTDIR/dmd_deb.sh -v$1 $3
 
 echo "$DESTDIR/dmd_deb.sh -v$2" >>$LOGFILE
-#$DESTDIR/dmd_deb.sh -v$2
+$DESTDIR/dmd_deb.sh -v$2 $3
 
 echo "$DESTDIR/dmd_rpm.sh -v$1" >>$LOGFILE
-#$DESTDIR/dmd_rpm.sh -v$1
+$DESTDIR/dmd_rpm.sh -v$1 $3
 
 echo "$DESTDIR/dmd_rpm.sh -v$2" >>$LOGFILE
-#$DESTDIR/dmd_rpm.sh -v$2
+$DESTDIR/dmd_rpm.sh -v$2 $3
 
 echo "$DESTDIR/dmd_arch.sh -v$1" >>$LOGFILE
-#$DESTDIR/dmd_arch.sh -v$1
+$DESTDIR/dmd_arch.sh -v$1 $3
 
 echo "$DESTDIR/dmd_arch.sh -v$2" >>$LOGFILE
-$DESTDIR/dmd_arch.sh -v$2
+$DESTDIR/dmd_arch.sh -v$2 $3
 
 echo "$DESTDIR/dmd_apt.sh -v$2" >>$LOGFILE
 $DESTDIR/dmd_apt.sh -v$2
 
 
-# if everything worked
-echo -e "\neverything has been properly built!\n"
+# if everything went well
+echo -e "\nEverything properly built!\n"
 
 
 # remove log file
 rm -f $LOGFILE
+

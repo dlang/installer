@@ -5,16 +5,13 @@ set -e -o pipefail
 
 
 # set variables
-SIGNKEY="dmd-apt"
+KEYID="d-apt"
 VERSION=${1:2}
 RELEASE=0
 DESTDIR=`pwd`
 APTDIR="apt"
 DEB32="dmd_"$VERSION"-"$RELEASE"_i386.deb"
 DEB64="dmd_"$VERSION"-"$RELEASE"_amd64.deb"
-F="Package Source Version Section Priority Architecture"
-F="$F Essential Depends Recommends Suggests Enhances"
-F="$F Pre-Depends Installed-Size Maintainer Homepage"
 
 
 # error function
@@ -68,7 +65,6 @@ fcheck(){
 		E=1
 	fi
 }
-fcheck gzip
 fcheck gpg
 fcheck md5sum
 fcheck sha1sum
@@ -77,6 +73,10 @@ fcheck dpkg-deb
 if [ $E -eq 1 ]; then
     ferror "missing commands: $LIST"
 fi
+
+
+# test public key
+gpg -k =$KEYID >/dev/null
 
 
 # check if deb packages exist
@@ -91,9 +91,8 @@ mkdir -p $APTDIR
 cd $APTDIR
 
 
-# export public key if exist
-gpg -k $SIGNKEY >/dev/null
-gpg --export -a $SIGNKEY >$SIGNKEY.key
+# export public key
+gpg --export -a =$KEYID >$KEYID.key
 
 
 # create links to deb packages
@@ -101,13 +100,10 @@ ln -s ../$DEB32 $DEB32
 ln -s ../$DEB64 $DEB64
 
 
-# remove files
-#rm -f Packages Packages.gz Release Release.gpg
-
-
 # create "Packages" file
 for I in $DEB32 $DEB64
 do
+	F=`dpkg-deb -f $I | grep -v -e "^ " -e "^Description:" | awk -F : '{print $1}'`
 	dpkg-deb -f $I $F >>Packages
 	echo "Filename: "`basename $I` >>Packages
 	echo "Size: "`du -b -D $I | awk '{print $1}'`  >>Packages
@@ -138,5 +134,9 @@ sha256sum Packages.gz | sed "s/^/ /;s/  / $(du -b Packages.gz)/;s/\tPackages.gz/
 
 
 # create "Release.gpg" file
-gpg --output Release.gpg -ba -u $SIGNKEY Release
+gpg --output Release.gpg -ba -u =$KEYID Release
+
+
+# if everything went well
+echo -e "APT Repository built"
 
