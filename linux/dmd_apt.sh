@@ -5,7 +5,7 @@ set -e -o pipefail
 
 
 # set variables
-KEYID="d-apt"
+KEYID="dmd-apt"
 VERSION=${1:2}
 RELEASE=0
 DESTDIR=`pwd`

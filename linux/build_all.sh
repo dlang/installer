@@ -64,27 +64,82 @@ if test $# -eq 3 -a "$3" != "-f" ;then
 fi
 
 
-# run all scripts with arguments
-echo "$DESTDIR/dmd_deb.sh -v$1" >$LOGFILE
-$DESTDIR/dmd_deb.sh -v$1 $3
+# build dmd1 deb 32-bit
+COMMAND="$DESTDIR/dmd_deb.sh -v$1 -m32 $3"
+echo $COMMAND >$LOGFILE
+$COMMAND
 
-echo "$DESTDIR/dmd_deb.sh -v$2" >>$LOGFILE
-$DESTDIR/dmd_deb.sh -v$2 $3
 
-echo "$DESTDIR/dmd_rpm.sh -v$1" >>$LOGFILE
-$DESTDIR/dmd_rpm.sh -v$1 $3
+# build dmd1 deb 64-bit
+COMMAND="$DESTDIR/dmd_deb.sh -v$1 -m64 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
 
-echo "$DESTDIR/dmd_rpm.sh -v$2" >>$LOGFILE
-$DESTDIR/dmd_rpm.sh -v$2 $3
 
-echo "$DESTDIR/dmd_arch.sh -v$1" >>$LOGFILE
-$DESTDIR/dmd_arch.sh -v$1 $3
+# build dmd2 deb 32-bit
+COMMAND="$DESTDIR/dmd_deb.sh -v$2 -m32 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
 
-echo "$DESTDIR/dmd_arch.sh -v$2" >>$LOGFILE
-$DESTDIR/dmd_arch.sh -v$2 $3
 
-echo "$DESTDIR/dmd_apt.sh -v$2" >>$LOGFILE
-$DESTDIR/dmd_apt.sh -v$2
+# build dmd2 deb 64-bit
+COMMAND="$DESTDIR/dmd_deb.sh -v$2 -m64 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd1 rpm 32-bit
+COMMAND="$DESTDIR/dmd_rpm.sh -v$1 -m32 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd1 rpm 64-bit
+COMMAND="$DESTDIR/dmd_rpm.sh -v$1 -m64 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd2 rpm 32-bit
+COMMAND="$DESTDIR/dmd_rpm.sh -v$2 -m32 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd2 rpm 64-bit
+COMMAND="$DESTDIR/dmd_rpm.sh -v$2 -m64 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd1 arch 32-bit
+COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m32 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd1 arch 64-bit
+COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m64 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd2 arch 32-bit
+COMMAND="$DESTDIR/dmd_arch.sh -v$2 -m32 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build dmd2 arch 64-bit
+COMMAND="$DESTDIR/dmd_arch.sh -v$2 -m64 $3"
+echo $COMMAND >>$LOGFILE
+$COMMAND
+
+
+# build apt folder/files
+COMMAND="$DESTDIR/dmd_apt.sh -v$2"
+echo $COMMAND >>$LOGFILE
+$COMMAND
 
 
 # if everything went well
