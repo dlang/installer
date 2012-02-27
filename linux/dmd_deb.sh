@@ -6,10 +6,10 @@ set -e -o pipefail
 
 # error function
 ferror(){
-	echo "=========================================================="
-	echo $1
-	echo $2
-	echo "=========================================================="
+	echo "==========================================================" >&2
+	echo $1 >&2
+	echo $2 >&2
+	echo "==========================================================" >&2
 	exit 1
 }
 
@@ -25,7 +25,7 @@ if test -z $1 ;then
 	echo "Script to create dmd binary deb packages."
 	echo
 	echo "Usage:"
-	echo "  dmd_deb.sh -v\"version\" -m\"model\" [ -f ]"
+	echo "  dmd_deb.sh -v\"version\" -m\"model\" [-f]"
 	echo
 	echo "Options:"
 	echo "  -v       dmd version (mandatory)"
@@ -43,7 +43,7 @@ fi
 
 # check version parameter
 if test "${1:0:2}" != "-v" ;then
-	ferror "Unknown first argument" "Exiting..."
+	ferror "Unknown first argument (-v)" "Exiting..."
 elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
 	ferror "Incorrect version number" "Exiting..."
 elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "73" ;then
@@ -55,15 +55,15 @@ fi
 
 # check model parameter
 if test $# -eq 1 ;then
-	ferror "Second argument is mandatory" "Exiting..."
+	ferror "Second argument is mandatory (-m[32-64])" "Exiting..."
 elif test "$2" != "-m32" -a "$2" != "-m64" ;then
-	ferror "Unknown second argument" "Exiting..."
+	ferror "Unknown second argument (-m[32-64])" "Exiting..."
 fi
 
 
 # check forced build parameter
 if test $# -eq 3 -a "$3" != "-f" ;then
-	ferror "Unknown third argument" "Exiting..."
+	ferror "Unknown third argument (-f)" "Exiting..."
 fi
 
 
@@ -128,7 +128,7 @@ else
 
 
 	# unpacking sources
-	unzip $DESTDIR"/"$ZIPFILE -d $BASEDIR
+	unzip -q $DESTDIR"/"$ZIPFILE -d $BASEDIR
 
 
 	# add dmd-completion if present

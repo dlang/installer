@@ -7,12 +7,13 @@ set -e
 # set variables
 DESTDIR=`dirname $0`
 LOGFILE="build_all.log"
+SPACER="\n`seq -s "#" 77 | sed 's/[0-9]//g'`\n"
 
 
 # error function
 ferror(){
-	echo -n "error: "
-	echo $1
+	echo -n "error: " >&2
+	echo $1 >&2
 	exit 1
 }
 
@@ -28,7 +29,7 @@ if test $# -eq 0 ;then
 	echo "Script to build all deb/rpm packages, and all apt server files."
 	echo
 	echo "Usage:"
-	echo "  build_all.sh \"dmd1_version\" \"dmd2_version\" [ -f ]" 
+	echo "  build_all.sh \"dmd1_version\" \"dmd2_version\" [-f]" 
 	echo
 	echo "Options:"
 	echo "  (first and second arguments are mandatory)"
@@ -60,86 +61,86 @@ fi
 
 # check forced build parameter
 if test $# -eq 3 -a "$3" != "-f" ;then
-	ferror "unknown third argument"
+	ferror "unknown third argument (-f)"
 fi
 
 
 # build dmd1 deb 32-bit
 COMMAND="$DESTDIR/dmd_deb.sh -v$1 -m32 $3"
-echo $COMMAND >$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd1 deb 64-bit
 COMMAND="$DESTDIR/dmd_deb.sh -v$1 -m64 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 deb 32-bit
 COMMAND="$DESTDIR/dmd_deb.sh -v$2 -m32 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 deb 64-bit
 COMMAND="$DESTDIR/dmd_deb.sh -v$2 -m64 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd1 rpm 32-bit
 COMMAND="$DESTDIR/dmd_rpm.sh -v$1 -m32 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd1 rpm 64-bit
 COMMAND="$DESTDIR/dmd_rpm.sh -v$1 -m64 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 rpm 32-bit
 COMMAND="$DESTDIR/dmd_rpm.sh -v$2 -m32 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 rpm 64-bit
 COMMAND="$DESTDIR/dmd_rpm.sh -v$2 -m64 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd1 arch 32-bit
 COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m32 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd1 arch 64-bit
 COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m64 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 arch 32-bit
 COMMAND="$DESTDIR/dmd_arch.sh -v$2 -m32 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 arch 64-bit
 COMMAND="$DESTDIR/dmd_arch.sh -v$2 -m64 $3"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build apt folder/files
 COMMAND="$DESTDIR/dmd_apt.sh -v$2"
-echo $COMMAND >>$LOGFILE
-$COMMAND
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # if everything went well

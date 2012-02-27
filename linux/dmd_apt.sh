@@ -16,8 +16,8 @@ DEB64="dmd_"$VERSION"-"$RELEASE"_amd64.deb"
 
 # error function
 ferror(){
-	echo -n "error: "
-	echo $1
+	echo -n "error: " >&2
+	echo $1 >&2
 	exit 1
 }
 
@@ -49,7 +49,7 @@ fi
 
 # check version parameter
 if test "${1:0:2}" != "-v" ;then
-	ferror "unknown argument"
+	ferror "unknown argument (-v)"
 elif ! [[ $1 =~ ^"-v"[0-9]"."[0-9][0-9][0-9]$ ]] ;then
 	ferror "incorrect version number"
 elif test ${1:2:1}${1:4} -lt 2058 ;then
