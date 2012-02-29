@@ -12,9 +12,9 @@
 
 ; If Download, the urls of the dmd.zip and dmc.zip
 !define DownloadDmd1ZipUrl "http://ftp.digitalmars.com/dmd.${Version1}.zip"
-!define DownloadDmd2ZipUrl "http://ftp.digitalmars.com/dmd.${Version2}.zip"
+!define DownloadDmd2ZipUrl "https://github.com/downloads/D-Programming-Language/dmd/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl "http://ftp.digitalmars.com/dmc.zip"
-!define DownloadCurlZipUrl "http://ftp.digitalmars.com/curl-${VersionCurl}-dmd-win32.zip" ;"http://ftp.digitalmars.com/dmc.zip"
+!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip" ;"http://ftp.digitalmars.com/dmc.zip"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
