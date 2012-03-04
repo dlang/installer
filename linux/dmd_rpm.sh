@@ -88,10 +88,17 @@ fi
 for DNAME in fedora openSUSE
 do
 	# assign variables
+	MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
+	VERSION=${1:2}
+	RELEASE=0
+	DESTDIR=`pwd`
+	BASEDIR='/tmp/'`date +"%s%N"`
 	if test "${1:0:4}" = "-v1." ;then
 		UNZIPDIR="dmd"
+		DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
 	elif test "${1:0:4}" = "-v2." ;then
 		UNZIPDIR="dmd2"
+		DMDURL="https://github.com/downloads/D-Programming-Language/dmd/dmd.$VERSION.zip"
 	fi
 	if test "$2" = "-m64" ;then
 		ARCH="x86_64"
@@ -100,12 +107,6 @@ do
 		ARCH="i386"
 		FARCH="x86-32"
 	fi
-	MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
-	VERSION=${1:2}
-	RELEASE=0
-	DESTDIR=`pwd`
-	BASEDIR='/tmp/'`date +"%s%N"`
-	DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
 	ZIPFILE=`basename $DMDURL`
 	DMDDIR="dmd-"$VERSION"-"$RELEASE"."$ARCH
 	RPMFILE="dmd-"$VERSION"-"$RELEASE"."$DNAME"."$ARCH".rpm"
@@ -122,7 +123,8 @@ do
 
 		# download zip file if not exist
 		if test ! -f $DESTDIR"/"$ZIPFILE ;then
-			wget -P $DESTDIR $DMDURL
+			echo "Downloading $ZIPFILE..."
+			wget -nv -P $DESTDIR $DMDURL
 		fi
 
 
