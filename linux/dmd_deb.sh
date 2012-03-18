@@ -121,7 +121,7 @@ else
 	# download zip file if not exist
 	if test ! -f $DESTDIR"/"$ZIPFILE ;then
 		echo "Downloading $ZIPFILE..."
-		wget  -nv -P $DESTDIR $DMDURL
+		wget -nv -P $DESTDIR $DMDURL
 	fi
 
 
@@ -167,19 +167,14 @@ else
 	# install libraries
 	mkdir -p usr/lib
 	if [ "$UNZIPDIR" = "dmd2" ]; then
-		PHNAME="libphobos2.a"
+		PHONAME="libphobos2.a"
 	elif [ "$UNZIPDIR" = "dmd" ]; then
-		PHNAME="libphobos.a"
+		PHONAME="libphobos.a"
 	fi
-	if test "$ARCH" = "amd64" ;then
-		mkdir -p usr/lib32
-		cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib32
-		cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib
-	elif test "$ARCH" = "i386" ;then
-		mkdir -p usr/lib64
-		cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib
-		cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib64
-	fi
+	mkdir -p usr/lib/i386-linux-gnu
+	cp -f ../$UNZIPDIR/linux/lib32/$PHONAME usr/lib/i386-linux-gnu
+	mkdir -p usr/lib/x86_64-linux-gnu
+	cp -f ../$UNZIPDIR/linux/lib64/$PHONAME usr/lib/x86_64-linux-gnu
 
 
 	# install include
@@ -245,9 +240,9 @@ else
 		echo -n ' -I/usr/include/d/dmd/druntime/import' >> etc/dmd.conf
 	fi
 	if [ "$ARCH" = "amd64" ]; then
-		echo -n ' -L-L/usr/lib -L-L/usr/lib32' >> etc/dmd.conf
+		echo -n ' -L-L/usr/lib/x86_64-linux-gnu -L-L/usr/lib/i386-linux-gnu' >> etc/dmd.conf
 	elif [ "$ARCH" = "i386" ]; then
-		echo -n ' -L-L/usr/lib -L-L/usr/lib64' >> etc/dmd.conf
+		echo -n ' -L-L/usr/lib/i386-linux-gnu -L-L/usr/lib/x86_64-linux-gnu' >> etc/dmd.conf
 	fi
 	echo ' -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
 
