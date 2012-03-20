@@ -5,19 +5,22 @@
 ; Version
 ;!define Version1 "1.046"
 ;!define Version2 "2.031"
+!define VersionCurl "7.24.0"
 
 ; Download zip from website, or include the compressed zip?
 !define Download
 
 ; If Download, the urls of the dmd.zip and dmc.zip
 !define DownloadDmd1ZipUrl "http://ftp.digitalmars.com/dmd.${Version1}.zip"
-!define DownloadDmd2ZipUrl "http://ftp.digitalmars.com/dmd.${Version2}.zip"
+!define DownloadDmd2ZipUrl "https://github.com/downloads/D-Programming-Language/dmd/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl "http://ftp.digitalmars.com/dmc.zip"
+!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip" ;"http://ftp.digitalmars.com/dmc.zip"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
 !define DmdZipPath2 "dmd.${Version2}.zip"
 !define DmcZipPath "dmc.zip"
+!define CurlZipPath "curl-${VersionCurl}-dmd-win32.zip"
 
 ;--------------------------------------------------------
 ; Includes
@@ -175,6 +178,32 @@ Section "D 2" Dmd2Files
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoModify" 1
     WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoRepair" 1
     WriteUninstaller "uninstall.exe"
+
+SectionEnd
+
+Section "cURL support for D 2" cURLFiles
+
+    ; This section is mandatory
+    ;SectionIn RO
+    
+    SetOutPath $INSTDIR
+    
+    ; Create installation directory
+    CreateDirectory "$INSTDIR"
+    
+    !ifdef Download
+        ; Download the zip files
+        inetc::get /caption "Downloading ${CurlZipPath}..." /popup "" "${DownloadCurlZipUrl}" "$INSTDIR\curl.zip" /end
+        Pop $0 # return value = exit code, "OK" means OK
+    !else
+        FILE "/oname=$INSTDIR\curl.zip" "${CurlZipPath}"
+    !endif
+    
+    ; Unzip them right there
+    nsisunz::Unzip "$INSTDIR\curl.zip" "$INSTDIR"
+    
+    ; Delete the zip files
+    Delete "$INSTDIR\curl.zip"
 
 SectionEnd
 
