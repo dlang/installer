@@ -92,7 +92,7 @@ MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
 RELEASE=0
 DESTDIR=`pwd`
-BASEDIR='/tmp/'`date +"%s%N"`
+TEMPDIR='/tmp/'`date +"%s%N"`
 if test "${1:0:4}" = "-v1." ;then
 	UNZIPDIR="dmd"
 	DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
@@ -107,6 +107,8 @@ elif test "$2" = "-m32" ;then
 fi
 ZIPFILE=`basename $DMDURL`
 DMDDIR="dmd_"$VERSION"-"$RELEASE"_"$ARCH
+DIR32="i386-linux-gnu"
+DIR64="x86_64-linux-gnu"
 DEBFILE=$DMDDIR".deb"
 
 
@@ -126,27 +128,27 @@ else
 
 
 	# create temp dir
-	mkdir -p $BASEDIR"/"$DMDDIR
+	mkdir -p $TEMPDIR"/"$DMDDIR
 
 
 	# unpacking sources
-	unzip -q $DESTDIR"/"$ZIPFILE -d $BASEDIR
+	unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
 
 
 	# add dmd-completion if present
 	if test -f `dirname $0`"/"dmd-completion ;then
-		mkdir -p $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/"
-		cp `dirname $0`"/"dmd-completion $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
+		mkdir -p $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/"
+		cp `dirname $0`"/"dmd-completion $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
 	fi
 
 
 	# change unzipped folders and files permissions
-	chmod -R 0755 $BASEDIR/$UNZIPDIR/*
-	chmod 0644 $(find -L $BASEDIR/$UNZIPDIR ! -type d)
+	chmod -R 0755 $TEMPDIR/$UNZIPDIR/*
+	chmod 0644 $(find -L $TEMPDIR/$UNZIPDIR ! -type d)
 
 
 	# switch to temp dir
-	pushd $BASEDIR"/"$DMDDIR
+	pushd $TEMPDIR"/"$DMDDIR
 
 
 	# install binaries
@@ -171,19 +173,27 @@ else
 	elif [ "$UNZIPDIR" = "dmd" ]; then
 		PHONAME="libphobos.a"
 	fi
-	mkdir -p usr/lib/i386-linux-gnu
-	cp -f ../$UNZIPDIR/linux/lib32/$PHONAME usr/lib/i386-linux-gnu
-	mkdir -p usr/lib/x86_64-linux-gnu
-	cp -f ../$UNZIPDIR/linux/lib64/$PHONAME usr/lib/x86_64-linux-gnu
+	mkdir -p usr/lib/{$DIR32,$DIR64}
+	cp -f ../$UNZIPDIR/linux/lib32/$PHONAME usr/lib/$DIR32
+	cp -f ../$UNZIPDIR/linux/lib64/$PHONAME usr/lib/$DIR64
 
 
 	# install include
 	find ../$UNZIPDIR/src/ -iname "*.mak" -print0 | xargs -0 rm
-	mkdir -p usr/include/d/dmd/
-	cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/d/dmd
-	if [ "$UNZIPDIR" = "dmd2" ]; then
-		mkdir -p usr/include/d/dmd/druntime/
-		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/d/dmd/druntime
+	if test "$ARCH" = "amd64" ;then
+		mkdir -p usr/include/$DIR64/dmd/
+		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/$DIR64/dmd
+		if [ "$UNZIPDIR" = "dmd2" ]; then
+			mkdir -p usr/include/$DIR64/dmd/druntime/
+			cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/$DIR64/dmd/druntime
+		fi
+	elif test "$ARCH" = "i386" ;then
+		mkdir -p usr/include/$DIR32/dmd/
+		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/$DIR32/dmd
+		if [ "$UNZIPDIR" = "dmd2" ]; then
+			mkdir -p usr/include/$DIR32/dmd/druntime/
+			cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/$DIR32/dmd/druntime
+		fi
 	fi
 
 
@@ -219,32 +229,36 @@ else
 
 	# create /etc/dmd.conf file
 	mkdir -p etc/
-	echo '; ' > etc/dmd.conf
-	echo '; dmd.conf file for dmd' >> etc/dmd.conf
-	echo '; ' >> etc/dmd.conf
-	echo '; dmd will look for dmd.conf in the following sequence of directories:' >> etc/dmd.conf
-	echo ';   - current working directory' >> etc/dmd.conf
-	echo ';   - directory specified by the HOME environment variable' >> etc/dmd.conf
-	echo ';   - directory dmd resides in' >> etc/dmd.conf
-	echo ';   - /etc directory' >> etc/dmd.conf
-	echo '; ' >> etc/dmd.conf
-	echo '; Names enclosed by %% are searched for in the existing environment and inserted' >> etc/dmd.conf
-	echo '; ' >> etc/dmd.conf
-	echo '; The special name %@P% is replaced with the path to this file' >> etc/dmd.conf
-	echo '; ' >> etc/dmd.conf
+	echo "; " > etc/dmd.conf
+	echo "; dmd.conf file for dmd" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo "; dmd will look for dmd.conf in the following sequence of directories:" >> etc/dmd.conf
+	echo ";   - current working directory" >> etc/dmd.conf
+	echo ";   - directory specified by the HOME environment variable" >> etc/dmd.conf
+	echo ";   - directory dmd resides in" >> etc/dmd.conf
+	echo ";   - /etc directory" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo "; Names enclosed by %% are searched for in the existing environment and inserted" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
+	echo "; The special name %@P% is replaced with the path to this file" >> etc/dmd.conf
+	echo "; " >> etc/dmd.conf
 	echo >> etc/dmd.conf
-	echo '[Environment]' >> etc/dmd.conf
+	echo "[Environment]" >> etc/dmd.conf
 	echo >> etc/dmd.conf
-	echo -n 'DFLAGS=-I/usr/include/d/dmd/phobos' >> etc/dmd.conf
-	if [ "$UNZIPDIR" = "dmd2" ]; then
-		echo -n ' -I/usr/include/d/dmd/druntime/import' >> etc/dmd.conf
-	fi
 	if [ "$ARCH" = "amd64" ]; then
-		echo -n ' -L-L/usr/lib/x86_64-linux-gnu -L-L/usr/lib/i386-linux-gnu' >> etc/dmd.conf
+		echo -n "DFLAGS=-I/usr/include/$DIR64/dmd/phobos" >> etc/dmd.conf
+		if [ "$UNZIPDIR" = "dmd2" ]; then
+			echo -n " -I/usr/include/$DIR64/dmd/druntime/import" >> etc/dmd.conf
+		fi
+		echo -n " -L-L/usr/lib/$DIR64 -L-L/usr/lib/$DIR32" >> etc/dmd.conf
 	elif [ "$ARCH" = "i386" ]; then
-		echo -n ' -L-L/usr/lib/i386-linux-gnu -L-L/usr/lib/x86_64-linux-gnu' >> etc/dmd.conf
+		echo -n "DFLAGS=-I/usr/include/$DIR32/dmd/phobos" >> etc/dmd.conf
+		if [ "$UNZIPDIR" = "dmd2" ]; then
+			echo -n " -I/usr/include/$DIR32/dmd/druntime/import" >> etc/dmd.conf
+		fi
+		echo -n " -L-L/usr/lib/$DIR32 -L-L/usr/lib/$DIR64" >> etc/dmd.conf
 	fi
-	echo ' -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
+	echo " -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
 
 
 	# create conffiles file
@@ -316,10 +330,10 @@ else
 
 
 	# place deb package
-	mv $BASEDIR"/"$DEBFILE $DESTDIR
+	mv $TEMPDIR"/"$DEBFILE $DESTDIR
 
 
 	# delete temp dir
-	rm -Rf $BASEDIR
+	rm -Rf $TEMPDIR
 fi
 

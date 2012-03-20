@@ -90,7 +90,7 @@ MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
 RELEASE=0
 DESTDIR=`pwd`
-BASEDIR='/tmp/'`date +"%s%N"`
+TEMPDIR='/tmp/'`date +"%s%N"`
 if test "${1:0:4}" = "-v1." ;then
 	UNZIPDIR="dmd"
 	DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
@@ -123,27 +123,27 @@ else
 
 
 	# create temp dir
-	mkdir -p $BASEDIR/root
+	mkdir -p $TEMPDIR/root
 
 
 	# unpacking sources
-	unzip -q $DESTDIR"/"$ZIPFILE -d $BASEDIR
+	unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
 
 
 	# add dmd-completion if present
 	if test -f `dirname $0`"/"dmd-completion ;then
-		mkdir -p $BASEDIR"/root/etc/bash_completion.d/"
-		cp `dirname $0`"/"dmd-completion $BASEDIR"/root/etc/bash_completion.d/dmd"
+		mkdir -p $TEMPDIR"/root/etc/bash_completion.d/"
+		cp `dirname $0`"/"dmd-completion $TEMPDIR"/root/etc/bash_completion.d/dmd"
 	fi
 
 
 	# change unzipped folders and files permissions
-	chmod -R 0755 $BASEDIR/$UNZIPDIR/*
-	chmod 0644 $(find -L $BASEDIR/$UNZIPDIR ! -type d)
+	chmod -R 0755 $TEMPDIR/$UNZIPDIR/*
+	chmod 0644 $(find -L $TEMPDIR/$UNZIPDIR ! -type d)
 
 
 	# switch to temp dir
-	pushd $BASEDIR/root
+	pushd $TEMPDIR/root
 
 
 	# install binaries
@@ -275,10 +275,10 @@ else
 
 
 	# copy package
-	cp $BASEDIR/$ARCHFILE $DESTDIR
+	cp $TEMPDIR/$ARCHFILE $DESTDIR
 
 
 	# delete temp dir
-	rm -Rf $BASEDIR
+	rm -Rf $TEMPDIR
 fi
 

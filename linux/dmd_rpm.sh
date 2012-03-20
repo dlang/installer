@@ -92,7 +92,7 @@ do
 	VERSION=${1:2}
 	RELEASE=0
 	DESTDIR=`pwd`
-	BASEDIR='/tmp/'`date +"%s%N"`
+	TEMPDIR='/tmp/'`date +"%s%N"`
 	if test "${1:0:4}" = "-v1." ;then
 		UNZIPDIR="dmd"
 		DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
@@ -110,7 +110,7 @@ do
 	ZIPFILE=`basename $DMDURL`
 	DMDDIR="dmd-"$VERSION"-"$RELEASE"."$ARCH
 	RPMFILE="dmd-"$VERSION"-"$RELEASE"."$DNAME"."$ARCH".rpm"
-	RPMDIR=$BASEDIR"/rpmbuild"
+	RPMDIR=$TEMPDIR"/rpmbuild"
 
 
 	# check if destination rpm file already exist
@@ -129,27 +129,27 @@ do
 
 
 		# create temp dir
-		mkdir -p $BASEDIR"/"$DMDDIR
+		mkdir -p $TEMPDIR"/"$DMDDIR
 
 
 		# unpacking sources
-		unzip -q $DESTDIR"/"$ZIPFILE -d $BASEDIR
+		unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
 
 
 		# add dmd-completion if present
 		if test -f `dirname $0`"/"dmd-completion ;then
-			mkdir -p $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/"
-			cp `dirname $0`"/"dmd-completion $BASEDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
+			mkdir -p $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/"
+			cp `dirname $0`"/"dmd-completion $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
 		fi
 
 
 		# change unzipped folders and files permissions
-		chmod -R 0755 $BASEDIR/$UNZIPDIR/*
-		chmod 0644 $(find $BASEDIR/$UNZIPDIR ! -type d)
+		chmod -R 0755 $TEMPDIR/$UNZIPDIR/*
+		chmod 0644 $(find $TEMPDIR/$UNZIPDIR ! -type d)
 
 
 		# switch to temp dir
-		pushd $BASEDIR"/"$DMDDIR
+		pushd $TEMPDIR"/"$DMDDIR
 
 
 		# install binaries
@@ -310,9 +310,9 @@ do
 
 
 		# add dir/files to dmd.spec
-		find $BASEDIR/$DMDDIR/ -type d | sed 's:'$BASEDIR'/'$DMDDIR':%dir ":' | sed 's:$:":' >> dmd.spec
-		find $BASEDIR/$DMDDIR/ -type f | sed 's:'$BASEDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
-		find $BASEDIR/$DMDDIR/ -type l | sed 's:'$BASEDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
+		find $TEMPDIR/$DMDDIR/ -type d | sed 's:'$TEMPDIR'/'$DMDDIR':%dir ":' | sed 's:$:":' >> dmd.spec
+		find $TEMPDIR/$DMDDIR/ -type f | sed 's:'$TEMPDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
+		find $TEMPDIR/$DMDDIR/ -type l | sed 's:'$TEMPDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
 
 
 		# mark as %config files
@@ -327,7 +327,7 @@ do
 
 
 		# create rpm file
-		fakeroot rpmbuild --buildroot=$BASEDIR/$DMDDIR -bb --target $ARCH dmd.spec
+		fakeroot rpmbuild --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH dmd.spec
 
 
 		# disable pushd
@@ -339,7 +339,7 @@ do
 
 
 		# delete temp dir
-		rm -Rf $BASEDIR
+		rm -Rf $TEMPDIR
 	fi
 done
 
