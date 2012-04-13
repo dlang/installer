@@ -76,7 +76,7 @@ fi
 
 
 # test public key
-gpg -k =$KEYID >/dev/null
+gpg --no-use-agent -k =$KEYID >/dev/null
 
 
 # check if deb packages exist
@@ -92,7 +92,7 @@ cd $APTDIR
 
 
 # export public key
-gpg --export -a =$KEYID >$KEYID.key
+gpg --no-use-agent --export -a =$KEYID >$KEYID.key
 
 
 # create links to deb packages
@@ -134,7 +134,7 @@ sha256sum Packages.gz | sed "s/^/ /;s/  / $(du -b Packages.gz)/;s/\tPackages.gz/
 
 
 # create "Release.gpg" file
-gpg --output Release.gpg -ba -u =$KEYID Release
+gpg --no-use-agent --output Release.gpg -ba -u =$KEYID Release
 
 
 # if everything went well
