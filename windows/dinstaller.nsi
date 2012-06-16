@@ -14,7 +14,7 @@
 !define DownloadDmd1ZipUrl "http://ftp.digitalmars.com/dmd.${Version1}.zip"
 !define DownloadDmd2ZipUrl "https://github.com/downloads/D-Programming-Language/dmd/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl "http://ftp.digitalmars.com/dmc.zip"
-!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip" ;"http://ftp.digitalmars.com/dmc.zip"
+!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
@@ -126,7 +126,14 @@ Section "-D2" Dmd2Files
     
     ; Delete the zip files
     Delete "$INSTDIR\dmd2.zip"
-    
+
+    ; Create command line batch file
+    FileOpen $0 "$INSTDIR\dmd2vars.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+    FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
+    FileClose $0
+
     ; Write installation dir in the registry
     WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
 
@@ -204,6 +211,13 @@ Section /o "-D1" Dmd1Files
     ; Delete the zip files
     Delete "$INSTDIR\dmd.zip"
 
+    ; Create command line batch file
+    FileOpen $0 "$INSTDIR\dmd1vars.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up environment for using DMD 1 from %~dp0dmd\windows\bin.$\n"
+    FileWrite $0 "@set PATH=%~dp0dmd\windows\bin;%PATH%$\n"
+    FileClose $0
+
     ; Write installation dir in the registry
     WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
 
@@ -254,6 +268,13 @@ Section "-dmc" DmcFiles
     ; Delete the zip files
     Delete "$INSTDIR\dmc.zip"
     
+    ; Create command line batch file
+    FileOpen $0 "$INSTDIR\dmcvars.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up environment for using dmc from %~dp0dm\bin.$\n"
+    FileWrite $0 "@set PATH=%~dp0dm\bin;%PATH%$\n"
+    FileClose $0
+
     ; Write installation dir in the registry
     WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
 
@@ -281,17 +302,26 @@ SectionGroupEnd
 Section "Start Menu Shortcuts" StartMenuShortcuts
     CreateDirectory "$SMPROGRAMS\D"
 
-    ; install dmd 1 documentation
-    SectionGetFlags ${Dmd1Files} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +2
-        CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
-
-    ; install dmd 2 documentation
+    ; install dmd 2 documentation and command prompt
     SectionGetFlags ${Dmd2Files} $0
     IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +2
+    IntCmp $0 ${SF_SELECTED} +1 +3
         CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+        CreateShortCut "$SMPROGRAMS\D\D2 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars.bat""' "" "" SW_SHOWNORMAL "" "Open D2 Command Prompt"
+
+    ; install dmd 1 documentation and command prompt
+    SectionGetFlags ${Dmd1Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +3
+        CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+        CreateShortCut "$SMPROGRAMS\D\D1 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd1vars.bat""' "" "" SW_SHOWNORMAL "" "Open D1 Command Prompt"
+
+    ; install dmc command prompt
+    SectionGetFlags ${DmcFiles} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+        CreateShortCut "$SMPROGRAMS\D\dmc Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmcvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmc Command Prompt"
+
 
     CreateShortCut "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 SectionEnd
