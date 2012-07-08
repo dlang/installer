@@ -14,7 +14,7 @@
 !define DownloadDmd1ZipUrl "http://ftp.digitalmars.com/dmd.${Version1}.zip"
 !define DownloadDmd2ZipUrl "https://github.com/downloads/D-Programming-Language/dmd/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl "http://ftp.digitalmars.com/dmc.zip"
-!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip" ;"http://ftp.digitalmars.com/dmc.zip"
+!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
@@ -100,48 +100,10 @@ CRCCheck force
 ; Required section: main program files,
 ; registry entries, etc.
 ;--------------------------------------------------------
+;
+SectionGroup /e "D2"
 
-Section /o "D 1" Dmd1Files
-
-    ; This section is mandatory
-    ;SectionIn RO
-    
-    SetOutPath $INSTDIR
-    
-    ; Create installation directory
-    CreateDirectory "$INSTDIR"
-    
-    !ifdef Download
-        ; Download the zip files
-        inetc::get /caption "Downloading dmd.${Version1}.zip..." /popup "" "${DownloadDmd1ZipUrl}" "$INSTDIR\dmd.zip" /end
-        Pop $0 # return value = exit code, "OK" means OK
-    !else
-        FILE "/oname=$INSTDIR\dmd.zip" "${DmdZipPath1}"
-    !endif
-    
-    ; Unzip them right there
-    nsisunz::Unzip "$INSTDIR\dmd.zip" "$INSTDIR"
-    
-    ; Delete the zip files
-    Delete "$INSTDIR\dmd.zip"
-    
-    ; Add directories to path (for all users)
-    ; (if for the current user, use HKCU)
-    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd\windows\bin"  
-    
-    ; Write installation dir in the registry
-    WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
-
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "DisplayName" "D"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoModify" 1
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoRepair" 1
-    WriteUninstaller "uninstall.exe"
-
-SectionEnd
-
-Section "D 2" Dmd2Files
+Section "-D2" Dmd2Files
 
     ; This section is mandatory
     ;SectionIn RO
@@ -164,11 +126,14 @@ Section "D 2" Dmd2Files
     
     ; Delete the zip files
     Delete "$INSTDIR\dmd2.zip"
-    
-    ; Add directories to path (for all users)
-    ; (if for the current user, use HKCU)
-    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin"  
-    
+
+    ; Create command line batch file
+    FileOpen $0 "$INSTDIR\dmd2vars.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+    FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
+    FileClose $0
+
     ; Write installation dir in the registry
     WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
 
@@ -181,7 +146,7 @@ Section "D 2" Dmd2Files
 
 SectionEnd
 
-Section "cURL support for D 2" cURLFiles
+Section "cURL support" cURLFiles
 
     ; This section is mandatory
     ;SectionIn RO
@@ -207,7 +172,79 @@ Section "cURL support for D 2" cURLFiles
 
 SectionEnd
 
-Section "dmc" DmcFiles
+Section "Add to PATH" AddD2ToPath
+
+    ; Add dmd 2 directories to path (for all users)
+    SectionGetFlags ${Dmd2Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+        ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin"
+
+SectionEnd
+
+SectionGroupEnd
+
+
+SectionGroup "D1"
+
+Section /o "-D1" Dmd1Files
+
+    ; This section is mandatory
+    ;SectionIn RO
+    
+    SetOutPath $INSTDIR
+    
+    ; Create installation directory
+    CreateDirectory "$INSTDIR"
+    
+    !ifdef Download
+        ; Download the zip files
+        inetc::get /caption "Downloading dmd.${Version1}.zip..." /popup "" "${DownloadDmd1ZipUrl}" "$INSTDIR\dmd.zip" /end
+        Pop $0 # return value = exit code, "OK" means OK
+    !else
+        FILE "/oname=$INSTDIR\dmd.zip" "${DmdZipPath1}"
+    !endif
+    
+    ; Unzip them right there
+    nsisunz::Unzip "$INSTDIR\dmd.zip" "$INSTDIR"
+    
+    ; Delete the zip files
+    Delete "$INSTDIR\dmd.zip"
+
+    ; Create command line batch file
+    FileOpen $0 "$INSTDIR\dmd1vars.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up environment for using DMD 1 from %~dp0dmd\windows\bin.$\n"
+    FileWrite $0 "@set PATH=%~dp0dmd\windows\bin;%PATH%$\n"
+    FileClose $0
+
+    ; Write installation dir in the registry
+    WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
+
+    ; Write registry keys to make uninstall from Windows
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "DisplayName" "D"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString" '"$INSTDIR\uninstall.exe"'
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoModify" 1
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoRepair" 1
+    WriteUninstaller "uninstall.exe"
+
+SectionEnd
+
+Section /o "Add to PATH" AddD1ToPath
+
+    ; Add dmd 1 directories to path (for all users)
+    SectionGetFlags ${Dmd1Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+        ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd\windows\bin"
+
+SectionEnd
+
+SectionGroupEnd
+
+SectionGroup "dmc"
+
+Section "-dmc" DmcFiles
 
     ; This section is mandatory
     ;SectionIn RO
@@ -231,10 +268,13 @@ Section "dmc" DmcFiles
     ; Delete the zip files
     Delete "$INSTDIR\dmc.zip"
     
-    ; Add directories to path (for all users)
-    ; (if for the current user, use HKCU)
-    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dm\bin"  
-    
+    ; Create command line batch file
+    FileOpen $0 "$INSTDIR\dmcvars.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up environment for using dmc from %~dp0dm\bin.$\n"
+    FileWrite $0 "@set PATH=%~dp0dm\bin;%PATH%$\n"
+    FileClose $0
+
     ; Write installation dir in the registry
     WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
 
@@ -247,20 +287,41 @@ Section "dmc" DmcFiles
 
 SectionEnd
 
+Section "Add to PATH" AddDmcToPath
+
+    ; Add dmc directories to path (for all users)
+    SectionGetFlags ${DmcFiles} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +2
+        ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dm\bin"
+
+SectionEnd
+
+SectionGroupEnd
+
 Section "Start Menu Shortcuts" StartMenuShortcuts
     CreateDirectory "$SMPROGRAMS\D"
 
-    ; install dmd 1 documentation
-    SectionGetFlags ${Dmd1Files} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +2
-		CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
-
-	; install dmd 2 documentation
+    ; install dmd 2 documentation and command prompt
     SectionGetFlags ${Dmd2Files} $0
     IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +3
+        CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+        CreateShortCut "$SMPROGRAMS\D\D2 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars.bat""' "" "" SW_SHOWNORMAL "" "Open D2 Command Prompt"
+
+    ; install dmd 1 documentation and command prompt
+    SectionGetFlags ${Dmd1Files} $0
+    IntOp $0 $0 & ${SF_SELECTED}
+    IntCmp $0 ${SF_SELECTED} +1 +3
+        CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+        CreateShortCut "$SMPROGRAMS\D\D1 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd1vars.bat""' "" "" SW_SHOWNORMAL "" "Open D1 Command Prompt"
+
+    ; install dmc command prompt
+    SectionGetFlags ${DmcFiles} $0
+    IntOp $0 $0 & ${SF_SELECTED}
     IntCmp $0 ${SF_SELECTED} +1 +2
-		CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+        CreateShortCut "$SMPROGRAMS\D\dmc Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmcvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmc Command Prompt"
+
 
     CreateShortCut "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 SectionEnd
@@ -286,9 +347,9 @@ Section "Uninstall"
 
     ; Remove directories to path (for all users)
     ; (if for the current user, use HKCU)
-    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dm\bin"  
-    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd\windows\bin"  
-    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin"  
+    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dm\bin"
+    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd\windows\bin"
+    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin"
 
     ; Remove stuff from registry
     DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D"
