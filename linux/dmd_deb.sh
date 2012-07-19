@@ -180,20 +180,11 @@ else
 
 	# install include
 	find ../$UNZIPDIR/src/ -iname "*.mak" -print0 | xargs -0 rm
-	if test "$ARCH" = "amd64" ;then
-		mkdir -p usr/include/$DIR64/dmd/
-		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/$DIR64/dmd
-		if [ "$UNZIPDIR" = "dmd2" ]; then
-			mkdir -p usr/include/$DIR64/dmd/druntime/
-			cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/$DIR64/dmd/druntime
-		fi
-	elif test "$ARCH" = "i386" ;then
-		mkdir -p usr/include/$DIR32/dmd/
-		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/$DIR32/dmd
-		if [ "$UNZIPDIR" = "dmd2" ]; then
-			mkdir -p usr/include/$DIR32/dmd/druntime/
-			cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/$DIR32/dmd/druntime
-		fi
+	mkdir -p usr/include/dmd/
+	cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/dmd
+	if [ "$UNZIPDIR" = "dmd2" ]; then
+		mkdir -p usr/include/dmd/druntime/
+		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/dmd/druntime
 	fi
 
 
@@ -245,17 +236,13 @@ else
 	echo >> etc/dmd.conf
 	echo "[Environment]" >> etc/dmd.conf
 	echo >> etc/dmd.conf
+	echo -n "DFLAGS=-I/usr/include/dmd/phobos" >> etc/dmd.conf
+	if [ "$UNZIPDIR" = "dmd2" ]; then
+		echo -n " -I/usr/include/dmd/druntime/import" >> etc/dmd.conf
+	fi
 	if [ "$ARCH" = "amd64" ]; then
-		echo -n "DFLAGS=-I/usr/include/$DIR64/dmd/phobos" >> etc/dmd.conf
-		if [ "$UNZIPDIR" = "dmd2" ]; then
-			echo -n " -I/usr/include/$DIR64/dmd/druntime/import" >> etc/dmd.conf
-		fi
 		echo -n " -L-L/usr/lib/$DIR64 -L-L/usr/lib/$DIR32" >> etc/dmd.conf
 	elif [ "$ARCH" = "i386" ]; then
-		echo -n "DFLAGS=-I/usr/include/$DIR32/dmd/phobos" >> etc/dmd.conf
-		if [ "$UNZIPDIR" = "dmd2" ]; then
-			echo -n " -I/usr/include/$DIR32/dmd/druntime/import" >> etc/dmd.conf
-		fi
 		echo -n " -L-L/usr/lib/$DIR32 -L-L/usr/lib/$DIR64" >> etc/dmd.conf
 	fi
 	echo " -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
