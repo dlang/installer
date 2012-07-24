@@ -137,6 +137,10 @@ sha256sum Packages.gz | sed "s/^/ /;s/  / $(du -b Packages.gz)/;s/\tPackages.gz/
 gpg --no-use-agent --output Release.gpg -ba -u =$KEYID Release
 
 
+# remove "Packages" file
+rm -f Packages
+
+
 # if everything went well
 echo -e "APT Repository built"
 
