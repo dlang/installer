@@ -13,8 +13,6 @@ TARGET_DIR=data
 # TARGET_SITE=erdani.com
 # TARGET_DIR=d
 
-TEMPDIR:=$(shell mktemp -d /tmp/dmd-installer.XXX)
-
 MAKER:=$(shell \
 if [ -f /Developer/usr/bin/packagemaker ];\
 	then echo /Developer/usr/bin/packagemaker;\
@@ -22,23 +20,30 @@ if [ -f /Developer/usr/bin/packagemaker ];\
 fi)
 
 all: ${VERSIONS}
-	rm -rf ${TEMPDIR}
+
+clean:
+	rm -rf dmd.*.zip dmd.*.dmg
 
 define MAIN
-$1:
-	rm -rf ${TEMPDIR}/dmd.$1*.zip ${TEMPDIR}/dmd.$1* dmd dmg
-	curl --silent http://ftp.digitalmars.com/dmd.$1.zip >${TEMPDIR}/dmd.$1.zip
-	unzip -q ${TEMPDIR}/dmd.$1.zip -d ${TEMPDIR}/$1
-	rm -rf $(addprefix ${TEMPDIR}/$1/*/,freebsd linux windows bin)
+dmd.$1.zip:
+	curl --silent --time-cond $$@ http://ftp.digitalmars.com/dmd.$1.zip >$$@.tmp
+	mv $$@.tmp $$@
+
+dmd.$1.dmg: dmd.$1.zip
+	rm -rf dmd
 	mkdir -p dmd
-	cp -r $(addprefix ${TEMPDIR}/$1/dmd*/,html license.txt man README.TXT license.txt samples src osx/bin osx/lib) dmd/
+	unzip -q dmd.$1.zip -d dmd/
+	mv $(addprefix dmd/dmd$2/,html license.txt man README.TXT samples src osx/bin osx/lib) dmd/
+	rm -rf dmd/dmd$2/
 	cp dmd$2.conf dmd/bin/dmd.conf
+	rm -rf dmg/
 	mkdir -p dmg/DMD$2
 	cp uninstall.command dmg/DMD$2/
 	${MAKER} -d dmd$2.pmdoc -o dmg/DMD2/DMD$2.pkg
-	hdiutil create -srcfolder dmg/DMD$2 ${TEMPDIR}/dmd.$1.dmg
-	scp ${TEMPDIR}/dmd.$1.dmg ${TARGET_SITE}:${TARGET_DIR}/dmd.$1.dmg.tmp
-	ssh ${TARGET_SITE} "mv ${TARGET_DIR}/dmd.$1.dmg.tmp ${TARGET_DIR}/dmd.$1.dmg"
+	hdiutil create -srcfolder dmg/DMD$2 $$@
+
+$1: dmd.$1.dmg
+	rsync -az $$< ${TARGET_SITE}:${TARGET_DIR}/dmd.$1.dmg
 endef
 
 $(foreach VER,$(VERSIONS),$(eval $(call MAIN,$(VER),$(firstword $(subst ., ,$(VER))))))
