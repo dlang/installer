@@ -13,11 +13,10 @@ include FileUtils
 
 class PackageMaker
 	attr_accessor :path, :output
-	
+
 	def make
 		dmd = ""
 		dmd_conf = ""
-		packagemaker = '/Developer/usr/bin/packagemaker'
 		version = 0
 
 		rm_rf "dmd"
@@ -49,7 +48,13 @@ class PackageMaker
 		`hdiutil create -srcfolder dmg/#{dmd} #{@output}.dmg` unless @output.nil?
 		`hdiutil create -srcfolder dmg/#{dmd} dmd.dmg` if @output.nil? && version == 1
 		`hdiutil create -srcfolder dmg/#{dmd} dmd2.dmg` if @output.nil? && version == 2
-	end	
+	end
+
+	def packagemaker
+		return @packagemaker if @packagemaker
+		path = '/Developer/usr/bin/packagemaker'
+		@packagemaker = File.exist?(path) ? path : "/Applications/PackageMaker.app/Contents/MacOS/PackageMaker"
+	end
 end
 
 # Prints the message to stderr, exits
