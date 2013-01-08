@@ -39,7 +39,7 @@ dmd.$1.dmg: dmd.$1.zip
 	rm -rf dmg/
 	mkdir -p dmg/DMD$2
 	cp uninstall.command dmg/DMD$2/
-	${MAKER} -d dmd$2.pmdoc -o dmg/DMD2/DMD$2.pkg
+	${MAKER} -d dmd$2.pmdoc -o dmg/DMD2/DMD$2.pkg --target 10.5
 	hdiutil create -srcfolder dmg/DMD$2 $$@
 
 $1: dmd.$1.dmg
