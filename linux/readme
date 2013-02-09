@@ -8,18 +8,18 @@ Run it with dmd version and model as argument and you'll get a deb packages in t
 Resulting package should be installable on any debian like system (debian, ubuntu, linuxmint, etc.).
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 1.073/2.058 and newer.
+Works with dmd 2.062 and newer.
 
 
 
 "dmd_rpm.sh"
 ============
-Script to create rpm packages for fedora and openSUSE.
+Script to create rpm packages for fedora or openSUSE.
 Run it with dmd version and model as argument and you'll get two rpm packages in the current directory.
-Resulting package should be installable on fedora/centos and openSUSE.
+Resulting package should be installable on fedora/centos or openSUSE.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 1.073/2.058 and newer.
+Works with dmd 2.062 and newer.
 
 
 
@@ -30,7 +30,7 @@ Run it with dmd version and model as argument and you'll get a package in the cu
 Resulting package should be installable on an Arch Linux system.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 1.073/2.058 and newer.
+Works with dmd 2.062 and newer.
 
 
 
@@ -41,15 +41,15 @@ Run it with dmd version as argument.
 Requires both (32-bit and 64-bit) dmd deb files in the current directory, and a PGP key.
 Create an apt folder in the current directory and generate these files in it:
 Packages, Packages.gz, Release, Release.gpg, <public_key>.key, and symbolic links to both deb packages.
-Works with dmd v2.058 and newer.
+Works with dmd v2.062 and newer.
 
 
 
 "build_all.sh"
 ==============
 Script to build all deb/rpm packages, and all apt server files.
-Run it with dmd1 and dmd2 version as arguments, and all scripts will be executed with these arguments.
-Works with dmd 1.073/2.058 and newer.
+Run it with dmd2 version as arguments, and all scripts will be executed with these arguments.
+Works with dmd 2.062 and newer.
 
 
 
