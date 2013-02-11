@@ -171,6 +171,12 @@ do
 		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/d/dmd/druntime
 
 
+		# install samples and HTML
+		mkdir -p usr/share/dmd/
+		cp -Rf ../$UNZIPDIR/samples/ usr/share/dmd
+		cp -Rf ../$UNZIPDIR/html/ usr/share/dmd
+
+
 		# install man pages
 		gzip ../$UNZIPDIR/man/man1/{dmd.1,dmd.conf.5,dumpobj.1,obj2asm.1,rdmd.1}
 		chmod 0644 ../$UNZIPDIR/man/man1/{dmd.1.gz,dmd.conf.5.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz}
@@ -191,8 +197,8 @@ do
 		cat ../$UNZIPDIR/license.txt | sed 's/\r//' >> usr/share/doc/dmd/copyright
 
 
-		# create changelog
-		echo "See: http://dlang.org/changelog.html" > usr/share/doc/dmd/changelog
+		# link changelog
+		ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
 
 
 		# create /etc/dmd.conf file
