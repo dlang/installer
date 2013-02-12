@@ -5,7 +5,7 @@ All of these scripts works only on debian like systems.
 ============
 Script to create deb packages for debian like systems.
 Run it with dmd version and model as argument and you'll get a deb packages in the current directory.
-Resulting package should be installable on any debian like system (debian, ubuntu, linuxmint, etc.).
+Resulting package should be installable on any debian like systems (debian, ubuntu, linuxmint, etc.).
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
 Works with dmd 2.062 and newer.
@@ -16,7 +16,7 @@ Works with dmd 2.062 and newer.
 ============
 Script to create rpm packages for fedora or openSUSE.
 Run it with dmd version and model as argument and you'll get two rpm packages in the current directory.
-Resulting package should be installable on fedora/centos or openSUSE.
+Resulting package should be installable on fedora/centos or openSUSE systems.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
 Works with dmd 2.062 and newer.
@@ -27,9 +27,21 @@ Works with dmd 2.062 and newer.
 ============
 Script to create installable packages for Arch Linux.
 Run it with dmd version and model as argument and you'll get a package in the current directory.
-Resulting package should be installable on an Arch Linux system.
+Resulting package should be installable on Arch Linux systems.
 If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
+Works with dmd 2.062 and newer.
+
+
+
+"dmd_win.sh"
+============
+Script to create installers for windows systems (32-bit).
+Run it with dmd version as argument and you'll get an executable package in the current directory.
+Resulting package should be installable on windows system (tested in WinXP and Win7).
+If "dmd.x.xxx.zip" already exist in the current folder, will be used, if not, will try to download first.
+If "dmc.zip" already exist in the current folder, will be used, if not, will try to download first.
+If "curl-x.xx.x-dmd-win32.zip" already exist in the current folder, will be used, if not, will try to download first.
 Works with dmd 2.062 and newer.
 
 

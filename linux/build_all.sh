@@ -47,7 +47,7 @@ fi
 # check version parameter
 if ! [[ $1 =~ ^[0-9]"."[0-9][0-9][0-9]$ ]] ;then
 	ferror "incorrect version number"
-elif test ${1:0:1}${1:2} -lt 2062 -o ${1:0:1} -gt 2 ;then
+elif test ${1:0:1}${1:2} -lt 2061 -o ${1:0:1} -gt 2 ;then
 	ferror "dmd v2.062 and newer only"
 fi
 
@@ -90,6 +90,12 @@ $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 # build dmd2 arch 64-bit
 COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m64 $2"
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
+
+
+# build dmd2 windows 32-bit
+COMMAND="$DESTDIR/dmd_win.sh -v$1 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
