@@ -21,6 +21,9 @@
 ; General definitions
 ;--------------------------------------------------------
 
+; Requested execution level for Windows 7
+RequestExecutionLevel admin
+
 ; Name of the installer
 Name "${DName} v${Version}"
 
@@ -31,13 +34,27 @@ OutFile "${ExeFile}"
 InstallDir "C:\dmd\"
 
 ; Take the instalation directory from the registry, if possible
-InstallDirRegKey HKLM "SOFTWARE\${DName}" "Install_Dir"
+InstallDirRegKey HKLM "SOFTWARE\${DName}" "Install Directory"
 
 ; This is so no one can corrupt the installer
 CRCCheck force
 
 ; Compress with lzma algorithm
 SetCompressor /SOLID lzma
+
+;--------------------------------------------------------
+; Macros definition
+;--------------------------------------------------------
+
+!macro VerifyUserIsAdmin
+UserInfo::GetAccountType
+pop $0
+${If} $0 != "admin" ;Require admin rights on NT4+
+	messageBox mb_iconstop "Administrator rights required!"
+	setErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+	quit
+${EndIf}
+!macroend
 
 ;--------------------------------------------------------
 ; Interface settings
@@ -54,9 +71,9 @@ SetCompressor /SOLID lzma
 ;--------------------------------------------------------
 
 ; Remember the installation language
-!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
-!define MUI_LANGDLL_REGISTRY_KEY "Software\${DName}"
-!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
+;!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
+;!define MUI_LANGDLL_REGISTRY_KEY "Software\${DName}"
+;!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 
 ;--------------------------------------------------------
 ; Installer pages
@@ -95,17 +112,17 @@ SectionGroup /e "dmd"
 
 Section "-dmd" DmdFiles
 
-    ; Remove previous installation if same directory
-    ;Exec $INSTDIR\uninstall.exe
+	; Remove previous installation if same directory
+	;Exec $INSTDIR\uninstall.exe
 
-    ; This section is mandatory
-    ;SectionIn RO
-    
-    SetOutPath $INSTDIR
-    
-    ; Create installation directory
-    CreateDirectory "$INSTDIR"
-    
+	; This section is mandatory
+	;SectionIn RO
+
+	SetOutPath $INSTDIR
+
+	; Create installation directory
+	CreateDirectory "$INSTDIR"
+
 	; dmd directory to include
 	File /r dmd/dmd2
 
@@ -113,40 +130,40 @@ Section "-dmd" DmdFiles
 	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
 	IntFmt $3 "0x%08X" $0
 
-    ; Create command line batch file
-    FileOpen $0 "$INSTDIR\dmdvars.bat" w
-    FileWrite $0 "@echo.$\n"
-    FileWrite $0 "@echo Setting up environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
-    FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
-    FileClose $0
+	; Create command line batch file
+	FileOpen $0 "$INSTDIR\dmdvars.bat" w
+	FileWrite $0 "@echo.$\n"
+	FileWrite $0 "@echo Setting up environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+	FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
+	FileClose $0
 
-    ; Write installation dir in the registry
-    WriteRegStr HKLM "SOFTWARE\${DName}" "Install_Dir" "$INSTDIR"
+	; Write installation dir in the registry
+	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
 
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
-    WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-    WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
-    WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
+	; Write registry keys to make uninstall from Windows
+	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
+	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
+	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
+	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
 	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$3"
-    WriteRegDWORD HKLM "${ARP}" "NoModify" 1
-    WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-    WriteUninstaller "uninstall.exe"
+	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
+	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
+	WriteUninstaller "uninstall.exe"
 
 SectionEnd
 
 Section "cURL support" cURLFiles
 
-    ; This section is mandatory
-    ;SectionIn RO
-    
-    SetOutPath $INSTDIR
-    
-    ; Create installation directory
-    CreateDirectory "$INSTDIR"
-    
+	; This section is mandatory
+	;SectionIn RO
+
+	SetOutPath $INSTDIR
+
+	; Create installation directory
+	CreateDirectory "$INSTDIR"
+
 	; curl directory to include
 	File /r curl/dmd2
 
@@ -154,30 +171,30 @@ Section "cURL support" cURLFiles
 	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
 	IntFmt $3 "0x%08X" $0
 
-    ; Write installation dir in the registry
-    WriteRegStr HKLM "SOFTWARE\${DName}" "Install_Dir" "$INSTDIR"
+	; Write installation dir in the registry
+	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
 
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
-    WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-    WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
-    WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
+	; Write registry keys to make uninstall from Windows
+	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
+	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
+	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
+	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
 	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$3"
-    WriteRegDWORD HKLM "${ARP}" "NoModify" 1
-    WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-    WriteUninstaller "uninstall.exe"
+	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
+	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
+	WriteUninstaller "uninstall.exe"
 
 SectionEnd
 
 Section "Add to PATH" AddDmdToPath
 
-    ; Add dmd 2 directories to path (for all users)
-    SectionGetFlags ${DmdFiles} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +2
-        ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin"
+	; Add dmd 2 directories to path (for all users)
+	SectionGetFlags ${DmdFiles} $0
+	IntOp $0 $0 & ${SF_SELECTED}
+	IntCmp $0 ${SF_SELECTED} +1 +2
+	${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin"
 
 SectionEnd
 
@@ -188,13 +205,13 @@ SectionGroup /e "dmc"
 
 Section "-dmc" DmcFiles
 
-    ; This section is mandatory
-    ;SectionIn RO
+	; This section is mandatory
+	;SectionIn RO
 
-    SetOutPath $INSTDIR
+	SetOutPath $INSTDIR
 
-    ; Create installation directory
-    CreateDirectory "$INSTDIR"
+	; Create installation directory
+	CreateDirectory "$INSTDIR"
 
 	; dmc directory to include
 	File /r dm
@@ -203,62 +220,65 @@ Section "-dmc" DmcFiles
 	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
 	IntFmt $3 "0x%08X" $0
 
-    ; Create command line batch file
-    FileOpen $0 "$INSTDIR\dmcvars.bat" w
-    FileWrite $0 "@echo.$\n"
-    FileWrite $0 "@echo Setting up environment for using dmc from %~dp0dm\bin.$\n"
-    FileWrite $0 "@set PATH=%~dp0dm\bin;%PATH%$\n"
-    FileClose $0
+	; Create command line batch file
+	FileOpen $0 "$INSTDIR\dmcvars.bat" w
+	FileWrite $0 "@echo.$\n"
+	FileWrite $0 "@echo Setting up environment for using dmc from %~dp0dm\bin.$\n"
+	FileWrite $0 "@set PATH=%~dp0dm\bin;%PATH%$\n"
+	FileClose $0
 
-    ; Write installation dir in the registry
-    WriteRegStr HKLM "SOFTWARE\${DName}" "Install_Dir" "$INSTDIR"
+	; Write installation dir in the registry
+	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
 
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
-    WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-    WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
-    WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
-    WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
+	; Write registry keys to make uninstall from Windows
+	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
+	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
+	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
+	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
 	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$3"
-    WriteRegDWORD HKLM "${ARP}" "NoModify" 1
-    WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-    WriteUninstaller "uninstall.exe"
+	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
+	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
+	WriteUninstaller "uninstall.exe"
 
 SectionEnd
 
 Section "Add to PATH" AddDmcToPath
 
-    ; Add dmc directories to path (for all users)
-    SectionGetFlags ${DmcFiles} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +2
-        ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dm\bin"
+	; Add dmc directories to path (for all users)
+	SectionGetFlags ${DmcFiles} $0
+	IntOp $0 $0 & ${SF_SELECTED}
+	IntCmp $0 ${SF_SELECTED} +1 +2
+	${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dm\bin"
 
 SectionEnd
 
 SectionGroupEnd
 
 Section "Start menu items" StartMenuItems
-    CreateDirectory "$SMPROGRAMS\${DName} v${Version}"
 
-    ; install dmd documentation and command prompt
-    SectionGetFlags ${DmdFiles} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +3
-		CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmd Documentation.lnk" \
-		"$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
-		CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmd Command Prompt.lnk" '%comspec%' \
-		'/k ""$INSTDIR\dmdvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmd Command Prompt"
+	CreateDirectory "$SMPROGRAMS\${DName} v${Version}"
 
-    ; install dmc command prompt
-    SectionGetFlags ${DmcFiles} $0
-    IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +2
-        CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmc Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmcvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmc Command Prompt"
+	; install dmd documentation and command prompt
+	SectionGetFlags ${DmdFiles} $0
+	IntOp $0 $0 & ${SF_SELECTED}
+	IntCmp $0 ${SF_SELECTED} +1 +3
+	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmd Documentation.lnk" \
+	"$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmd Command Prompt.lnk" '%comspec%' \
+	'/k ""$INSTDIR\dmdvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmd Command Prompt"
+
+	; install dmc command prompt
+	SectionGetFlags ${DmcFiles} $0
+	IntOp $0 $0 & ${SF_SELECTED}
+	IntCmp $0 ${SF_SELECTED} +1 +2
+	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmc Command Prompt.lnk" '%comspec%' \
+	'/k ""$INSTDIR\dmcvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmc Command Prompt"
 
 
-    CreateShortCut "$SMPROGRAMS\${DName} v${Version}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+
 SectionEnd
 
 ;--------------------------------------------------------
@@ -269,24 +289,27 @@ Function .onInit
 
 	SetShellVarContext all
 
-    ; This is commented because there's only one language
-    ; (for now)
-    ;!insertmacro MUI_LANGDLL_DISPLAY
+	!insertmacro VerifyUserIsAdmin
+
+	; This is commented because there's only one language
+	; (for now)
+	;!insertmacro MUI_LANGDLL_DISPLAY
 
 	; Remove if already installed
 	ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
 	StrCmp $R0 "" done
 
 	ReadRegStr $4 HKLM "${ARP}" "DisplayName"
-    ReadRegStr $5 HKLM "${ARP}" "DisplayVersion"
+	ReadRegStr $5 HKLM "${ARP}" "DisplayVersion"
 	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-	"$4 v$5 is installed in your system$\n$\nClick 'OK' to replace it by ${DName} v${Version}" \
+	"$4 v$5 is installed in your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
 	IDOK uninst
 	Abort
-	 
-	;Run the uninstaller
+
 	uninst:
-	ExecWait '$R0 /S'
+		;Run the uninstaller before install anything
+		ExecWait '$R0 /S _?=$INSTDIR'
+		ExecWait '$R0 /S'
 
 	done:
 
@@ -304,53 +327,52 @@ Function .onSelChange
 	SectionGetFlags ${StartMenuItems} $R4
 
 	${If} ${SectionIsSelected} ${DmdFiles}
-		${If} $R1 == 16
-			!insertmacro SetSectionFlag ${cURLFiles} 1
+		${If} $R1 == ${SF_RO}
+			!insertmacro SetSectionFlag ${cURLFiles} ${SF_SELECTED}
 		${EndIf}
-		${If} $R2 == 16
-			!insertmacro SetSectionFlag ${AddDmdToPath} 1
+		${If} $R2 == ${SF_RO}
+			!insertmacro SetSectionFlag ${AddDmdToPath} ${SF_SELECTED}
 		${EndIf}
-		!insertmacro ClearSectionFlag ${cURLFiles} 16
-		!insertmacro ClearSectionFlag ${AddDmdToPath} 16
+		!insertmacro ClearSectionFlag ${cURLFiles} ${SF_RO}
+		!insertmacro ClearSectionFlag ${AddDmdToPath} ${SF_RO}
 	${Else}
-		!insertmacro ClearSectionFlag ${cURLFiles} 1
-		!insertmacro SetSectionFlag ${cURLFiles} 16
-		!insertmacro ClearSectionFlag ${AddDmdToPath} 1
-		!insertmacro SetSectionFlag ${AddDmdToPath} 16
+		!insertmacro ClearSectionFlag ${cURLFiles} ${SF_SELECTED}
+		!insertmacro SetSectionFlag ${cURLFiles} ${SF_RO}
+		!insertmacro ClearSectionFlag ${AddDmdToPath} ${SF_SELECTED}
+		!insertmacro SetSectionFlag ${AddDmdToPath} ${SF_RO}
 	${EndIf}
 
 	${If} ${SectionIsSelected} ${DmcFiles}
-		${If} $R3 == 16
-			!insertmacro SetSectionFlag ${AddDmcToPath} 1
+		${If} $R3 == ${SF_RO}
+			!insertmacro SetSectionFlag ${AddDmcToPath} ${SF_SELECTED}
 		${EndIf}
-		!insertmacro ClearSectionFlag ${AddDmcToPath} 16
+		!insertmacro ClearSectionFlag ${AddDmcToPath} ${SF_RO}
 	${Else}
-		!insertmacro ClearSectionFlag ${AddDmcToPath} 1
-		!insertmacro SetSectionFlag ${AddDmcToPath} 16
+		!insertmacro ClearSectionFlag ${AddDmcToPath} ${SF_SELECTED}
+		!insertmacro SetSectionFlag ${AddDmcToPath} ${SF_RO}
 	${EndIf}
 
 	GetDlgItem $1 $HWNDPARENT 1
 
 	${IfNot} ${SectionIsSelected} ${DmdFiles}
 		${IfNot} ${SectionIsSelected} ${DmcFiles}
-			!insertmacro ClearSectionFlag ${StartMenuItems} 1
-			!insertmacro SetSectionFlag ${StartMenuItems} 16
+			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_SELECTED}
+			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_RO}
 			EnableWindow $1 0
 		${Else}
-			${If} $R4 == 16
-				!insertmacro SetSectionFlag ${StartMenuItems} 1
+			${If} $R4 == ${SF_RO}
+				!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
 			${EndIf}
-			!insertmacro ClearSectionFlag ${StartMenuItems} 16
+			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
 			EnableWindow $1 1
 		${EndIf}
 	${Else}
-		${If} $R4 == 16
-			!insertmacro SetSectionFlag ${StartMenuItems} 1
+		${If} $R4 == ${SF_RO}
+			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
 		${EndIf}
-		!insertmacro ClearSectionFlag ${StartMenuItems} 16
+		!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
 		EnableWindow $1 1
 	${EndIf}
-	
 
 FunctionEnd
 
@@ -363,39 +385,36 @@ FunctionEnd
 
 Section "Uninstall"
 
-    ; Remove directories to path (for all users)
-    ; (if for the current user, use HKCU)
-    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dm\bin"
-    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd\windows\bin"
-    ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin"
+	; Remove directories to path (for all users)
+	; (if for the current user, use HKCU)
+	${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dm\bin"
+	${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin"
 
-    ; Remove stuff from registry
-    DeleteRegKey HKLM "${ARP}"
-    DeleteRegKey HKLM "SOFTWARE\${DName}"
-    DeleteRegKey /ifempty HKLM "SOFTWARE\${DName}"
+	; Remove stuff from registry
+	DeleteRegKey HKLM "${ARP}"
+	DeleteRegKey HKLM "SOFTWARE\${DName}"
 
-    ; This is for deleting the remembered language of the installation
-    DeleteRegKey HKCU "Software\${DName}"
-    DeleteRegKey /ifempty HKCU "Software\${DName}"
+	; This is for deleting the remembered language of the installation
+	;DeleteRegKey HKCU "Software\${DName}"
 
-    ; Remove the uninstaller
-    Delete $INSTDIR\uninstall.exe
-    
-    ; Remove shortcuts
-    Delete "$SMPROGRAMS\${DName} v${Version}\dmd Documentation.lnk"
-    Delete "$SMPROGRAMS\${DName} v${Version}\dmd Command Prompt.lnk"
-    Delete "$SMPROGRAMS\${DName} v${Version}\dmc Command Prompt.lnk"
-    Delete "$SMPROGRAMS\${DName} v${Version}\Uninstall.lnk"
+	; Remove the uninstaller
+	Delete $INSTDIR\uninstall.exe
+
+	; Remove shortcuts
+	Delete "$SMPROGRAMS\${DName} v${Version}\dmd Documentation.lnk"
+	Delete "$SMPROGRAMS\${DName} v${Version}\dmd Command Prompt.lnk"
+	Delete "$SMPROGRAMS\${DName} v${Version}\dmc Command Prompt.lnk"
+	Delete "$SMPROGRAMS\${DName} v${Version}\Uninstall.lnk"
 
 	; Remove files
 	Delete "$INSTDIR\dmdvars.bat"
 	Delete "$INSTDIR\dmcvars.bat"
 
-    ; Remove used directories
-    RMDir /r /REBOOTOK "$INSTDIR\dm"
-    RMDir /r /REBOOTOK "$INSTDIR\dmd2"
-    RMDir "$INSTDIR"
-    RMDir /r /REBOOTOK "$SMPROGRAMS\${DName} v${Version}"
+	; Remove used directories
+	RMDir /r /REBOOTOK "$SMPROGRAMS\${DName} v${Version}"
+	RMDir /r /REBOOTOK "$INSTDIR\dm"
+	RMDir /r /REBOOTOK "$INSTDIR\dmd2"
+	RMDir "$INSTDIR"
 
 SectionEnd
 
@@ -407,10 +426,13 @@ Function un.onInit
 
 	SetShellVarContext all
 
-    ; Ask language before starting the uninstall
+	!insertmacro VerifyUserIsAdmin
 
-    ; This is commented because there's only one language
-    ; (for now)
-    ;!insertmacro MUI_UNGETLANGUAGE
+	; Ask language before starting the uninstall
+
+	; This is commented because there's only one language
+	; (for now)
+	;!insertmacro MUI_UNGETLANGUAGE
+
 FunctionEnd
 
