@@ -44,6 +44,8 @@ This script needs "dmd.x.xxx.zip", "dmc.zip" and "curl-x.xx.x-dmd-win32.zip".
 If they already exists in the current folder will be used, otherwise will try to download first.
 Works with dmd 2.062 and newer.
 
+NOTE: This script uses all image files, nsi headers files (nsh) and a modified version of "dinstaller.nsi" from DMD Windows installer.
+
 
 
 "dmd_apt.sh"
