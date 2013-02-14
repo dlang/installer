@@ -85,7 +85,7 @@ NSI="dinstaller.nsi"
 
 
 # check if destination exe file already exist
-if [ -f $DESTDIR/$EXEFILE ] && [ "$2" != "-f" ]
+if $(file $DESTDIR/$EXEFILE | grep "MS Windows" &>/dev/null) && [ "$2" != "-f" ]
 then
 	echo -e "$EXEFILE - already exist"
 else
