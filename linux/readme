@@ -44,8 +44,6 @@ This script needs "dmd.x.xxx.zip", "dmc.zip" and "curl-x.xx.x-dmd-win32.zip".
 If they already exists in the current folder will be used, otherwise will try to download first.
 Works with dmd 2.062 and newer.
 
-NOTE: This script uses all image files, nsi headers files (nsh) and a modified version of "dinstaller.nsi" from DMD Windows installer.
-
 
 
 "dmd_apt.sh"
@@ -64,6 +62,12 @@ Works with dmd v2.058 and newer.
 Script to build all deb/rpm packages, Windows installer and all apt server files.
 Run it with dmd version as arguments.
 Works with dmd 2.062 and newer.
+
+
+
+NOTE:
+"dmd_win.sh" script uses all image files, nsi headers files (nsh) and a modified version of "dinstaller.nsi" from DMD Windows installer.
+"dmd-completion" is a modified bash-completion script from https://github.com/Lutger/d_utils
 
 
 

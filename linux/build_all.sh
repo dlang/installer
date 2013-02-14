@@ -5,7 +5,7 @@ set -e
 
 
 # set variables
-DESTDIR=`dirname $0`
+BASEDIR=`dirname $0`
 LOGFILE="build_all.log"
 SPACER="\n`seq -s "#" 77 | sed 's/[0-9]//g'`\n"
 
@@ -59,49 +59,49 @@ fi
 
 
 # build dmd2 deb 32-bit
-COMMAND="$DESTDIR/dmd_deb.sh -v$1 -m32 $2"
+COMMAND="$BASEDIR/dmd_deb.sh -v$1 -m32 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 deb 64-bit
-COMMAND="$DESTDIR/dmd_deb.sh -v$1 -m64 $2"
+COMMAND="$BASEDIR/dmd_deb.sh -v$1 -m64 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 rpm 32-bit
-COMMAND="$DESTDIR/dmd_rpm.sh -v$1 -m32 $2"
+COMMAND="$BASEDIR/dmd_rpm.sh -v$1 -m32 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 rpm 64-bit
-COMMAND="$DESTDIR/dmd_rpm.sh -v$1 -m64 $2"
+COMMAND="$BASEDIR/dmd_rpm.sh -v$1 -m64 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 arch 32-bit
-COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m32 $2"
+COMMAND="$BASEDIR/dmd_arch.sh -v$1 -m32 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 arch 64-bit
-COMMAND="$DESTDIR/dmd_arch.sh -v$1 -m64 $2"
+COMMAND="$BASEDIR/dmd_arch.sh -v$1 -m64 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build dmd2 windows 32-bit
-COMMAND="$DESTDIR/dmd_win.sh -v$1 $2"
+COMMAND="$BASEDIR/dmd_win.sh -v$1 $2"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build apt folder/files
-COMMAND="$DESTDIR/dmd_apt.sh -v$1"
+COMMAND="$BASEDIR/dmd_apt.sh -v$1"
 echo -e "$SPACER$COMMAND" >>$LOGFILE
 $COMMAND 2> >(tee -a $LOGFILE >&2)
 
