@@ -302,7 +302,7 @@ Function .onInit
 	ReadRegStr $4 HKLM "${ARP}" "DisplayName"
 	ReadRegStr $5 HKLM "${ARP}" "DisplayVersion"
 	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-	"$4 v$5 is installed in your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
+	"$4 v$5 is installed on your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
 	IDOK uninst
 	Abort
 

@@ -22,7 +22,7 @@ fi
 
 # show help
 if test -z $1 ;then
-	echo "Script to create win32 dmd installer."
+	echo "Script to create Windows dmd installers."
 	echo
 	echo "Usage:"
 	echo "  dmd_win.sh -v\"version\" [-f]"
@@ -78,7 +78,7 @@ CURLVERSION="7.24.0"
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 DMD_URL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
-DM_URL="http://ftp.digitalmars.com/dmc.zip"
+DMC_URL="http://ftp.digitalmars.com/dmc.zip"
 CURL_URL="https://github.com/downloads/D-Programming-Language/dmd/curl-$CURLVERSION-dmd-win32.zip"
 EXEFILE="dmd-$VERSION.exe"
 NSI="dinstaller.nsi"
@@ -87,59 +87,58 @@ NSI="dinstaller.nsi"
 # check if destination exe file already exist
 if [ -f $DESTDIR/$EXEFILE ] && [ "$2" != "-f" ]
 then
-	ferror "\"$EXEFILE\" already exist" "Exiting..."
+	echo -e "$EXEFILE - already exist"
+else
+	# remove exe file
+	rm -f $DESTDIR/$EXEFILE
+
+
+	# download zip file if they don't exists
+	for F in $DMD_URL $DMC_URL $CURL_URL
+	do
+		if [ ! -f $DESTDIR/$(basename $F) ]
+		then
+			echo "Downloading $(basename $F)..."
+			wget -nv -P $DESTDIR $F
+		fi
+	done
+
+
+	# create temp dir
+	mkdir -p $TEMPDIR
+
+
+	# unpacking sources
+	unzip -q $DESTDIR/$(basename $DMD_URL) -d $TEMPDIR/dmd
+	unzip -q $DESTDIR/$(basename $DMC_URL) -d $TEMPDIR
+	unzip -q $DESTDIR/$(basename $CURL_URL) -d $TEMPDIR/curl
+
+
+	# copy needed files to temp directory
+	cp -f $(dirname $0)/win/* $TEMPDIR
+
+
+	# switch to temp dir
+	pushd $TEMPDIR
+
+
+	# remove unneeded files
+	rm -rf dmd/dmd2/{freebsd,linux,man,osx,src/dmd}
+
+
+	# create exe file
+	makensis -V3 -DVersion=$VERSION -DExeFile=$EXEFILE $NSI
+
+
+	# disable pushd
+	popd
+
+
+	# place exe installer
+	mv $TEMPDIR/$EXEFILE $DESTDIR
+
+
+	# delete temp dir
+	rm -Rf $TEMPDIR
 fi
-
-
-# remove exe file
-rm -f $DESTDIR/$EXEFILE
-
-
-# download zip file if not exist
-for F in $DMD_URL $DM_URL $CURL_URL
-do
-	if [ ! -f $DESTDIR/$(basename $F) ]
-	then
-		echo "Downloading $(basename $F)..."
-		wget -nv -P $DESTDIR $F
-	fi
-done
-
-
-# create temp dir
-mkdir -p $TEMPDIR
-
-
-# unpacking sources
-unzip -q $DESTDIR/$(basename $DMD_URL) -d $TEMPDIR/dmd
-unzip -q $DESTDIR/$(basename $DM_URL) -d $TEMPDIR
-unzip -q $DESTDIR/$(basename $CURL_URL) -d $TEMPDIR/curl
-
-
-# copy files to temp directory
-cp -f $(dirname $0)/win/* $TEMPDIR
-
-
-# switch to temp dir
-pushd $TEMPDIR
-
-
-# remove unneeded files
-rm -rf dmd/dmd2/{freebsd,linux,man,osx,src/dmd}
-
-
-# create exe file
-makensis -V3 -DVersion=$VERSION -DExeFile=$EXEFILE $NSI
-
-
-# disable pushd
-popd
-
-
-# place deb package
-mv $TEMPDIR/$EXEFILE $DESTDIR
-
-
-# delete temp dir
-rm -Rf $TEMPDIR
 

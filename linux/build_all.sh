@@ -101,9 +101,9 @@ $COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # build apt folder/files
-#COMMAND="$DESTDIR/dmd_apt.sh -v$1"
-#echo -e "$SPACER$COMMAND" >>$LOGFILE
-#$COMMAND 2> >(tee -a $LOGFILE >&2)
+COMMAND="$DESTDIR/dmd_apt.sh -v$1"
+echo -e "$SPACER$COMMAND" >>$LOGFILE
+$COMMAND 2> >(tee -a $LOGFILE >&2)
 
 
 # if everything went well
