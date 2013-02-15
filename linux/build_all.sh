@@ -34,7 +34,7 @@ if test $# -eq 0 ;then
 	echo "Script to build all deb/rpm/exe packages"
 	echo
 	echo "Usage:"
-	echo "  build_all.sh \"version\" [-f]" 
+	echo "  build_all.sh -v\"version\" [-f]" 
 	echo
 	echo "Options:"
 	echo "  -v       dmd version (mandatory)"
