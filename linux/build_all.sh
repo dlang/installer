@@ -37,8 +37,8 @@ if test $# -eq 0 ;then
 	echo "  build_all.sh -v\"version\" [-f]" 
 	echo
 	echo "Options:"
-	echo "  -v       dmd version (mandatory)"
-	echo "  -f       force to rebuild"
+	echo "  -v\"version\"    dmd version (mandatory)"
+	echo "  -f             force to rebuild"
 	exit
 fi
 

@@ -74,13 +74,17 @@ fi
 
 # assign variables
 VERSION=${1:2}
+if [ "$RELEASE" == "" ]
+then
+	RELEASE=0
+fi
 CURLVERSION="7.24.0"
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 DMD_URL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
 DMC_URL="http://ftp.digitalmars.com/dmc.zip"
 CURL_URL="https://github.com/downloads/D-Programming-Language/dmd/curl-$CURLVERSION-dmd-win32.zip"
-EXEFILE="dmd-$VERSION.exe"
+EXEFILE="dmd-$VERSION-$RELEASE.exe"
 NSI="dinstaller.nsi"
 
 
@@ -127,7 +131,7 @@ else
 
 
 	# create exe file
-	makensis -V3 -DVersion=$VERSION -DExeFile=$EXEFILE $NSI
+	makensis -V3 -DVersion=$VERSION-$RELEASE -DExeFile=$EXEFILE $NSI
 
 
 	# disable pushd

@@ -88,7 +88,10 @@ fi
 # assign variables
 MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
-RELEASE=0
+if [ "$RELEASE" == "" ]
+then
+	RELEASE=0
+fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"

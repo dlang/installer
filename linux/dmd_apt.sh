@@ -7,7 +7,10 @@ set -e -o pipefail
 # set variables
 KEYID="dmd-apt"
 VERSION=${1:2}
-RELEASE=0
+if [ "$RELEASE" == "" ]
+then
+	RELEASE=0
+fi
 DESTDIR=`pwd`
 APTDIR="apt"
 DEB32="dmd_"$VERSION"-"$RELEASE"_i386.deb"

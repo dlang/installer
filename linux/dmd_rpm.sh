@@ -88,7 +88,10 @@ do
 	# assign variables
 	MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 	VERSION=${1:2}
-	RELEASE=0
+	if [ "$RELEASE" == "" ]
+	then
+		RELEASE=0
+	fi
 	DESTDIR=`pwd`
 	TEMPDIR='/tmp/'`date +"%s%N"`
 	UNZIPDIR="dmd2"
@@ -166,9 +169,9 @@ do
 
 		# install include
 		find ../$UNZIPDIR/src/ -iname "*.mak" -print0 | xargs -0 rm
-		mkdir -p usr/include/d/dmd/druntime/
-		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/d/dmd
-		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/d/dmd/druntime
+		mkdir -p usr/include/dmd/druntime/
+		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/dmd
+		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/dmd/druntime
 
 
 		# install samples and HTML
@@ -219,7 +222,7 @@ do
 		
 		[Environment]
 		
-		DFLAGS=-I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import' | sed 's/^\t\t//' > etc/dmd.conf
+		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import' | sed 's/^\t\t//' > etc/dmd.conf
 		if [ "$ARCH" = "x86_64" ]; then
 			echo -n ' -L-L/usr/lib64' >> etc/dmd.conf
 		fi
