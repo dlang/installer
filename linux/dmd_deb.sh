@@ -22,7 +22,7 @@ fi
 
 # show help
 if test -z $1 ;then
-	echo "Script to create dmd binary deb packages."
+	echo "Script to create dmd v2 binary deb packages."
 	echo
 	echo "Usage:"
 	echo "  dmd_deb.sh -v\"version\" -m\"model\" [-f]"

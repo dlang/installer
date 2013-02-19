@@ -38,7 +38,7 @@ fi
 
 # show help
 if test $# -eq 0 ;then
-	echo "Script to build all deb/rpm/exe packages at once"
+	echo "Script to build all dmd v2 deb/rpm/exe packages at once"
 	echo
 	echo "Usage:"
 	echo "  build_all.sh -v\"version\" [-f] [-r\"release\"] [-h]" 

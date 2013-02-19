@@ -22,7 +22,7 @@ fi
 
 # show help
 if test -z $1 ;then
-	echo "Script to create dmd binary packages for Arch Linux."
+	echo "Script to create dmd v2 binary packages for Arch Linux."
 	echo
 	echo "Usage:"
 	echo "  dmd_arch.sh -v\"version\" -m\"model\" [-f]"

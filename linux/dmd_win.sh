@@ -22,7 +22,7 @@ fi
 
 # show help
 if test -z $1 ;then
-	echo "Script to create Windows dmd installers."
+	echo "Script to create dmd v2 Windows installer"
 	echo
 	echo "Usage:"
 	echo "  dmd_win.sh -v\"version\" [-f]"

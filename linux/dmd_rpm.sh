@@ -22,7 +22,7 @@ fi
 
 # show help
 if test -z $1 ;then
-	echo "Script to create dmd binary rpm packages."
+	echo "Script to create dmd v2 binary rpm packages."
 	echo
 	echo "Usage:"
 	echo "  dmd_rpm.sh -v\"version\" -m\"model\" [-f]"
