@@ -300,7 +300,7 @@ do
 
 
 		# create rpm file
-		fakeroot rpmbuild --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH dmd.spec
+		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH dmd.spec
 
 
 		# disable pushd

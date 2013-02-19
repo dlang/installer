@@ -127,7 +127,7 @@ else
 
 
 	# create exe file
-	makensis -V3 -DVersion=$VERSION -DExeFile=$EXEFILE $NSI
+	makensis -V2 -DVersion=$VERSION -DExeFile=$EXEFILE $NSI
 
 
 	# disable pushd

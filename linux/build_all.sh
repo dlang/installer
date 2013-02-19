@@ -8,7 +8,7 @@ set -e
 BASEDIR=`dirname $0`
 LOGFILE="build_all.log"
 SPACER=$(seq -s "*" 71 | sed 's/[0-9]//g')
-
+unset RELEASE
 
 # error function
 ferror()
@@ -141,7 +141,7 @@ fcmd "$BASEDIR/dmd_win.sh $1 $2"
 
 
 # build apt folder/files
-fcmd "$BASEDIR/dmd_apt.sh $1"
+#fcmd "$BASEDIR/dmd_apt.sh $1"
 
 
 # if everything went well
