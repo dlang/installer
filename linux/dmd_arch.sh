@@ -22,7 +22,7 @@ fi
 
 # show help
 if test -z $1 ;then
-	echo "Script to create dmd binary packages for Arch Linux."
+	echo "Script to create dmd v1 binary packages for Arch Linux."
 	echo
 	echo "Usage:"
 	echo "  dmd_arch.sh -v\"version\" -m\"model\" [-f]"
@@ -44,12 +44,10 @@ fi
 # check version parameter
 if test "${1:0:2}" != "-v" ;then
 	ferror "Unknown first argument (-v)" "Exiting..."
-elif test "${1:0:4}" != "-v1." -a "${1:0:4}" != "-v2." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
+elif test "${1:0:4}" != "-v1." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
 	ferror "Incorrect version number" "Exiting..."
-elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "73" ;then
-	ferror "For \"dmd v1.073\" and newer only" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "58" ;then
-	ferror "For \"dmd v2.058\" and newer only" "Exiting..."
+elif test "${1:0:4}" = "-v1." -a "${1:4}" -lt "76" ;then
+	ferror "For \"dmd v1.076\" and newer only" "Exiting..."
 fi
 
 
@@ -57,13 +55,13 @@ fi
 if test $# -eq 1 ;then
 	ferror "Second argument is mandatory (-m[32-64])" "Exiting..."
 elif test "$2" != "-m32" -a "$2" != "-m64" ;then
-	ferror "Unknown second argument (-m[32-64])" "Exiting..."
+	ferror "Unknown second argument '$2'" "Exiting..."
 fi
 
 
 # check forced build parameter
 if test $# -eq 3 -a "$3" != "-f" ;then
-	ferror "Unknown third argument (-f)" "Exiting..."
+	ferror "Unknown third argument '$3'" "Exiting..."
 fi
 
 
@@ -88,16 +86,14 @@ fi
 # assign variables
 MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
-RELEASE=0
+if [ "$RELEASE" == "" ]
+then
+	RELEASE=0
+fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
-if test "${1:0:4}" = "-v1." ;then
-	UNZIPDIR="dmd"
-	DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
-elif test "${1:0:4}" = "-v2." ;then
-	UNZIPDIR="dmd2"
-	DMDURL="https://github.com/downloads/D-Programming-Language/dmd/dmd.$VERSION.zip"
-fi
+UNZIPDIR="dmd"
+DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
 if test "$2" = "-m64" ;then
 	ARCH="x86_64"
 elif test "$2" = "-m32" ;then
@@ -150,24 +146,14 @@ else
 	mkdir -p usr/bin
 	if test "$ARCH" = "x86_64" ;then
 		cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd} usr/bin
-		if [ "$UNZIPDIR" = "dmd2" ]; then
-			cp -f ../$UNZIPDIR/linux/bin64/{ddemangle,dman} usr/bin
-		fi
 	elif test "$ARCH" = "i386" ;then
 		cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd} usr/bin
-		if [ "$UNZIPDIR" = "dmd2" ]; then
-			cp -f ../$UNZIPDIR/linux/bin32/{ddemangle,dman} usr/bin
-		fi
 	fi
 
 
 	# install libraries
 	mkdir -p usr/lib
-	if [ "$UNZIPDIR" = "dmd2" ]; then
-		PHNAME="libphobos2.a"
-	elif [ "$UNZIPDIR" = "dmd" ]; then
-		PHNAME="libphobos.a"
-	fi
+	PHNAME="libphobos.a"
 	if test "$ARCH" = "x86_64" ;then
 		cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib
 	else
@@ -177,12 +163,8 @@ else
 
 	# install include
 	find ../$UNZIPDIR/src/ -iname "*.mak" -print0 | xargs -0 rm
-	mkdir -p usr/include/d/dmd/
-	cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/d/dmd
-	if [ "$UNZIPDIR" = "dmd2" ]; then
-		mkdir -p usr/include/d/dmd/druntime/
-		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/d/dmd/druntime
-	fi
+	mkdir -p usr/include/dmd/
+	cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/dmd
 
 
 	# install samples and HTML
@@ -202,7 +184,7 @@ else
 
 	# copy copyright file
 	mkdir -p usr/share/doc/dmd
-	cp ../$UNZIPDIR/license.txt usr/share/doc/dmd/copyright
+	cat ../$UNZIPDIR/license.txt | sed 's/\r//' > usr/share/doc/dmd/copyright
 
 
 	# link changelog
@@ -210,18 +192,15 @@ else
 
 
 	# create .PKGINFO file
-	echo "pkgname = dmd" >.PKGINFO
-	echo "pkgver = $VERSION-$RELEASE" >>.PKGINFO
-	echo "pkgdesc = Digital Mars D Compiler" >>.PKGINFO
-	echo "url = http://dlang.org/" >>.PKGINFO
-	echo "builddate = `date +%s`" >>.PKGINFO
-	echo "packager = $MAINTAINER" >>.PKGINFO
-	echo "size = `du -bs . | awk '{print $1}'`" >>.PKGINFO
-	echo "license = custom" >>.PKGINFO
-	echo "depend = gcc" >>.PKGINFO
-	if test "$UNZIPDIR" = "dmd2" ;then
-		echo "depend = xdg-utils" >>.PKGINFO
-	fi
+	echo -e 'pkgname = dmd
+	pkgver = '$VERSION-$RELEASE'
+	pkgdesc = Digital Mars D Compiler
+	url = http://dlang.org/
+	builddate = '$(date +%s)'
+	packager = '$MAINTAINER'
+	size = '$(du -bs . | awk '{print $1}')'
+	license = custom
+	depend = gcc' | sed 's/^\t//' >.PKGINFO
 	if test "$ARCH" = "x86_64" ;then
 		echo "arch = x86_64" >>.PKGINFO
 	else
@@ -234,36 +213,30 @@ else
 
 	# create dmd.conf
 	mkdir -p etc
-	echo "; " > etc/dmd.conf
-	echo "; dmd.conf file for dmd" >> etc/dmd.conf
-	echo "; " >> etc/dmd.conf
-	echo "; dmd will look for dmd.conf in the following sequence of directories:" >> etc/dmd.conf
-	echo ";   - current working directory" >> etc/dmd.conf
-	echo ";   - directory specified by the HOME environment variable" >> etc/dmd.conf
-	echo ";   - directory dmd resides in" >> etc/dmd.conf
-	echo ";   - /etc directory" >> etc/dmd.conf
-	echo "; " >> etc/dmd.conf
-	echo "; Names enclosed by %% are searched for in the existing environment and inserted" >> etc/dmd.conf
-	echo "; " >> etc/dmd.conf
-	echo "; The special name %@P% is replaced with the path to this file" >> etc/dmd.conf
-	echo "; " >> etc/dmd.conf
-	echo >> etc/dmd.conf
-	echo "[Environment]" >> etc/dmd.conf
-	echo >> etc/dmd.conf
-	if [ "$UNZIPDIR" = "dmd2" ]; then
-		echo "DFLAGS=-I/usr/include/d/dmd/phobos -I/usr/include/d/dmd/druntime/import -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
-	else
-		echo "DFLAGS=-I/usr/include/d/dmd/phobos -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
-	fi
+	echo -en ';
+	; dmd.conf file for dmd
+	;
+	; dmd will look for dmd.conf in the following sequence of directories:
+	;   - current working directory
+	;   - directory specified by the HOME environment variable
+	;   - directory dmd resides in
+	;   - /etc directory
+	;
+	; Names enclosed by %% are searched for in the existing environment and inserted
+	;
+	; The special name %@P% is replaced with the path to this file
+	;
+	
+	[Environment]
+	
+	DFLAGS=-I/usr/include/dmd/phobos' | sed 's/^\t//' > etc/dmd.conf
+	echo ' -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
 
 
 	# change folders and files permissions
 	chmod -R 0755 *
 	chmod 0644 $(find -L . ! -type d)
 	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd}
-	if [ "$UNZIPDIR" = "dmd2" ]; then
-		chmod 0755 usr/bin/{ddemangle,dman}
-	fi
 
 
 	# create package
