@@ -59,7 +59,7 @@ Works with dmd v2.058 and newer.
 
 "build_all.sh"
 ==============
-Script to build all deb/rpm packages, Windows installer and all apt server files.
+Script to build all deb/rpm packages and Windows installer.
 Run it with dmd version as arguments.
 Works with dmd 2.062 and newer.
 

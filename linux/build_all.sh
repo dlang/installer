@@ -8,7 +8,7 @@ set -e
 BASEDIR=`dirname $0`
 LOGFILE="build_all.log"
 SPACER=$(seq -s "*" 71 | sed 's/[0-9]//g')
-unset RELEASE
+
 
 # error function
 ferror()
@@ -23,6 +23,13 @@ ferror()
 }
 
 
+# test if in 64-bit system
+if [ "$(uname -m)" != "x86_64" ]
+then
+    ferror "should be run on a 'x86_64' system" "Exiting..."
+fi
+
+
 # check if in debian like system
 if test ! -f /etc/debian_version ; then
 	ferror "refusing to build on a non-debian like system" "Exiting..."
@@ -31,40 +38,63 @@ fi
 
 # show help
 if test $# -eq 0 ;then
-	echo "Script to build all deb/rpm/exe packages"
+	echo "Script to build all deb/rpm/exe packages at once"
 	echo
 	echo "Usage:"
-	echo "  build_all.sh -v\"version\" [-f]" 
+	echo "  build_all.sh -v\"version\" [-f] [-r\"release\"] [-h]" 
 	echo
 	echo "Options:"
-	echo "  -v\"version\"    dmd version (mandatory)"
-	echo "  -f             force to rebuild"
+	echo "  -v\"version\"      dmd version (mandatory)"
+	echo "  -f               force to rebuild"
+	echo "  -r\"release\"      release version (default 0)"
+	echo "  -h               show this help and exit"
 	exit
 fi
 
 
-# check number of parameters
-if test $# -gt 2 ;then
-	ferror "too many arguments" "Exiting..."
+# check arguments
+unset RELEASE FORCE VER
+
+for I in "$@"
+do
+	case "$I" in
+	-h | -H)
+		exec "$0"
+	esac
+done
+
+for I in "$@"
+do
+	case "$I" in
+	-f)
+		FORCE="-f"
+		;;
+	-r*)
+		export RELEASE="${I:2}"
+		;;
+	-v*)
+		VER="${I:2}"
+		;;
+	*)
+		ferror "unknown argument '$I'" "try '`basename $0` -h' for more information."
+	esac
+done
+
+
+# version is mandatory
+if [ -z "$VER" ]
+then
+	ferror "missing version" "try '`basename $0` -h' for more information."
 fi
 
 
 # check version parameter
-if test "${1:0:2}" != "-v"
+if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ ]]
 then
-	ferror "unknown first argument '$1'" "Exiting..."
-elif ! [[ $1 =~ ^"-v"[0-9]"."[0-9][0-9][0-9]$ ]]
-then
-	ferror "incorrect version number"
+	ferror "incorrect version number" "try '`basename $0` -h' for more information."
 elif test ${1:2:1}${1:4} -lt 2062 -o ${1:2:1} -gt 2
 then
-	ferror "dmd v2.062 and newer only"
-fi
-
-
-# check forced build parameter
-if test $# -eq 2 -a "$2" != "-f" ;then
-	ferror "unknown second argument '$2'" "Exiting..."
+	ferror "dmd v2.062 and newer only" "try '`basename $0` -h' for more information."
 fi
 
 
@@ -96,7 +126,7 @@ fcheck wget
 
 if [ -n "$LIST" ]
 then
-	ferror "Mandatory to install these packages first:$LIST"
+	ferror "mandatory to install these packages first:$LIST"
 fi
 
 
@@ -113,35 +143,35 @@ fcmd()
 
 
 # build dmd2 deb 32-bit
-fcmd "$BASEDIR/dmd_deb.sh $1 -m32 $2"
+fcmd "$BASEDIR/dmd_deb.sh -v$VER -m32 $FORCE"
 
 
 # build dmd2 deb 64-bit
-fcmd "$BASEDIR/dmd_deb.sh $1 -m64 $2"
+fcmd "$BASEDIR/dmd_deb.sh -v$VER -m64 $FORCE"
 
 
 # build dmd2 rpm 32-bit
-fcmd "$BASEDIR/dmd_rpm.sh $1 -m32 $2"
+fcmd "$BASEDIR/dmd_rpm.sh -v$VER -m32 $FORCE"
 
 
 # build dmd2 rpm 64-bit
-fcmd "$BASEDIR/dmd_rpm.sh $1 -m64 $2"
+fcmd "$BASEDIR/dmd_rpm.sh -v$VER -m64 $FORCE"
 
 
 # build dmd2 arch 32-bit
-fcmd "$BASEDIR/dmd_arch.sh $1 -m32 $2"
+fcmd "$BASEDIR/dmd_arch.sh -v$VER -m32 $FORCE"
 
 
 # build dmd2 arch 64-bit
-fcmd "$BASEDIR/dmd_arch.sh $1 -m64 $2"
+fcmd "$BASEDIR/dmd_arch.sh -v$VER -m64 $FORCE"
 
 
 # build dmd2 windows 32-bit
-fcmd "$BASEDIR/dmd_win.sh $1 $2"
+fcmd "$BASEDIR/dmd_win.sh -v$VER $FORCE"
 
 
 # build apt folder/files
-#fcmd "$BASEDIR/dmd_apt.sh $1"
+#fcmd "$BASEDIR/dmd_apt.sh -v$VER"
 
 
 # if everything went well
