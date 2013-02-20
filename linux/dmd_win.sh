@@ -124,6 +124,7 @@ else
 
 	# remove unneeded files
 	rm -rf dmd/dmd2/{freebsd,linux,man,osx,src/dmd}
+	find dmd/dmd2/html -regex ".*\.\(d\|c\|h\|lib\|obj\)" -print0 | xargs -0 rm -f
 
 
 	# create exe file

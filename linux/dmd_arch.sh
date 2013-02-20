@@ -172,6 +172,8 @@ else
 	mkdir -p usr/share/dmd/
 	cp -Rf ../$UNZIPDIR/samples/ usr/share/dmd
 	cp -Rf ../$UNZIPDIR/html/ usr/share/dmd
+	# remove unneeded files
+	find usr/share/dmd/html -regex ".*\.\(d\|c\|h\|lib\|obj\)" -print0 | xargs -0 rm -f
 
 
 	# install man pages
