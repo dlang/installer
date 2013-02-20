@@ -4,7 +4,7 @@ from the binary package archives at www.digitalmars.com.
 Simply run:
     make
 
-to build the devault version (2.061) and release (0).  Provided other
+to build the devault version (2.062) and release (0).  Provided other
 versions and releases do not stray outside of /usr/bin, /usr/lib,
 /usr/include, /usr/share and /etc directors and only have /etc/dmd.conf and
 /etc/bash_completion.d/dmd in the /etc directory it should be possible
