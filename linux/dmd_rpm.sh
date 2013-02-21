@@ -282,9 +282,8 @@ do
 
 
 		# add dir/files to dmd.spec
-		find $TEMPDIR/$DMDDIR/ -type d | sed 's:'$TEMPDIR'/'$DMDDIR':%dir ":' | sed 's:$:":' >> dmd.spec
-		find $TEMPDIR/$DMDDIR/ -type f | sed 's:'$TEMPDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
-		find $TEMPDIR/$DMDDIR/ -type l | sed 's:'$TEMPDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
+		#find $TEMPDIR/$DMDDIR/ -type d | sed 's:'$TEMPDIR'/'$DMDDIR':%dir ":' | sed 's:$:":' >> dmd.spec
+		find $TEMPDIR/$DMDDIR/ ! -type d | sed 's:'$TEMPDIR'/'$DMDDIR':":' | sed 's:$:":' >> dmd.spec
 
 
 		# mark as %config files
