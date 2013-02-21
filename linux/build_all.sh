@@ -92,7 +92,10 @@ fi
 if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ ]]
 then
 	ferror "incorrect version number" "try '`basename $0` -h' for more information."
-elif test ${1:2:1}${1:4} -lt 1076 -o ${1:2:1} -gt 1
+elif test ${VER:0:1} -ne 1
+then
+	ferror "for dmd v1 only" "try '`basename $0` -h' for more information."
+elif test ${VER:0:1}${VER:2} -lt 1076
 then
 	ferror "dmd v1.076 and newer only" "try '`basename $0` -h' for more information."
 fi
