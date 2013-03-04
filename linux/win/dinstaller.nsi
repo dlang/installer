@@ -46,15 +46,66 @@ SetCompressor /SOLID lzma
 ; Macros definition
 ;--------------------------------------------------------
 
+; Verify if installer user has Administration rights
 !macro VerifyUserIsAdmin
-UserInfo::GetAccountType
-pop $0
-${If} $0 != "admin" ;Require admin rights on NT4+
-	messageBox mb_iconstop "Administrator rights required!"
-	setErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
-	quit
-${EndIf}
+	UserInfo::GetAccountType
+	pop $0
+	${If} $0 != "admin" ;Require admin rights on NT4+
+		messageBox mb_iconstop "Administrator rights required!"
+		setErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
+		quit
+	${EndIf}
 !macroend
+
+; Check if a dmd installer instance is already running
+!macro OneInstanceOnly
+	System::Call 'kernel32::CreateMutexA(i 0, i 0, t "dmd_installer_1362401722119187326") ?e'
+	Pop $R0
+	StrCmp $R0 0 +3
+		MessageBox MB_OK "An instance of ${DName} installer is already running"
+		Abort
+!macroend
+
+; Write registry keys when installing
+!macro WriteRegistryKeys
+	; Computes the size of the installed files
+	Call GetInstalledSize
+
+	; Write installation dir in the registry
+	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
+
+	; Registry keys to make Windows uninstaller
+	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
+	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
+	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
+	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
+	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$GetInstalledSize.total"
+	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
+	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
+	WriteUninstaller "uninstall.exe"
+!macroend
+
+;--------------------------------------------------------
+; Function definition
+;--------------------------------------------------------
+
+; Return the total size of the selected (installed) sections, formated as DWORD
+; Assumes no more than 256 sections are defined
+Var GetInstalledSize.total
+Var I
+Var J
+Function GetInstalledSize
+	StrCpy $GetInstalledSize.total 0
+	${ForEach} $I 0 256 + 1
+		${if} ${SectionIsSelected} $I
+			SectionGetSize $I $J
+			IntOp $GetInstalledSize.total $GetInstalledSize.total + $J
+		${Endif}
+	${Next}
+	IntFmt $GetInstalledSize.total "0x%08X" $GetInstalledSize.total
+FunctionEnd
 
 ;--------------------------------------------------------
 ; Interface settings
@@ -126,31 +177,15 @@ Section "-dmd" DmdFiles
 	; dmd directory to include
 	File /r dmd/dmd2
 
-	; Computes the size of the installed files (in KB)
-	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-	IntFmt $3 "0x%08X" $0
-
 	; Create command line batch file
 	FileOpen $0 "$INSTDIR\dmdvars.bat" w
 	FileWrite $0 "@echo.$\n"
-	FileWrite $0 "@echo Setting up environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+	FileWrite $0 "@echo Setting up environment for using dmd from %~dp0dmd2\windows\bin.$\n"
 	FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
 	FileClose $0
 
-	; Write installation dir in the registry
-	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
-
-	; Write registry keys to make uninstall from Windows
-	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
-	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
-	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
-	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$3"
-	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
-	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-	WriteUninstaller "uninstall.exe"
+	; Write registry keys
+	!insertmacro WriteRegistryKeys
 
 SectionEnd
 
@@ -161,30 +196,8 @@ Section "cURL support" cURLFiles
 
 	SetOutPath $INSTDIR
 
-	; Create installation directory
-	CreateDirectory "$INSTDIR"
-
 	; curl directory to include
 	File /r curl/dmd2
-
-	; Computes the size of the installed files (in KB)
-	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-	IntFmt $3 "0x%08X" $0
-
-	; Write installation dir in the registry
-	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
-
-	; Write registry keys to make uninstall from Windows
-	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
-	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
-	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
-	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$3"
-	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
-	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-	WriteUninstaller "uninstall.exe"
 
 SectionEnd
 
@@ -216,10 +229,6 @@ Section "-dmc" DmcFiles
 	; dmc directory to include
 	File /r dm
 
-	; Computes the size of the installed files (in KB)
-	${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
-	IntFmt $3 "0x%08X" $0
-
 	; Create command line batch file
 	FileOpen $0 "$INSTDIR\dmcvars.bat" w
 	FileWrite $0 "@echo.$\n"
@@ -227,20 +236,8 @@ Section "-dmc" DmcFiles
 	FileWrite $0 "@set PATH=%~dp0dm\bin;%PATH%$\n"
 	FileClose $0
 
-	; Write installation dir in the registry
-	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
-
-	; Write registry keys to make uninstall from Windows
-	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
-	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
-	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
-	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$3"
-	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
-	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-	WriteUninstaller "uninstall.exe"
+	; Write registry keys
+	!insertmacro WriteRegistryKeys
 
 SectionEnd
 
@@ -289,7 +286,11 @@ Function .onInit
 
 	SetShellVarContext all
 
+	; Verify if user is Administrator
 	!insertmacro VerifyUserIsAdmin
+
+	; Check if a dmd installer instance is already running
+	!insertmacro OneInstanceOnly
 
 	; This is commented because there's only one language
 	; (for now)
@@ -426,6 +427,7 @@ Function un.onInit
 
 	SetShellVarContext all
 
+	; Verify if user is Administrator
 	!insertmacro VerifyUserIsAdmin
 
 	; Ask language before starting the uninstall
