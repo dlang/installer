@@ -1,0 +1,33 @@
+These files enable a one-command build of dmd rpms (for i386 and x86_64)
+from the binary package archives at www.digitalmars.com.
+
+Simply run:
+    make
+
+to build the devault version (2.062) and release (0).  Provided other
+versions and releases do not stray outside of /usr/bin, /usr/lib,
+/usr/include, /usr/share and /etc directors and only have /etc/dmd.conf and
+/etc/bash_completion.d/dmd in the /etc directory it should be possible
+to build them by passing make the appropriate values for VERSION and
+RELEASE, e.g.
+
+make VERSION=2.070 RELEASE=0
+
+would build rpms from the 2.070 release 0 binary package archives at
+www.digitalmars.com.
+
+A note on building RPMs.
+It is typically considered bad form to build rpms with a privileged user. There
+are a lot of "rm -fr" statements, and if an environment isn't setup correctly,
+catastrophic failure ensues. If you are building RPMs for the first time, follow
+this guide to setting up a develpment environment.
+http://fedoraproject.org/wiki/A_Short_RPM_Tutorial#Development_environment
+
+In short:
+    yum install  @development-tools
+    yum -y install rpm-build rpmdevtools rpmlint mock
+    rpmdev-setuptree
+
+The last command creates a ~/.rpmmacros file that roots your RPM build
+environment in your user's home directory. After this, the Makefile should take
+care of the rest.
