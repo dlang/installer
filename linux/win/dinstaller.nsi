@@ -18,6 +18,15 @@
 !include "LogicLib.nsh"
 
 ;--------------------------------------------------------
+; Variables
+;--------------------------------------------------------
+
+Var GetInstalledSize.total
+Var I
+Var J
+Var InstanceCheck
+
+;--------------------------------------------------------
 ; General definitions
 ;--------------------------------------------------------
 
@@ -41,6 +50,23 @@ CRCCheck force
 
 ; Compress with lzma algorithm
 SetCompressor /SOLID lzma
+
+;--------------------------------------------------------
+; Function definition
+;--------------------------------------------------------
+
+; Return the total size of the selected (installed) sections, formated as DWORD
+; Assumes no more than 256 sections are defined
+Function GetInstalledSize
+	StrCpy $GetInstalledSize.total 0
+	${ForEach} $I 0 256 + 1
+		${if} ${SectionIsSelected} $I
+			SectionGetSize $I $J
+			IntOp $GetInstalledSize.total $GetInstalledSize.total + $J
+		${Endif}
+	${Next}
+	IntFmt $GetInstalledSize.total "0x%08X" $GetInstalledSize.total
+FunctionEnd
 
 ;--------------------------------------------------------
 ; Macros definition
@@ -86,26 +112,6 @@ SetCompressor /SOLID lzma
 	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
 	WriteUninstaller "uninstall.exe"
 !macroend
-
-;--------------------------------------------------------
-; Function definition
-;--------------------------------------------------------
-
-; Return the total size of the selected (installed) sections, formated as DWORD
-; Assumes no more than 256 sections are defined
-Var GetInstalledSize.total
-Var I
-Var J
-Function GetInstalledSize
-	StrCpy $GetInstalledSize.total 0
-	${ForEach} $I 0 256 + 1
-		${if} ${SectionIsSelected} $I
-			SectionGetSize $I $J
-			IntOp $GetInstalledSize.total $GetInstalledSize.total + $J
-		${Endif}
-	${Next}
-	IntFmt $GetInstalledSize.total "0x%08X" $GetInstalledSize.total
-FunctionEnd
 
 ;--------------------------------------------------------
 ; Interface settings
@@ -309,8 +315,8 @@ Function .onInit
 
 	uninst:
 		;Run the uninstaller before install anything
-		ExecWait '$R0 /S _?=$INSTDIR'
-		ExecWait '$R0 /S'
+		ExecWait '$R0 /IC False /S _?=$INSTDIR'
+		ExecWait '$R0 /IC False /S'
 
 	done:
 
@@ -429,6 +435,13 @@ Function un.onInit
 
 	; Verify if user is Administrator
 	!insertmacro VerifyUserIsAdmin
+
+	; Check if a dmd installer instance is already running
+	; Do not check if "/IC False" argument is passed to uninstaller
+	${GetOptions} $CMDLINE "/IC" $InstanceCheck
+	${IfNot} "$InstanceCheck" == "False"
+		!insertmacro OneInstanceOnly
+	${EndIf}
 
 	; Ask language before starting the uninstall
 
