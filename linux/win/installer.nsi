@@ -52,7 +52,7 @@ CRCCheck force
 SetCompressor /SOLID lzma
 
 ;--------------------------------------------------------
-; Function definition
+; Functions definition
 ;--------------------------------------------------------
 
 ; Return the total size of the selected (installed) sections, formated as DWORD
@@ -384,7 +384,7 @@ Function .onSelChange
 FunctionEnd
 
 ; Contains descriptions of components and other stuff
-!include dinstaller_descriptions.nsh
+!include installer_descriptions.nsh
 
 ;--------------------------------------------------------
 ; Uninstaller
