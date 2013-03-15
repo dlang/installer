@@ -118,7 +118,7 @@ FunctionEnd
 ;--------------------------------------------------------
 
 ; Confirmation when exiting the installer
-!define MUI_ABORTWARNING
+;!define MUI_ABORTWARNING
 
 !define MUI_ICON "installer-icon.ico"
 !define MUI_UNICON "uninstaller-icon.ico"
@@ -302,7 +302,7 @@ Function .onInit
 	; (for now)
 	;!insertmacro MUI_LANGDLL_DISPLAY
 
-	; Remove if already installed
+	; Remove if dmd is already installed
 	ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
 	StrCmp $R0 "" done
 
@@ -315,7 +315,11 @@ Function .onInit
 
 	uninst:
 		;Run the uninstaller before install anything
-		ExecWait '$R0 /IC False /S _?=$INSTDIR'
+		ExecWait '$R0 /IC False _?=$INSTDIR' $I
+		;Exit if uninstaller is cancelled by user
+		StrCmp $I 0 +2
+		Abort
+		;Remove in background the remaining uninstaller program itself
 		ExecWait '$R0 /IC False /S'
 
 	done:
