@@ -103,8 +103,8 @@ FunctionEnd
 	; Registry keys to make Windows uninstaller
 	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
 	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
-	WriteRegStr HKLM "${ARP}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-	WriteRegStr HKLM "${ARP}" "DisplayIcon" '"$INSTDIR\uninstall.exe"'
+	WriteRegStr HKLM "${ARP}" "UninstallString" "$INSTDIR\uninstall.exe"
+	WriteRegStr HKLM "${ARP}" "DisplayIcon" "$INSTDIR\uninstall.exe"
 	WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
 	WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
 	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$GetInstalledSize.total"
@@ -302,6 +302,11 @@ Function .onInit
 	; (for now)
 	;!insertmacro MUI_LANGDLL_DISPLAY
 
+	; Force install without uninstall
+	; Usefull if uninstall is broken
+	${GetParameters} $R0
+	StrCmp $R0 "/F" done
+
 	; Remove if dmd is already installed
 	ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
 	StrCmp $R0 "" done
@@ -314,12 +319,12 @@ Function .onInit
 	Abort
 
 	uninst:
-		;Run the uninstaller before install anything
+		; Run uninstaller fron installed directory
 		ExecWait '$R0 /IC False _?=$INSTDIR' $I
-		;Exit if uninstaller is cancelled by user
+		; Exit if uninstaller is cancelled by user
 		StrCmp $I 0 +2
 		Abort
-		;Remove in background the remaining uninstaller program itself
+		; Remove in background the remaining uninstaller program itself
 		ExecWait '$R0 /IC False /S'
 
 	done:
