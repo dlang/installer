@@ -88,7 +88,7 @@ FunctionEnd
 	System::Call 'kernel32::CreateMutexA(i 0, i 0, t "dmd_installer_1362401722119187326") ?e'
 	Pop $R0
 	StrCmp $R0 0 +3
-		MessageBox MB_OK "An instance of ${DName} installer is already running"
+		MessageBox MB_OK|MB_ICONSTOP "An instance of ${DName} installer is already running"
 		Abort
 !macroend
 
@@ -313,7 +313,7 @@ Function .onInit
 
 	ReadRegStr $4 HKLM "${ARP}" "DisplayName"
 	ReadRegStr $5 HKLM "${ARP}" "DisplayVersion"
-	MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
+	MessageBox MB_OKCANCEL|MB_ICONQUESTION \
 	"$4 v$5 is installed on your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
 	IDOK uninst
 	Abort
