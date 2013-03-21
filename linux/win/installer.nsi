@@ -85,7 +85,7 @@ FunctionEnd
 
 ; Check if a dmd installer instance is already running
 !macro OneInstanceOnly
-	System::Call 'kernel32::CreateMutexA(i 0, i 0, t "dmd_installer_1362401722119187326") ?e'
+	System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d_compiler_installer") ?e'
 	Pop $R0
 	StrCmp $R0 0 +3
 		MessageBox MB_OK|MB_ICONSTOP "An instance of ${DName} installer is already running"
@@ -100,7 +100,7 @@ FunctionEnd
 	; Write installation dir in the registry
 	WriteRegStr HKLM "SOFTWARE\${DName}" "Install Directory" "$INSTDIR"
 
-	; Registry keys to make Windows uninstaller
+	; Registry keys for dmd uninstaller
 	WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
 	WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version}"
 	WriteRegStr HKLM "${ARP}" "UninstallString" "$INSTDIR\uninstall.exe"
@@ -110,7 +110,8 @@ FunctionEnd
 	WriteRegDWORD HKLM "${ARP}" "EstimatedSize" "$GetInstalledSize.total"
 	WriteRegDWORD HKLM "${ARP}" "NoModify" 1
 	WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
-	WriteUninstaller "uninstall.exe"
+
+	WriteUninstaller "$INSTDIR\uninstall.exe"
 !macroend
 
 ;--------------------------------------------------------
@@ -305,25 +306,31 @@ Function .onInit
 	; Force install without uninstall
 	; Usefull if uninstall is broken
 	${GetParameters} $R0
-	StrCmp $R0 "/F" done
+	StrCmp $R0 "/f" done
 
 	; Remove if dmd is already installed
 	ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
 	StrCmp $R0 "" done
 
-	ReadRegStr $4 HKLM "${ARP}" "DisplayName"
-	ReadRegStr $5 HKLM "${ARP}" "DisplayVersion"
+	ReadRegStr $I HKLM "${ARP}" "DisplayName"
+	ReadRegStr $J HKLM "${ARP}" "DisplayVersion"
 	MessageBox MB_OKCANCEL|MB_ICONQUESTION \
-	"$4 v$5 is installed on your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
+	"$I v$J is installed on your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
 	IDOK uninst
 	Abort
 
 	uninst:
+		ClearErrors
 		; Run uninstaller fron installed directory
 		ExecWait '$R0 /IC False _?=$INSTDIR' $I
+		; Exit if uninstaller return an error
+		IfErrors 0 +3
+			MessageBox MB_OK|MB_ICONSTOP \
+			"An error occurred when removing $I v$J!$\n$\nRun 'dmd-${Version}.exe /f' to force install ${DName} v${Version}"
+			Abort
 		; Exit if uninstaller is cancelled by user
 		StrCmp $I 0 +2
-		Abort
+			Abort
 		; Remove in background the remaining uninstaller program itself
 		ExecWait '$R0 /IC False /S'
 
