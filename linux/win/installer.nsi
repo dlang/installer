@@ -269,26 +269,26 @@ SectionGroupEnd
 
 Section "Start menu items" StartMenuItems
 
-	CreateDirectory "$SMPROGRAMS\${DName} v${Version}"
+	CreateDirectory "$SMPROGRAMS\${DName}"
 
 	; install dmd documentation and command prompt
 	SectionGetFlags ${DmdFiles} $0
 	IntOp $0 $0 & ${SF_SELECTED}
 	IntCmp $0 ${SF_SELECTED} +1 +3
-	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmd Documentation.lnk" \
+	CreateShortCut "$SMPROGRAMS\${DName}\dmd Documentation.lnk" \
 	"$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
-	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmd Command Prompt.lnk" '%comspec%' \
+	CreateShortCut "$SMPROGRAMS\${DName}\dmd Command Prompt.lnk" '%comspec%' \
 	'/k ""$INSTDIR\dmdvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmd Command Prompt"
 
 	; install dmc command prompt
 	SectionGetFlags ${DmcFiles} $0
 	IntOp $0 $0 & ${SF_SELECTED}
 	IntCmp $0 ${SF_SELECTED} +1 +2
-	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\dmc Command Prompt.lnk" '%comspec%' \
+	CreateShortCut "$SMPROGRAMS\${DName}\dmc Command Prompt.lnk" '%comspec%' \
 	'/k ""$INSTDIR\dmcvars.bat""' "" "" SW_SHOWNORMAL "" "Open dmc Command Prompt"
 
 
-	CreateShortCut "$SMPROGRAMS\${DName} v${Version}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
+	CreateShortCut "$SMPROGRAMS\${DName}\Uninstall.lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 
 SectionEnd
 
@@ -333,7 +333,7 @@ Function .onInit
 		; Exit if uninstaller return an error
 		IfErrors 0 +3
 			MessageBox MB_OK|MB_ICONSTOP \
-			"An error occurred when removing $I v$J!$\n$\nRun 'dmd-${Version}.exe /f' to force install ${DName} v${Version}"
+			"An error occurred when removing $I v$J$\n$\nRun 'dmd-${Version}.exe /f' to force install ${DName} v${Version}"
 			Abort
 		; Exit if uninstaller is cancelled by user
 		StrCmp $I 0 +2
@@ -342,6 +342,9 @@ Function .onInit
 		ExecWait '$R0 /IC False /S'
 
 	done:
+
+	; Remove menus items before install (if any)
+	RMDir /r "$SMPROGRAMS\${DName}"
 
 FunctionEnd
 
@@ -450,17 +453,17 @@ Section "Uninstall"
 	Delete $INSTDIR\uninstall.exe
 
 	; Remove shortcuts
-	Delete "$SMPROGRAMS\${DName} v${Version}\dmd Documentation.lnk"
-	Delete "$SMPROGRAMS\${DName} v${Version}\dmd Command Prompt.lnk"
-	Delete "$SMPROGRAMS\${DName} v${Version}\dmc Command Prompt.lnk"
-	Delete "$SMPROGRAMS\${DName} v${Version}\Uninstall.lnk"
+	Delete "$SMPROGRAMS\${DName}\dmd Documentation.lnk"
+	Delete "$SMPROGRAMS\${DName}\dmd Command Prompt.lnk"
+	Delete "$SMPROGRAMS\${DName}\dmc Command Prompt.lnk"
+	Delete "$SMPROGRAMS\${DName}\Uninstall.lnk"
 
 	; Remove files
 	Delete "$INSTDIR\dmdvars.bat"
 	Delete "$INSTDIR\dmcvars.bat"
 
 	; Remove used directories
-	RMDir /r /REBOOTOK "$SMPROGRAMS\${DName} v${Version}"
+	RMDir /r /REBOOTOK "$SMPROGRAMS\${DName}"
 	RMDir /r /REBOOTOK "$INSTDIR\dm"
 	RMDir /r /REBOOTOK "$INSTDIR\dmd2"
 	RMDir "$INSTDIR"
