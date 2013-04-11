@@ -1,34 +1,34 @@
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Defines
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 !define DPublisher "Digital Mars"
 !define DProduct "D Compiler"
 !define DName "${DPublisher} ${DProduct}"
 !define ARP "Software\Microsoft\Windows\CurrentVersion\Uninstall\${DName}"
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Includes
-;--------------------------------------------------------
+;------------------------------------------------------------
 
-!include "MUI.nsh"
+!include "MUI2.nsh"
 !include "EnvVarUpdate.nsh"
 !include "FileFunc.nsh"
 !include "Sections.nsh"
 !include "LogicLib.nsh"
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Variables
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 Var GetInstalledSize.total
 Var I
 Var J
 Var InstanceCheck
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; General definitions
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 ; Requested execution level for Windows 7
 RequestExecutionLevel admin
@@ -51,9 +51,9 @@ CRCCheck force
 ; Compress with lzma algorithm
 SetCompressor /SOLID lzma
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Functions definition
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 ; Return the total size of the selected (installed) sections, formated as DWORD
 ; Assumes no more than 256 sections are defined
@@ -68,9 +68,9 @@ Function GetInstalledSize
 	IntFmt $GetInstalledSize.total "0x%08X" $GetInstalledSize.total
 FunctionEnd
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Macros definition
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 ; Verify if installer user has Administration rights
 !macro VerifyUserIsAdmin
@@ -114,9 +114,9 @@ FunctionEnd
 	WriteUninstaller "$INSTDIR\uninstall.exe"
 !macroend
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Interface settings
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 ; Confirmation when exiting the installer
 ;!define MUI_ABORTWARNING
@@ -124,47 +124,54 @@ FunctionEnd
 !define MUI_ICON "installer-icon.ico"
 !define MUI_UNICON "uninstaller-icon.ico"
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Langauge selection dialog settings
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 ; Remember the installation language
 ;!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
 ;!define MUI_LANGDLL_REGISTRY_KEY "Software\${DName}"
 ;!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Installer pages
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 !define MUI_WELCOMEFINISHPAGE_BITMAP "installer_image.bmp"
 !insertmacro MUI_PAGE_WELCOME
+
+; Define function to set "next" button state when loading "components" page.
+!define MUI_PAGE_CUSTOMFUNCTION_SHOW SetNextButton
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
+
+;------------------------------------------------------------
+; Uninstaller pages
+;------------------------------------------------------------
 
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; The languages
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 !insertmacro MUI_LANGUAGE "English"
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Reserve files needed by the installation
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Required section: main program files,
 ; registry entries, etc.
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 SectionGroup /e "dmd"
 
@@ -285,9 +292,9 @@ Section "Start menu items" StartMenuItems
 
 SectionEnd
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Installer functions
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 Function .onInit
 
@@ -338,9 +345,9 @@ Function .onInit
 
 FunctionEnd
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Enable and disable "sections" and "next" button
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 Function .onSelChange
 
@@ -379,21 +386,30 @@ Function .onSelChange
 
 	${IfNot} ${SectionIsSelected} ${DmdFiles}
 		${IfNot} ${SectionIsSelected} ${DmcFiles}
-			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_SELECTED}
-			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_RO}
+			; uncheck "Start menu item"
+;			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_SELECTED}
+			; disable "Start menu item"
+;			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_RO}
+			; disable "next" button
 			EnableWindow $1 0
 		${Else}
-			${If} $R4 == ${SF_RO}
-				!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
-			${EndIf}
-			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
+;			${If} $R4 == ${SF_RO}
+				; check "Start menu item"
+;				!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
+;			${EndIf}
+			; enable "Start menu item"
+;			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
+			; enable "next" button
 			EnableWindow $1 1
 		${EndIf}
 	${Else}
-		${If} $R4 == ${SF_RO}
-			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
-		${EndIf}
-		!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
+;		${If} $R4 == ${SF_RO}
+			; check "Start menu item"
+;			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
+;		${EndIf}
+		; enable "Start menu item"
+;		!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
+		; enable "next" button
 		EnableWindow $1 1
 	${EndIf}
 
@@ -402,9 +418,19 @@ FunctionEnd
 ; Contains descriptions of components and other stuff
 !include installer_descriptions.nsh
 
-;--------------------------------------------------------
+;------------------------------------------------------------
+; Set "next" button state when entering "Components" page
+;------------------------------------------------------------
+
+Function SetNextButton
+
+	Call .onSelChange
+
+FunctionEnd
+
+;------------------------------------------------------------
 ; Uninstaller
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 Section "Uninstall"
 
@@ -441,9 +467,9 @@ Section "Uninstall"
 
 SectionEnd
 
-;--------------------------------------------------------
+;------------------------------------------------------------
 ; Uninstaller functions
-;--------------------------------------------------------
+;------------------------------------------------------------
 
 Function un.onInit
 
