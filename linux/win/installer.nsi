@@ -343,9 +343,6 @@ Function .onInit
 
 	done:
 
-	; Remove menus items before install (if any)
-	RMDir /r "$SMPROGRAMS\${DName}"
-
 FunctionEnd
 
 ;------------------------------------------------------------
