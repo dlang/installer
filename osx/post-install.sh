@@ -7,6 +7,7 @@
 #
 
 ln -sf /usr/share/dmd/bin/dmd /usr/bin/dmd
+ln -sf /usr/share/dmd/bin/rdmd /usr/bin/rdmd
 ln -sf /usr/share/dmd/bin/dmd.conf /usr/bin/dmd.conf
 ln -sf /usr/share/dmd/bin/dumpobj /usr/bin/dumpobj
 ln -sf /usr/share/dmd/bin/obj2asm /usr/bin/obj2asm
