@@ -24,6 +24,7 @@
 Var GetInstalledSize.total
 Var I
 Var J
+Var K
 Var InstanceCheck
 
 ;------------------------------------------------------------
@@ -40,7 +41,7 @@ Name "${DName} v${Version}"
 OutFile "${ExeFile}"
 
 ; Where the program will be installed
-InstallDir "C:\dmd\"
+InstallDir "C:\dmd"
 
 ; Take the instalation directory from the registry, if possible
 InstallDirRegKey HKLM "SOFTWARE\${DName}" "Install Directory"
@@ -56,10 +57,10 @@ SetCompressor /SOLID lzma
 ;------------------------------------------------------------
 
 ; Return the total size of the selected (installed) sections, formated as DWORD
-; Assumes no more than 256 sections are defined
+; Assumes no more than 1024 sections are defined
 Function GetInstalledSize
 	StrCpy $GetInstalledSize.total 0
-	${ForEach} $I 0 256 + 1
+	${ForEach} $I 0 1024 + 1
 		${if} ${SectionIsSelected} $I
 			SectionGetSize $I $J
 			IntOp $GetInstalledSize.total $GetInstalledSize.total + $J
@@ -125,15 +126,6 @@ FunctionEnd
 !define MUI_UNICON "uninstaller-icon.ico"
 
 ;------------------------------------------------------------
-; Langauge selection dialog settings
-;------------------------------------------------------------
-
-; Remember the installation language
-;!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
-;!define MUI_LANGDLL_REGISTRY_KEY "Software\${DName}"
-;!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
-
-;------------------------------------------------------------
 ; Installer pages
 ;------------------------------------------------------------
 
@@ -176,9 +168,6 @@ FunctionEnd
 SectionGroup /e "dmd"
 
 Section "-dmd" DmdFiles
-
-	; Remove previous installation if same directory
-	;Exec $INSTDIR\uninstall.exe
 
 	; This section is mandatory
 	;SectionIn RO
@@ -306,18 +295,37 @@ Function .onInit
 	; Check if a dmd installer instance is already running
 	!insertmacro OneInstanceOnly
 
-	; This is commented because there's only one language
-	; (for now)
-	;!insertmacro MUI_LANGDLL_DISPLAY
-
 	; Force install without uninstall
 	; Usefull if uninstall is broken
 	${GetParameters} $R0
 	StrCmp $R0 "/f" done
 
-	; Remove old dmd installation if any
+
+	; Remove previous dmd installation if any
+	; this section is for previous dmd installer only
 	ReadRegStr $R5 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString"
+	ReadRegStr $R6 HKLM "SOFTWARE\D" "Install_Dir"
+	StrCmp $R5 "" done2
+	MessageBox MB_OKCANCEL|MB_ICONQUESTION \
+	"A previous DMD is installed on your system$\n$\nPress 'OK' to replace by ${DName} v${Version}" \
+	IDOK +2
+	Abort
+	ClearErrors
+	; Run uninstaller fron installed directory
+	ExecWait '$R5 /S _?=$R6' $K
+	; Exit if uninstaller return an error
+	IfErrors 0 +3
+		MessageBox MB_OK|MB_ICONSTOP \
+		"An error occurred when removing DMD$\n$\nRun 'dmd-${Version}.exe /f' to force install ${DName} v${Version}"
+		Abort
+	; Remove in background the remaining uninstaller program itself
+	Sleep 1000
 	Exec '$R5 /S'
+	MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled"
+
+	done2:
+	; End of removing previous dmd installation section
+
 
 	; Remove if dmd is already installed
 	ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
@@ -333,14 +341,14 @@ Function .onInit
 	uninst:
 		ClearErrors
 		; Run uninstaller fron installed directory
-		ExecWait '$R0 /IC False _?=$INSTDIR' $I
+		ExecWait '$R0 /IC False _?=$INSTDIR' $K
 		; Exit if uninstaller return an error
 		IfErrors 0 +3
 			MessageBox MB_OK|MB_ICONSTOP \
 			"An error occurred when removing $I v$J$\n$\nRun 'dmd-${Version}.exe /f' to force install ${DName} v${Version}"
 			Abort
 		; Exit if uninstaller is cancelled by user
-		StrCmp $I 0 +2
+		StrCmp $K 0 +2
 			Abort
 		; Remove in background the remaining uninstaller program itself
 		Exec '$R0 /IC False /S'
@@ -390,29 +398,13 @@ Function .onSelChange
 
 	${IfNot} ${SectionIsSelected} ${DmdFiles}
 		${IfNot} ${SectionIsSelected} ${DmcFiles}
-			; uncheck "Start menu item"
-;			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_SELECTED}
-			; disable "Start menu item"
-;			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_RO}
 			; disable "next" button
 			EnableWindow $1 0
 		${Else}
-;			${If} $R4 == ${SF_RO}
-				; check "Start menu item"
-;				!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
-;			${EndIf}
-			; enable "Start menu item"
-;			!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
 			; enable "next" button
 			EnableWindow $1 1
 		${EndIf}
 	${Else}
-;		${If} $R4 == ${SF_RO}
-			; check "Start menu item"
-;			!insertmacro SetSectionFlag ${StartMenuItems} ${SF_SELECTED}
-;		${EndIf}
-		; enable "Start menu item"
-;		!insertmacro ClearSectionFlag ${StartMenuItems} ${SF_RO}
 		; enable "next" button
 		EnableWindow $1 1
 	${EndIf}
@@ -446,9 +438,6 @@ Section "Uninstall"
 	; Remove stuff from registry
 	DeleteRegKey HKLM "${ARP}"
 	DeleteRegKey HKLM "SOFTWARE\${DName}"
-
-	; This is for deleting the remembered language of the installation
-	;DeleteRegKey HKCU "Software\${DName}"
 
 	; Remove the uninstaller
 	Delete $INSTDIR\uninstall.exe
@@ -488,12 +477,6 @@ Function un.onInit
 	${IfNot} "$InstanceCheck" == "False"
 		!insertmacro OneInstanceOnly
 	${EndIf}
-
-	; Ask language before starting the uninstall
-
-	; This is commented because there's only one language
-	; (for now)
-	;!insertmacro MUI_UNGETLANGUAGE
 
 FunctionEnd
 
