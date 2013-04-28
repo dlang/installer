@@ -315,6 +315,10 @@ Function .onInit
 	${GetParameters} $R0
 	StrCmp $R0 "/f" done
 
+	; Remove old dmd installation if any
+	ReadRegStr $R5 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString"
+	Exec '$R5 /S'
+
 	; Remove if dmd is already installed
 	ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
 	StrCmp $R0 "" done
@@ -339,7 +343,7 @@ Function .onInit
 		StrCmp $I 0 +2
 			Abort
 		; Remove in background the remaining uninstaller program itself
-		ExecWait '$R0 /IC False /S'
+		Exec '$R0 /IC False /S'
 
 	done:
 
