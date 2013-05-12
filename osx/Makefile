@@ -1,13 +1,18 @@
-# Makefile to build OSX installer. Run make -j for building both dmd1
-# and dmd2 versions in parallel. See the definition of VERSIONS for
-# what versions are processed. To pass versions from the outside, run
-# e.g.:
+# Makefile to build OSX installer. Just run without arguments to build
+# the latest version, or pass ${VERSION} to build a specific version,
+# e.g.
 #
-# make VERSIONS="2.058 1.073" -j
+# make VERSION="2.067"
 #
 
 # Externals
-VERSIONS=2.059 1.074
+ifeq (,${VERSION})
+  DMDPATH=${CURDIR}/../../dmd
+  VERSION:=$(shell cat ${DMDPATH}/VERSION)
+  ifeq (,${VERSION})
+    $(error Cannot find dmd version file ${DMDPATH}/VERSION)
+  endif
+endif
 TARGET_SITE=d-programming@digitalmars.com
 TARGET_DIR=data
 # TARGET_SITE=erdani.com
@@ -19,32 +24,26 @@ if [ -f /Developer/usr/bin/packagemaker ];\
 	else echo /Applications/PackageMaker.app/Contents/MacOS/PackageMaker;\
 fi)
 
-all: ${VERSIONS}
+all: dmd.${VERSION}.dmg
+	rsync -az $< ${TARGET_SITE}:${TARGET_DIR}/dmd.${VERSION}.dmg
 
-clean:
-	rm -rf dmd.*.zip dmd.*.dmg
+dmd.${VERSION}.zip:
+	curl --progress-bar ftp://ftp.digitalmars.com/dmd.${VERSION}.zip >$@.tmp
+	mv $@.tmp $@
 
-define MAIN
-dmd.$1.zip:
-	curl --silent --time-cond $$@ http://ftp.digitalmars.com/dmd.$1.zip >$$@.tmp
-	mv $$@.tmp $$@
-
-dmd.$1.dmg: dmd.$1.zip
+dmd.${VERSION}.dmg: dmd.${VERSION}.zip
 	rm -rf dmd
 	mkdir -p dmd
-	unzip -q dmd.$1.zip -d dmd/
-	mv $(addprefix dmd/dmd$2/,html license.txt man README.TXT samples src osx/bin osx/lib) dmd/
-	rm -rf dmd/dmd$2/
-	cp dmd$2.conf dmd/bin/dmd.conf
+	unzip -q dmd.${VERSION}.zip -d dmd/
+	mv $(addprefix dmd/dmd2/,html license.txt man README.TXT samples src osx/bin osx/lib) dmd/
+	rm -rf dmd/dmd2/
+	cp dmd2.conf dmd/bin/dmd.conf
 	rm -rf dmg/
 	mkdir -p dmg/DMD$2
 	cp uninstall.command dmg/DMD$2/
 	${MAKER} -d dmd$2.pmdoc -o dmg/DMD2/DMD$2.pkg --target 10.5
 	hdiutil create -srcfolder dmg/DMD$2 $$@
 
-$1: dmd.$1.dmg
-	rsync -az $$< ${TARGET_SITE}:${TARGET_DIR}/dmd.$1.dmg
-endef
-
-$(foreach VER,$(VERSIONS),$(eval $(call MAIN,$(VER),$(firstword $(subst ., ,$(VER))))))
+clean:
+	rm -rf dmd.*.zip dmd.*.dmg dmd.*.tmp
 
