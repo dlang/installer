@@ -37,7 +37,7 @@
 Name "D Programming Language"
 
 ; Name of the output file of the installer
-OutFile "dinstaller.exe"
+OutFile "dmd-${Version2}.exe"
 
 ; Where the program will be installed
 InstallDir "C:\D"
