@@ -122,7 +122,7 @@ echo.popd                                                               >> %REAL
 rem -------------------------------------------------------------------------
 
 rem Detect whether Git is available
-call gitsssssssa --help > NUL 2> NUL
+call git --help > NUL 2> NUL
 if errorlevel 1 (
     echo No Git detected, using fallback approach.
     set GIT_CMD=%FAKE_GIT_SCRIPT%
