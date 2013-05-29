@@ -158,10 +158,9 @@ else
 
 	# install libraries
 	mkdir -p usr/lib
-	PHONAME="libphobos2.a"
 	mkdir -p usr/lib/{$DIR32,$DIR64}
-	cp -f ../$UNZIPDIR/linux/lib32/$PHONAME usr/lib/$DIR32
-	cp -f ../$UNZIPDIR/linux/lib64/$PHONAME usr/lib/$DIR64
+	cp -f ../$UNZIPDIR/linux/lib32/{libphobos2.a,libphobos2.so} usr/lib/$DIR32
+	cp -f ../$UNZIPDIR/linux/lib64/{libphobos2.a,libphobos2.so} usr/lib/$DIR64
 
 
 	# install include
