@@ -159,11 +159,10 @@ do
 
 		# install libraries
 		mkdir -p usr/lib
-		PHNAME="libphobos2.a"
-		cp -f ../$UNZIPDIR/linux/lib32/$PHNAME usr/lib
+		cp -f ../$UNZIPDIR/linux/lib32/{libphobos2.a,libphobos2.so} usr/lib
 		if test "$ARCH" = "x86_64" ;then
 			mkdir -p usr/lib64
-			cp -f ../$UNZIPDIR/linux/lib64/$PHNAME usr/lib64
+			cp -f ../$UNZIPDIR/linux/lib64/{libphobos2.a,libphobos2.so} usr/lib64
 		fi
 
 
