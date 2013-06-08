@@ -158,11 +158,18 @@ do
 
 
 		# install libraries
+		A_LIB="libphobos2.a"
+		SO_LIB="libphobos2.so"
+		SO_VERSION=0.$(awk -F. '{ print $NF +0 }' <<<$VERSION).0
 		mkdir -p usr/lib
-		cp -f ../$UNZIPDIR/linux/lib32/{libphobos2.a,libphobos2.so} usr/lib
+		cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib
+		cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$SO_LIB.$SO_VERSION
+		ln -s $SO_LIB.$SO_VERSION usr/lib/$SO_LIB
 		if test "$ARCH" = "x86_64" ;then
 			mkdir -p usr/lib64
-			cp -f ../$UNZIPDIR/linux/lib64/{libphobos2.a,libphobos2.so} usr/lib64
+			cp -f ../$UNZIPDIR/linux/lib64/$A_LIB usr/lib64
+			cp -f ../$UNZIPDIR/linux/lib64/$SO_LIB usr/lib64/$SO_LIB.$SO_VERSION
+			ln -s $SO_LIB.$SO_VERSION usr/lib64/$SO_LIB
 		fi
 
 
@@ -237,12 +244,16 @@ do
 
 
 		# find deb package dependencies
-		DEPEND="glibc-devel($FARCH), gcc($FARCH), xdg-utils"
+		if test "$DNAME" = "fedora" ;then
+			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl($FARCH), xdg-utils"
+		elif test "$DNAME" = "openSUSE" ;then
+			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl4($FARCH), xdg-utils"
+		fi
 		if test "$ARCH" = "x86_64" ; then
 			if test "$DNAME" = "fedora" ;then
-				DEPEND=$DEPEND", glibc-devel(x86-32), libgcc(x86-32)"
+				DEPEND=$DEPEND", glibc-devel(x86-32), libgcc(x86-32), libcurl(x86-32)"
 			elif test "$DNAME" = "openSUSE" ;then
-				DEPEND=$DEPEND", glibc-devel-32bit(x86-32), gcc-32bit($FARCH)"
+				DEPEND=$DEPEND", glibc-devel-32bit(x86-32), gcc-32bit($FARCH), libcurl4-32bit(x86-32)"
 			fi
 		fi
 
@@ -279,6 +290,14 @@ do
 		the direction it goes.
 		
 		Main designer: Walter Bright
+
+		%post
+
+		ldconfig || :
+
+		%postun
+
+		ldconfig || :
 		
 		%files' | sed 's/^\t\t//' > dmd.spec
 

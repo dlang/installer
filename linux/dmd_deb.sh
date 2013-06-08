@@ -158,9 +158,29 @@ else
 
 	# install libraries
 	mkdir -p usr/lib
+	A_LIB="libphobos2.a"
+	SO_LIB="libphobos2.so"
+	SO_VERSION=0.$(awk -F. '{ print $NF +0 }' <<<$VERSION).0
 	mkdir -p usr/lib/{$DIR32,$DIR64}
-	cp -f ../$UNZIPDIR/linux/lib32/{libphobos2.a,libphobos2.so} usr/lib/$DIR32
-	cp -f ../$UNZIPDIR/linux/lib64/{libphobos2.a,libphobos2.so} usr/lib/$DIR64
+	cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib/$DIR32
+	cp -f ../$UNZIPDIR/linux/lib64/$A_LIB usr/lib/$DIR64
+	cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$DIR32/$SO_LIB.$SO_VERSION
+	cp -f ../$UNZIPDIR/linux/lib64/$SO_LIB usr/lib/$DIR64/$SO_LIB.$SO_VERSION
+	ln -s $SO_LIB.$SO_VERSION usr/lib/$DIR32/$SO_LIB
+	ln -s $SO_LIB.$SO_VERSION usr/lib/$DIR64/$SO_LIB
+
+	# links to libraries for backward compatibility
+	if [ "$ARCH" == "amd64" ]
+	then
+		mkdir -p usr/lib usr/lib32
+		ln -s ../lib/$DIR64/$SO_LIB.$SO_VERSION usr/lib
+		ln -s ../lib/$DIR32/$SO_LIB.$SO_VERSION usr/lib32
+	elif [ "$ARCH" == "i386" ]
+	then
+		mkdir -p usr/lib usr/lib64
+		ln -s ../lib/$DIR32/$SO_LIB.$SO_VERSION usr/lib
+		ln -s ../lib/$DIR64/$SO_LIB.$SO_VERSION usr/lib64
+	fi
 
 
 	# install include
@@ -238,7 +258,7 @@ else
 
 
 	# find deb package dependencies
-	DEPEND="libc6-dev, gcc, gcc-multilib, libc6, libgcc1, libstdc++6, xdg-utils"
+	DEPEND="libc6-dev, gcc, gcc-multilib, libc6, libgcc1, libstdc++6, libcurl3, xdg-utils"
 
 
 	# create control file
@@ -276,10 +296,22 @@ else
 	fi
 
 
+	# create postinst
+	echo -e '#!/bin/sh
+
+	ldconfig || :' | sed 's/^\t//' > DEBIAN/postinst
+
+
+	# create postrm
+	echo -e '#!/bin/sh
+
+	ldconfig || :' | sed 's/^\t//' > DEBIAN/postrm
+
+
 	# change folders and files permissions
 	chmod -R 0755 *
 	chmod 0644 $(find -L . ! -type d)
-	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman}
+	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman} DEBIAN/{postinst,postrm}
 
 
 	# create deb package
