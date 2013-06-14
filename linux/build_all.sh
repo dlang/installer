@@ -89,16 +89,16 @@ fi
 
 
 # check version parameter
-if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ ]]
-then
-	ferror "incorrect version number" "try '`basename $0` -h' for more information."
-elif test ${VER:0:1} -ne 2
-then
-	ferror "for dmd v2 only" "try '`basename $0` -h' for more information."
-elif test ${VER:0:1}${VER:2} -lt 2062
-then
-	ferror "dmd v2.062 and newer only" "try '`basename $0` -h' for more information."
-fi
+#if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ ]]
+#then
+#	ferror "incorrect version number" "try '`basename $0` -h' for more information."
+#elif test ${VER:0:1} -ne 2
+#then
+#	ferror "for dmd v2 only" "try '`basename $0` -h' for more information."
+#elif test ${VER:0:1}${VER:2} -lt 2062
+#then
+#	ferror "dmd v2.062 and newer only" "try '`basename $0` -h' for more information."
+#fi
 
 
 # check needed packages

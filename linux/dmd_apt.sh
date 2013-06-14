@@ -51,13 +51,13 @@ fi
 
 
 # check version parameter
-if test "${1:0:2}" != "-v" ;then
-	ferror "unknown argument (-v)"
-elif ! [[ $1 =~ ^"-v"[0-9]"."[0-9][0-9][0-9]$ ]] ;then
-	ferror "incorrect version number"
-elif test ${1:2:1}${1:4} -lt 2058 ;then
-	ferror "dmd v2.058 and newer only"
-fi
+#if test "${1:0:2}" != "-v" ;then
+#	ferror "unknown argument (-v)"
+#elif ! [[ $1 =~ ^"-v"[0-9]"."[0-9][0-9][0-9]$ ]] ;then
+#	ferror "incorrect version number"
+#elif test ${1:2:1}${1:4} -lt 2058 ;then
+#	ferror "dmd v2.058 and newer only"
+#fi
 
 
 # needed commands function

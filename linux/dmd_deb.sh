@@ -42,13 +42,13 @@ fi
 
 
 # check version parameter
-if test "${1:0:2}" != "-v" ;then
-	ferror "Unknown first argument (-v)" "Exiting..."
-elif test "${1:0:4}" != "-v2." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
-	ferror "dmd2: Incorrect version number" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "62" ;then
-	ferror "For \"dmd v2.062\" and newer only" "Exiting..."
-fi
+#if test "${1:0:2}" != "-v" ;then
+#	ferror "Unknown first argument (-v)" "Exiting..."
+#elif test "${1:0:4}" != "-v2." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
+#	ferror "dmd2: Incorrect version number" "Exiting..."
+#elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "62" ;then
+#	ferror "For \"dmd v2.062\" and newer only" "Exiting..."
+#fi
 
 
 # check model parameter
