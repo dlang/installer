@@ -9,7 +9,7 @@ Run it with dmd version and model as argument and you'll get a deb packages in t
 Resulting package should be installable on any debian like systems (debian, ubuntu, linuxmint, etc.).
 If "dmd.x.xxx.zip" already exist in the current folder will be used, otherwise will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 2.062 and newer.
+Works with dmd 2.063 and newer.
 
 
 
@@ -20,7 +20,7 @@ Run it with dmd version and model as argument and you'll get two rpm packages in
 Resulting package should be installable on fedora/centos or openSUSE systems.
 If "dmd.x.xxx.zip" already exist in the current folder will be used, otherwise will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 2.062 and newer.
+Works with dmd 2.063 and newer.
 
 
 
@@ -31,7 +31,7 @@ Run it with dmd version and model as argument and you'll get a package in the cu
 Resulting package should be installable on Arch Linux systems.
 If "dmd.x.xxx.zip" already exist in the current folder will be used, otherwise will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 2.062 and newer.
+Works with dmd 2.063 and newer.
 
 
 
@@ -42,7 +42,7 @@ Run it with dmd version as argument and you'll get an executable installer in th
 Resulting package should be installable on Windows systems. Tested in Windows XP (32-bit) and Windows 7 (64-bit).
 This script needs "dmd.x.xxx.zip", "dmc.zip" and "curl-x.xx.x-dmd-win32.zip".
 If they already exists in the current folder will be used, otherwise will try to download first.
-Works with dmd 2.062 and newer.
+Works with dmd 2.063 and newer.
 
 
 
@@ -61,7 +61,7 @@ Works with dmd v2.058 and newer.
 ==============
 Script to build all deb/rpm packages and Windows installer.
 Run it with dmd version as arguments.
-Works with dmd 2.062 and newer.
+Works with dmd 2.063 and newer.
 
 
 

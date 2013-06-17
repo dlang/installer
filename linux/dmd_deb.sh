@@ -44,10 +44,18 @@ fi
 # check version parameter
 if test "${1:0:2}" != "-v" ;then
 	ferror "Unknown first argument (-v)" "Exiting..."
-elif test "${1:0:4}" != "-v2." -o `expr length $1` -ne 7 || `echo ${1:4} | grep -q [^[:digit:]]` ;then
-	ferror "dmd2: Incorrect version number" "Exiting..."
-elif test "${1:0:4}" = "-v2." -a "${1:4}" -lt "62" ;then
-	ferror "For \"dmd v2.062\" and newer only" "Exiting..."
+else
+	VER="${1:2}"
+	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]$ ]]
+	then
+		ferror "incorrect version number" "Exiting..."
+	elif test ${VER:0:1} -ne 2
+	then
+		ferror "for dmd v2 only" "Exiting..."
+	elif test ${VER:0:1}${VER:2:3} -lt 2063
+	then
+		ferror "dmd v2.063 and newer only" "Exiting..."
+	fi
 fi
 
 
