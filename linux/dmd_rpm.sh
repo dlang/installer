@@ -168,7 +168,7 @@ do
 		# install libraries
 		A_LIB="libphobos2.a"
 		SO_LIB="libphobos2.so"
-		SO_VERSION=0.$(awk -F. '{ print $NF +0 }' <<<$VERSION).0
+		SO_VERSION=0.$(awk -F. '{ print $2 +0 }' <<<$VERSION).0
 		mkdir -p usr/lib
 		cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib
 		cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$SO_LIB.$SO_VERSION

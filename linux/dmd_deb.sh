@@ -168,7 +168,7 @@ else
 	mkdir -p usr/lib
 	A_LIB="libphobos2.a"
 	SO_LIB="libphobos2.so"
-	SO_VERSION=0.$(awk -F. '{ print $NF +0 }' <<<$VERSION).0
+	SO_VERSION=0.$(awk -F. '{ print $2 +0 }' <<<$VERSION).0
 	mkdir -p usr/lib/{$DIR32,$DIR64}
 	cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib/$DIR32
 	cp -f ../$UNZIPDIR/linux/lib64/$A_LIB usr/lib/$DIR64
