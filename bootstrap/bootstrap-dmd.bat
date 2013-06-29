@@ -45,8 +45,8 @@ set REAL_GIT_SCRIPT=%SCRAP_DIR%\real-git.bat
 set UNZIP_DIR=%SCRAP_DIR%\unzip
 set UNZIP_CMD=%UNZIP_DIR%\unzip.exe -q
 set DM_BIN=%WORK_DIR%\dm\bin
-set DMD_BIN=%WORK_DIR%\dmd\bin32
-set DMD_LIB=%WORK_DIR%\dmd\lib32
+set DMD_BIN=%WORK_DIR%\dmd\bin
+set DMD_LIB=%WORK_DIR%\dmd\lib
 
 rem Fresh start
 rmdir /S /Q "%WORK_DIR%" 2> NUL
@@ -164,7 +164,7 @@ copy %DM_BIN%\..\lib\*.lib %DMD_LIB%
 rem Generate sc.ini
 rem -------------------------------------------------------------------------
 echo.[Environment]                                                   >  %DMD_BIN%\sc.ini
-echo.LIB="%%@P%%\..\lib32"                                           >> %DMD_BIN%\sc.ini
+echo.LIB="%%@P%%\..\lib"                                             >> %DMD_BIN%\sc.ini
 echo.DFLAGS="-I%%@P%%\..\..\phobos" "-I%%@P%%\..\..\druntime\import" >> %DMD_BIN%\sc.ini
 echo.LINKCMD=%%@P%%\link.exe                                         >> %DMD_BIN%\sc.ini
 rem -------------------------------------------------------------------------
