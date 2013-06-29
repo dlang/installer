@@ -97,9 +97,6 @@ rem -------------------------------------------------------------------------
 
 rem Generate script to fake Git
 rem (There's a way to do functions in batch, but I couldn't get it to work.)
-rem MAINTAINERS: In all the sections (like this) that generate text files,
-rem              make sure each line starts with "echo." (note the period)
-rem              and that all "%" are escaped as "%%".
 rem -------------------------------------------------------------------------
 echo.^@echo off                                                         >  %FAKE_GIT_SCRIPT%
 echo.rem This script is only intended to be run from bootstrap-dmd.bat  >> %FAKE_GIT_SCRIPT%
