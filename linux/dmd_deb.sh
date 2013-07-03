@@ -276,6 +276,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPEND'
+	Provides: dmd'$(awk -F. '{ print $2 +0 }' <<<$VERSION)'
 	Section: devel
 	Priority: optional
 	Homepage: http://dlang.org/
