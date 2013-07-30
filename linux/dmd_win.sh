@@ -87,7 +87,7 @@ DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 DMD_URL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
 DMC_URL="http://ftp.digitalmars.com/dmc.zip"
-CURL_URL="https://github.com/downloads/D-Programming-Language/dmd/curl-$CURLVERSION-dmd-win32.zip"
+CURL_URL="http://downloads.dlang.org/other/curl-$CURLVERSION-dmd-win32.zip"
 EXEFILE="dmd-$VERSION.exe"
 NSI="installer.nsi"
 
@@ -104,10 +104,11 @@ else
 	# download zip file if they don't exists
 	for F in $DMD_URL $DMC_URL $CURL_URL
 	do
-		if [ ! -f $DESTDIR/$(basename $F) ]
+		if ! $(unzip -c $DESTDIR"/"$(basename $F) &>/dev/null)
 		then
+			rm -f $DESTDIR"/"$(basename $F)
 			echo "Downloading $(basename $F)..."
-			wget -nv -P $DESTDIR $F
+			curl -o $DESTDIR"/"$(basename $F) $F
 		fi
 	done
 

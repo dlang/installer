@@ -120,9 +120,11 @@ else
 
 
 	# download zip file if not exist
-	if test ! -f $DESTDIR"/"$ZIPFILE ;then
+	if ! $(unzip -c $DESTDIR"/"$ZIPFILE &>/dev/null)
+	then
+		rm -f $DESTDIR"/"$ZIPFILE
 		echo "Downloading $ZIPFILE..."
-		wget -nv -P $DESTDIR $DMDURL
+		curl -o $DESTDIR"/"$ZIPFILE $DMDURL
 	fi
 
 
