@@ -83,7 +83,7 @@ fcheck(){
 }
 fcheck gzip
 fcheck unzip
-fcheck wget
+fcheck curl
 fcheck dpkg
 fcheck dpkg-shlibdeps
 fcheck fakeroot

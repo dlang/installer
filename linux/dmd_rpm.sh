@@ -83,7 +83,7 @@ fcheck(){
 }
 fcheck gzip
 fcheck unzip
-fcheck wget
+fcheck curl
 fcheck rpmbuild
 fcheck fakeroot
 if [ $E -eq 1 ]; then

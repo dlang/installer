@@ -125,7 +125,7 @@ fcheck coreutils
 fcheck rpm
 fcheck tar
 fcheck unzip
-fcheck wget
+fcheck curl
 
 if [ -n "$LIST" ]
 then

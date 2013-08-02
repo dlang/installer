@@ -73,7 +73,7 @@ fcheck(){
 	fi
 }
 fcheck unzip
-fcheck wget
+fcheck curl
 fcheck makensis
 if [ $E -eq 1 ]; then
     ferror "Missing commands on Your system:" "$LIST"

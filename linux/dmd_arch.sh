@@ -83,7 +83,7 @@ fcheck(){
 }
 fcheck gzip
 fcheck unzip
-fcheck wget
+fcheck curl
 fcheck tar
 fcheck fakeroot
 if [ $E -eq 1 ]; then
