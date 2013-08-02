@@ -162,11 +162,11 @@ fcmd "$BASEDIR/dmd_rpm.sh -v$VER -m64 $FORCE"
 
 
 # build dmd2 arch 32-bit
-fcmd "$BASEDIR/dmd_arch.sh -v$VER -m32 $FORCE"
+#fcmd "$BASEDIR/dmd_arch.sh -v$VER -m32 $FORCE"
 
 
 # build dmd2 arch 64-bit
-fcmd "$BASEDIR/dmd_arch.sh -v$VER -m64 $FORCE"
+#fcmd "$BASEDIR/dmd_arch.sh -v$VER -m64 $FORCE"
 
 
 # build dmd2 windows 32-bit
