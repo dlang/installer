@@ -190,6 +190,7 @@ else
 
 	# create control file
 	echo -e 'Package: libphobos2-'$MINOR'
+	Source: dmd
 	Version: '$VERSION-$RELEASE'
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
