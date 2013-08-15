@@ -96,6 +96,9 @@ fi
 # assign variables
 MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
+MAJOR=0
+MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
+BUG=0
 if [ "$RELEASE" == "" ]
 then
 	RELEASE=0
@@ -170,7 +173,7 @@ else
 	mkdir -p usr/lib
 	A_LIB="libphobos2.a"
 	SO_LIB="libphobos2.so"
-	SO_VERSION=0.$(awk -F. '{ print $2 +0 }' <<<$VERSION).0
+	SO_VERSION=$MAJOR.$MINOR.$BUG
 	mkdir -p usr/lib/{$DIR32,$DIR64}
 	cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib/$DIR32
 	cp -f ../$UNZIPDIR/linux/lib64/$A_LIB usr/lib/$DIR64
@@ -278,7 +281,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPEND'
-	Provides: dmd'$(awk -F. '{ print $2 +0 }' <<<$VERSION)'
+	Provides: dmd'$MINOR'
 	Section: devel
 	Priority: optional
 	Homepage: http://dlang.org/

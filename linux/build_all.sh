@@ -153,6 +153,14 @@ fcmd "$BASEDIR/dmd_deb.sh -v$VER -m32 $FORCE"
 fcmd "$BASEDIR/dmd_deb.sh -v$VER -m64 $FORCE"
 
 
+# build libphobos2 deb 32-bit
+fcmd "$BASEDIR/dmd_phobos.sh -v$VER -m32 $FORCE"
+
+
+# build libphobos2 deb 64-bit
+fcmd "$BASEDIR/dmd_phobos.sh -v$VER -m64 $FORCE"
+
+
 # build dmd2 rpm 32-bit
 fcmd "$BASEDIR/dmd_rpm.sh -v$VER -m32 $FORCE"
 
