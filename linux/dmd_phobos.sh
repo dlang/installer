@@ -196,7 +196,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Pre-Depends: multiarch-support
-	Depends: libc6, libcurl3
+	Depends: libc6, libcurl3 | libcurl3-gnutls | libcurl3-nss
 	Conflicts: dmd'$MINOR'
 	Replaces: dmd'$MINOR'
 	Section: libs

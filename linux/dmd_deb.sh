@@ -271,7 +271,8 @@ else
 
 
 	# find deb package dependencies
-	DEPEND="libc6-dev, gcc, gcc-multilib, libc6, libgcc1, libstdc++6, libcurl3, xdg-utils"
+	DEPEND="libc6, libc6-dev, gcc, gcc-multilib, libgcc1, libstdc++6, xdg-utils"
+	DEPEND=$DEPEND", libcurl4-openssl-dev | libcurl4-gnutls-dev | libcurl4-nss-dev"
 
 
 	# create control file
