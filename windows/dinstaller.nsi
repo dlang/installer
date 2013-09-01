@@ -305,15 +305,16 @@ Section "Start Menu Shortcuts" StartMenuShortcuts
     ; install dmd 2 documentation and command prompt
     SectionGetFlags ${Dmd2Files} $0
     IntOp $0 $0 & ${SF_SELECTED}
-    IntCmp $0 ${SF_SELECTED} +1 +3
-        CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html" "" "$INSTDIR\dmd2\html\d\index.html" 0
+    IntCmp $0 ${SF_SELECTED} +1 +4
+        CreateShortCut "$SMPROGRAMS\D\D2 HTML Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html"
+        CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\windows\bin\d.chm"
         CreateShortCut "$SMPROGRAMS\D\D2 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars.bat""' "" "" SW_SHOWNORMAL "" "Open D2 Command Prompt"
 
     ; install dmd 1 documentation and command prompt
     SectionGetFlags ${Dmd1Files} $0
     IntOp $0 $0 & ${SF_SELECTED}
     IntCmp $0 ${SF_SELECTED} +1 +3
-        CreateShortCut "$SMPROGRAMS\D\D1 Documentation.lnk" "$INSTDIR\dmd\html\d\index.html" "" "$INSTDIR\dmd\html\d\index.html" 0
+        CreateShortCut "$SMPROGRAMS\D\D1 HTML Documentation.lnk" "$INSTDIR\dmd\html\d\index.html"
         CreateShortCut "$SMPROGRAMS\D\D1 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd1vars.bat""' "" "" SW_SHOWNORMAL "" "Open D1 Command Prompt"
 
     ; install dmc command prompt
@@ -364,7 +365,8 @@ Section "Uninstall"
     Delete $INSTDIR\uninstall.exe
     
     ; Remove shortcuts
-    Delete "$SMPROGRAMS\D\D1 Documentation.lnk"
+    Delete "$SMPROGRAMS\D\D1 HTML Documentation.lnk"
+    Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
     Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
     Delete "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk"
 
