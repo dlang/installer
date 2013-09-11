@@ -3,23 +3,33 @@
 ;--------------------------------------------------------
 
 ; Version
-;!define Version1 "1.046"
-;!define Version2 "2.031"
+;!define Version2 "2.063" ; <--- UPDATE
+!define Version1 "1.076"
+!define Version1ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
+!define Version2ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
+
+!define VersionDMC "857"
+
 !define VersionCurl "7.24.0"
+
+
+!define BaseURL "http://downloads.dlang.org" ; alternative base: "http://downloads.dlang.org.s3-website-us-east-1.amazonaws.com"
+
+
 
 ; Download zip from website, or include the compressed zip?
 !define Download
 
 ; If Download, the urls of the dmd.zip and dmc.zip
-!define DownloadDmd1ZipUrl "http://ftp.digitalmars.com/dmd.${Version1}.zip"
-!define DownloadDmd2ZipUrl "https://github.com/downloads/D-Programming-Language/dmd/dmd.${Version2}.zip"
-!define DownloadDmcZipUrl "http://ftp.digitalmars.com/dmc.zip"
-!define DownloadCurlZipUrl "https://github.com/downloads/D-Programming-Language/dmd/curl-${VersionCurl}-dmd-win32.zip"
+!define DownloadDmd1ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version1}.zip"
+!define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version2}.zip"
+!define DownloadDmcZipUrl  "${BaseURL}/other/dm${VersionDMC}c.zip"
+!define DownloadCurlZipUrl "${BaseURL}/other/curl-${VersionCurl}-dmd-win32.zip"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
 !define DmdZipPath2 "dmd.${Version2}.zip"
-!define DmcZipPath "dmc.zip"
+!define DmcZipPath "dm${VersionDMC}c.zip"
 !define CurlZipPath "curl-${VersionCurl}-dmd-win32.zip"
 
 ;--------------------------------------------------------
@@ -256,7 +266,7 @@ Section "-dmc" DmcFiles
     
     !ifdef Download
         ; Download the zip files
-        inetc::get /caption "Downloading dmc.zip..." /popup "" "${DownloadDmcZipUrl}" "$INSTDIR\dmc.zip" /end
+        inetc::get /caption "Downloading dm${VersionDMC}c.zip..." /popup "" "${DownloadDmcZipUrl}" "$INSTDIR\dmc.zip" /end
         Pop $0 # return value = exit code, "OK" means OK
     !else
         FILE "/oname=$INSTDIR\dmc.zip" "${DmcZipPath}"
