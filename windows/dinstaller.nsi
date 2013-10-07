@@ -4,9 +4,9 @@
 
 ; Version
 ;!define Version2 "2.063" ; <--- UPDATE
+!define Version2ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
 !define Version1 "1.076"
 !define Version1ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
-!define Version2ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
 
 !define VersionDMC "857"
 
@@ -22,7 +22,7 @@
 
 ; If Download, the urls of the dmd.zip and dmc.zip
 !define DownloadDmd1ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version1}.zip"
-!define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version2}.zip"
+!define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version2ReleaseYear}/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl  "${BaseURL}/other/dm${VersionDMC}c.zip"
 !define DownloadCurlZipUrl "${BaseURL}/other/curl-${VersionCurl}-dmd-win32.zip"
 
