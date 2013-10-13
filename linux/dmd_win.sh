@@ -108,7 +108,7 @@ else
 		then
 			rm -f $DESTDIR"/"$(basename $F)
 			echo "Downloading $(basename $F)..."
-			curl -o $DESTDIR"/"$(basename $F) $F
+			curl -fo $DESTDIR"/"$(basename $F) $F
 		fi
 	done
 

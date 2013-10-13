@@ -124,7 +124,7 @@ else
 	then
 		rm -f $DESTDIR"/"$ZIPFILE
 		echo "Downloading $ZIPFILE..."
-		curl -o $DESTDIR"/"$ZIPFILE $DMDURL
+		curl -fo $DESTDIR"/"$ZIPFILE $DMDURL
 	fi
 
 
