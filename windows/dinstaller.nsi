@@ -38,6 +38,7 @@
 
 !include "MUI.nsh"
 !include "EnvVarUpdate.nsh"
+!include "ReplaceInFile.nsh"
 
 ;--------------------------------------------------------
 ; General definitions
@@ -106,6 +107,7 @@ CRCCheck force
 
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
+
 ;--------------------------------------------------------
 ; Required section: main program files,
 ; registry entries, etc.
@@ -133,7 +135,7 @@ Section "-D2" Dmd2Files
     
     ; Unzip them right there
     nsisunz::Unzip "$INSTDIR\dmd2.zip" "$INSTDIR"
-    
+
     ; Delete the zip files
     Delete "$INSTDIR\dmd2.zip"
 
@@ -179,6 +181,65 @@ Section "cURL support" cURLFiles
     
     ; Delete the zip files
     Delete "$INSTDIR\curl.zip"
+
+SectionEnd
+
+Section "Detect MSVC" DetectMSVC
+    ClearErrors
+
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\12.0\Setup\VC" "ProductDir"
+    StrCpy $1 ";VC2013 "
+    IfErrors 0 write_vc_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\11.0\Setup\VC" "ProductDir"
+    StrCpy $1 ";VC2012 "
+    IfErrors 0 write_vc_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\10.0\Setup\VC" "ProductDir"
+    StrCpy $1 ";VC2010 "
+    IfErrors 0 write_vc_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\9.0\Setup\VC" "ProductDir"
+    StrCpy $1 ";VC2008 "
+    IfErrors no_vc_detected write_vc_path
+
+    write_vc_path:
+    !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";VCINSTALLDIR=" "VCINSTALLDIR=$0"
+    !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" "$1" ""
+    goto finish_vc_path
+
+    no_vc_detected:
+    MessageBox MB_OK "Could not detect Visual Studio (2008-2013 are supported). Using defaults."
+
+
+    finish_vc_path:
+    ClearErrors
+
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot81"
+    IfErrors 0 write_sdk_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot" ; 8.0
+    IfErrors 0 write_sdk_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.1A" "InstallationFolder"
+    IfErrors 0 write_sdk_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.0A" "InstallationFolder"
+    IfErrors 0 write_sdk_path
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v6.0A" "InstallationFolder"
+    IfErrors no_sdk_detected write_sdk_path
+
+    write_sdk_path:
+    !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";WindowsSdkDir=" "WindowsSdkDir=$0"
+    goto finish_sdk_path
+
+    no_sdk_detected:
+    MessageBox MB_OK "Could not detect Windows SDK (6.0A-8.1 are supported). Using defaults."
+
+
+    finish_sdk_path:
+    ClearErrors
 
 SectionEnd
 
@@ -346,6 +407,7 @@ Function .onInit
     ;!insertmacro MUI_LANGDLL_DISPLAY
 FunctionEnd
 
+
 ; Contains descriptions of components and other stuff
 !include dinstaller_descriptions.nsh
 
@@ -398,3 +460,4 @@ Function un.onInit
     ; (for now)
     ;!insertmacro MUI_UNGETLANGUAGE
 FunctionEnd
+
