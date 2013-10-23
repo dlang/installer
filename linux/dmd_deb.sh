@@ -46,7 +46,7 @@ if test "${1:0:2}" != "-v" ;then
 	ferror "Unknown first argument (-v)" "Exiting..."
 else
 	VER="${1:2}"
-	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]$ ]]
+	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]]
 	then
 		ferror "incorrect version number" "Exiting..."
 	elif test ${VER:0:1} -ne 2
@@ -98,7 +98,11 @@ MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
 MAJOR=0
 MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
-BUG=0
+BUG=$(awk -F. '{ print $3}' <<<$VERSION)
+if [ "$BUG" == "" ]
+then
+	BUG=0
+fi
 if [ "$RELEASE" == "" ]
 then
 	RELEASE=0
@@ -197,7 +201,7 @@ else
 
 
 	# install include
-	find ../$UNZIPDIR/src/ -iname "*.mak" -print0 | xargs -0 rm -f
+	find ../$UNZIPDIR/src/ -iname "*.mak" -print0 -o -iname "*.ddoc" -print0 | xargs -0 rm -f
 	mkdir -p usr/include/dmd/druntime/
 	cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/dmd
 	cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/dmd/druntime
@@ -233,6 +237,11 @@ else
 
 	# link changelog
 	ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
+
+
+	# create shlibs file
+	mkdir -p DEBIAN
+	echo "libphobos2 "$MAJOR.$MINOR" libphobos2-"$MINOR > DEBIAN/shlibs
 
 
 	# create /etc/dmd.conf file

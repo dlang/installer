@@ -89,7 +89,7 @@ fi
 
 
 # check version parameter
-if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]$ ]]
+if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]]
 then
 	ferror "incorrect version number" "try '`basename $0` -h' for more information."
 elif test ${VER:0:1} -ne 2

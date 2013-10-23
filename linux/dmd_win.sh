@@ -45,7 +45,7 @@ if test "${1:0:2}" != "-v" ;then
 	ferror "Unknown first argument (-v)" "Exiting..."
 else
 	VER="${1:2}"
-	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]$ ]]
+	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]]
 	then
 		ferror "incorrect version number" "Exiting..."
 	elif test ${VER:0:1} -ne 2

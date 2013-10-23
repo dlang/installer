@@ -46,7 +46,7 @@ if test "${1:0:2}" != "-v" ;then
 	ferror "Unknown first argument (-v)" "Exiting..."
 else
 	VER="${1:2}"
-	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]$ ]]
+	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]]
 	then
 		ferror "incorrect version number" "Exiting..."
 	elif test ${VER:0:1} -ne 2
@@ -98,7 +98,11 @@ MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
 MAJOR=0
 MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
-BUG=0
+BUG=$(awk -F. '{ print $3}' <<<$VERSION)
+if [ "$BUG" == "" ]
+then
+	BUG=0
+fi
 if [ "$RELEASE" == "" ]
 then
 	RELEASE=0
@@ -171,7 +175,7 @@ else
 	# debianize copyright file
 	mkdir -p usr/share/doc/$PHOBOSPKG
 	echo "This package was debianized by $MAINTAINER" > usr/share/doc/$PHOBOSPKG/copyright
-	echo "on Wed, 15 Aug 2013 00:00:00 +0200" >> usr/share/doc/$PHOBOSPKG/copyright
+	echo "on "$(date -R) >> usr/share/doc/$PHOBOSPKG/copyright
 	echo  >> usr/share/doc/$PHOBOSPKG/copyright
 	echo "It was downloaded from http://dlang.org/" >> usr/share/doc/$PHOBOSPKG/copyright
 	echo  >> usr/share/doc/$PHOBOSPKG/copyright
@@ -190,7 +194,7 @@ else
 
 	# create control file
 	echo -e 'Package: libphobos2-'$MINOR'
-	Source: dmd
+	Source: libphobos
 	Version: '$VERSION-$RELEASE'
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
