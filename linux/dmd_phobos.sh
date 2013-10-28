@@ -193,8 +193,7 @@ else
 
 
 	# set deb package dependencies
-	DEPENDS="libc6"
-	SUGGESTS="libcurl3"
+	DEPENDS="libc6, libcurl3"
 
 
 	# create control file
@@ -206,7 +205,6 @@ else
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Pre-Depends: multiarch-support
 	Depends: '$DEPENDS'
-	Suggests: '$SUGGESTS'
 	Conflicts: dmd'$MINOR'
 	Replaces: dmd'$MINOR'
 	Section: libs
