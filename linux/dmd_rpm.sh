@@ -210,7 +210,7 @@ do
 		# rpmize copyright file
 		mkdir -p usr/share/doc/dmd
 		echo "This package was rpmized by $MAINTAINER" > usr/share/doc/dmd/copyright
-		echo "on `date -R`" >> usr/share/doc/dmd/copyright
+		echo "on Wed, 15 Aug 2013 00:00:00 +0200" >> usr/share/doc/dmd/copyright
 		echo  >> usr/share/doc/dmd/copyright
 		echo "It was downloaded from http://dlang.org/" >> usr/share/doc/dmd/copyright
 		echo  >> usr/share/doc/dmd/copyright

@@ -175,7 +175,7 @@ else
 	# debianize copyright file
 	mkdir -p usr/share/doc/$PHOBOSPKG
 	echo "This package was debianized by $MAINTAINER" > usr/share/doc/$PHOBOSPKG/copyright
-	echo "on "$(date -R) >> usr/share/doc/$PHOBOSPKG/copyright
+	echo "on Wed, 15 Aug 2013 00:00:00 +0200" >> usr/share/doc/$PHOBOSPKG/copyright
 	echo  >> usr/share/doc/$PHOBOSPKG/copyright
 	echo "It was downloaded from http://dlang.org/" >> usr/share/doc/$PHOBOSPKG/copyright
 	echo  >> usr/share/doc/$PHOBOSPKG/copyright
