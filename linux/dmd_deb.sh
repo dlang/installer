@@ -279,9 +279,9 @@ else
 	fi
 
 
-	# find deb package dependencies
-	DEPEND="libc6, libc6-dev, gcc, gcc-multilib, libgcc1, libstdc++6, xdg-utils"
-	DEPEND=$DEPEND", libcurl4-openssl-dev | libcurl4-gnutls-dev | libcurl4-nss-dev"
+	# set deb package dependencies
+	DEPENDS="libc6, libc6-dev, gcc, gcc-multilib, libgcc1, libstdc++6, xdg-utils"
+	SUGGESTS="libcurl3, libcurl4-openssl-dev"
 
 
 	# create control file
@@ -290,7 +290,8 @@ else
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
-	Depends: '$DEPEND'
+	Depends: '$DEPENDS'
+	Suggests: '$SUGGESTS'
 	Provides: dmd'$MINOR'
 	Section: devel
 	Priority: optional

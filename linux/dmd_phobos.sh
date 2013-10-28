@@ -192,6 +192,11 @@ else
 	echo "libphobos2 "$MAJOR.$MINOR" libphobos2-"$MINOR > DEBIAN/shlibs
 
 
+	# set deb package dependencies
+	DEPENDS="libc6"
+	SUGGESTS="libcurl3"
+
+
 	# create control file
 	echo -e 'Package: libphobos2-'$MINOR'
 	Source: libphobos
@@ -200,7 +205,8 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Pre-Depends: multiarch-support
-	Depends: libc6, libcurl3 | libcurl3-gnutls | libcurl3-nss
+	Depends: '$DEPENDS'
+	Suggests: '$SUGGESTS'
 	Conflicts: dmd'$MINOR'
 	Replaces: dmd'$MINOR'
 	Section: libs
