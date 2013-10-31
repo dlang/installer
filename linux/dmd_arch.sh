@@ -94,9 +94,9 @@ fi
 # assign variables
 MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
-if [ "$RELEASE" == "" ]
+if [ "$REVISION" == "" ]
 then
-	RELEASE=0
+	REVISION=0
 fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
@@ -108,7 +108,7 @@ elif test "$2" = "-m32" ;then
 	ARCH="i386"
 fi
 ZIPFILE=`basename $DMDURL`
-ARCHFILE="dmd-"$VERSION"-"$RELEASE"-"$ARCH".pkg.tar.xz"
+ARCHFILE="dmd-"$VERSION"-"$REVISION"-"$ARCH".pkg.tar.xz"
 
 
 # check if destination arch file already exist
@@ -205,7 +205,7 @@ else
 
 	# create .PKGINFO file
 	echo -e 'pkgname = dmd
-	pkgver = '$VERSION-$RELEASE'
+	pkgver = '$VERSION-$REVISION'
 	pkgdesc = Digital Mars D Compiler
 	url = http://dlang.org/
 	builddate = '$(date +%s)'

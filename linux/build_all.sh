@@ -53,7 +53,7 @@ fi
 
 
 # check arguments
-unset RELEASE FORCE VER
+unset REVISION FORCE VER
 
 for I in "$@"
 do
@@ -70,7 +70,7 @@ do
 		FORCE="-f"
 		;;
 	-r*)
-		export RELEASE="${I:2}"
+		export REVISION="${I:2}"
 		;;
 	-v*)
 		VER="${I:2}"

@@ -96,9 +96,12 @@ do
 	# assign variables
 	MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 	VERSION=${1:2}
-	if [ "$RELEASE" == "" ]
+	MAJOR=0
+	MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
+	RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION)
+	if [ "$REVISION" == "" ]
 	then
-		RELEASE=0
+		REVISION=0
 	fi
 	DESTDIR=`pwd`
 	TEMPDIR='/tmp/'`date +"%s%N"`
@@ -112,8 +115,8 @@ do
 		FARCH="x86-32"
 	fi
 	ZIPFILE=`basename $DMDURL`
-	DMDDIR="dmd-"$VERSION"-"$RELEASE"."$ARCH
-	RPMFILE="dmd-"$VERSION"-"$RELEASE"."$DNAME"."$ARCH".rpm"
+	DMDDIR="dmd-"$VERSION"-"$REVISION"."$ARCH
+	RPMFILE="dmd-"$VERSION"-"$REVISION"."$DNAME"."$ARCH".rpm"
 	RPMDIR=$TEMPDIR"/rpmbuild"
 
 
@@ -170,16 +173,18 @@ do
 		# install libraries
 		A_LIB="libphobos2.a"
 		SO_LIB="libphobos2.so"
-		SO_VERSION=0.$(awk -F. '{ print $2 +0 }' <<<$VERSION).0
+		SO_VERSION=$MAJOR.$MINOR
 		mkdir -p usr/lib
 		cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib
-		cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$SO_LIB.$SO_VERSION
-		ln -s $SO_LIB.$SO_VERSION usr/lib/$SO_LIB
+		cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$SO_LIB.$SO_VERSION.$RELEASE
+		ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib/$SO_LIB.$SO_VERSION
+		ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib/$SO_LIB
 		if test "$ARCH" = "x86_64" ;then
 			mkdir -p usr/lib64
 			cp -f ../$UNZIPDIR/linux/lib64/$A_LIB usr/lib64
-			cp -f ../$UNZIPDIR/linux/lib64/$SO_LIB usr/lib64/$SO_LIB.$SO_VERSION
-			ln -s $SO_LIB.$SO_VERSION usr/lib64/$SO_LIB
+			cp -f ../$UNZIPDIR/linux/lib64/$SO_LIB usr/lib64/$SO_LIB.$SO_VERSION.$RELEASE
+			ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib64/$SO_LIB.$SO_VERSION
+			ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib64/$SO_LIB
 		fi
 
 
@@ -272,7 +277,7 @@ do
 		cd ..
 		echo -e 'Name: dmd
 		Version: '$VERSION'
-		Release: '$RELEASE'
+		Release: '$REVISION'
 		Summary: Digital Mars D Compiler
 		
 		Group: Development/Languages
@@ -282,7 +287,7 @@ do
 		
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
-		Provides: dmd = '$VERSION-$RELEASE', dmd('$FARCH') = '$VERSION-$RELEASE'
+		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION'
 		
 		%description
 		D is a systems programming language. Its focus is on combining the power and
@@ -337,7 +342,7 @@ do
 
 
 		# place rpm package
-		mv $RPMDIR/$ARCH/dmd-$VERSION-$RELEASE.$ARCH.rpm $DESTDIR"/"$RPMFILE
+		mv $RPMDIR/$ARCH/dmd-$VERSION-$REVISION.$ARCH.rpm $DESTDIR"/"$RPMFILE
 
 
 		# delete temp dir

@@ -7,14 +7,14 @@ set -e -o pipefail
 # set variables
 KEYID="dmd-apt"
 VERSION=${1:2}
-if [ "$RELEASE" == "" ]
+if [ "$REVISION" == "" ]
 then
-	RELEASE=0
+	REVISION=0
 fi
 DESTDIR=`pwd`
 APTDIR="apt"
-DEB32="dmd_"$VERSION"-"$RELEASE"_i386.deb"
-DEB64="dmd_"$VERSION"-"$RELEASE"_amd64.deb"
+DEB32="dmd_"$VERSION"-"$REVISION"_i386.deb"
+DEB64="dmd_"$VERSION"-"$REVISION"_amd64.deb"
 
 
 # error function

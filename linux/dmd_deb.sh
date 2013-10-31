@@ -98,14 +98,10 @@ MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
 VERSION=${1:2}
 MAJOR=0
 MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
-BUG=$(awk -F. '{ print $3}' <<<$VERSION)
-if [ "$BUG" == "" ]
+RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION)
+if [ "$REVISION" == "" ]
 then
-	BUG=0
-fi
-if [ "$RELEASE" == "" ]
-then
-	RELEASE=0
+	REVISION=0
 fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
@@ -117,7 +113,7 @@ elif test "$2" = "-m32" ;then
 	ARCH="i386"
 fi
 ZIPFILE=`basename $DMDURL`
-DMDDIR="dmd_"$VERSION"-"$RELEASE"_"$ARCH
+DMDDIR="dmd_"$VERSION"-"$REVISION"_"$ARCH
 DIR32="i386-linux-gnu"
 DIR64="x86_64-linux-gnu"
 DEBFILE=$DMDDIR".deb"
@@ -177,27 +173,16 @@ else
 	mkdir -p usr/lib
 	A_LIB="libphobos2.a"
 	SO_LIB="libphobos2.so"
-	SO_VERSION=$MAJOR.$MINOR.$BUG
+	SO_VERSION=$MAJOR.$MINOR
 	mkdir -p usr/lib/{$DIR32,$DIR64}
 	cp -f ../$UNZIPDIR/linux/lib32/$A_LIB usr/lib/$DIR32
 	cp -f ../$UNZIPDIR/linux/lib64/$A_LIB usr/lib/$DIR64
-	cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$DIR32/$SO_LIB.$SO_VERSION
-	cp -f ../$UNZIPDIR/linux/lib64/$SO_LIB usr/lib/$DIR64/$SO_LIB.$SO_VERSION
-	ln -s $SO_LIB.$SO_VERSION usr/lib/$DIR32/$SO_LIB
-	ln -s $SO_LIB.$SO_VERSION usr/lib/$DIR64/$SO_LIB
-
-	# links to libraries for backward compatibility
-	if [ "$ARCH" == "amd64" ]
-	then
-		mkdir -p usr/lib usr/lib32
-		ln -s ../lib/$DIR64/$SO_LIB.$SO_VERSION usr/lib
-		ln -s ../lib/$DIR32/$SO_LIB.$SO_VERSION usr/lib32
-	elif [ "$ARCH" == "i386" ]
-	then
-		mkdir -p usr/lib usr/lib64
-		ln -s ../lib/$DIR32/$SO_LIB.$SO_VERSION usr/lib
-		ln -s ../lib/$DIR64/$SO_LIB.$SO_VERSION usr/lib64
-	fi
+	cp -f ../$UNZIPDIR/linux/lib32/$SO_LIB usr/lib/$DIR32/$SO_LIB.$SO_VERSION.$RELEASE
+	cp -f ../$UNZIPDIR/linux/lib64/$SO_LIB usr/lib/$DIR64/$SO_LIB.$SO_VERSION.$RELEASE
+	ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib/$DIR32/$SO_LIB.$SO_VERSION
+	ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib/$DIR64/$SO_LIB.$SO_VERSION
+	ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib/$DIR32/$SO_LIB
+	ln -s $SO_LIB.$SO_VERSION.$RELEASE usr/lib/$DIR64/$SO_LIB
 
 
 	# install include
@@ -286,7 +271,7 @@ else
 
 	# create control file
 	echo -e 'Package: dmd
-	Version: '$VERSION-$RELEASE'
+	Version: '$VERSION-$REVISION'
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
