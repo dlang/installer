@@ -12,8 +12,11 @@
 
 !define VersionCurl "7.24.0"
 
+!define VersionVisualD "0.3.37"
+
 
 !define BaseURL "http://downloads.dlang.org" ; alternative base: "http://downloads.dlang.org.s3-website-us-east-1.amazonaws.com"
+!define VisualDBaseURL "https://github.com/D-Programming-Language/visuald/releases/download"
 
 
 
@@ -25,12 +28,14 @@
 !define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl  "${BaseURL}/other/dm${VersionDMC}c.zip"
 !define DownloadCurlZipUrl "${BaseURL}/other/curl-${VersionCurl}-dmd-win32.zip"
+!define DownloadVisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/VisualD-v${VersionVisualD}.exe"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
 !define DmdZipPath2 "dmd.${Version2}.zip"
 !define DmcZipPath "dm${VersionDMC}c.zip"
 !define CurlZipPath "curl-${VersionCurl}-dmd-win32.zip"
+!define VisualDPath "VisualD-v${VersionVisualD}.exe"
 
 ;--------------------------------------------------------
 ; Includes
@@ -119,12 +124,12 @@ Section "-D2" Dmd2Files
 
     ; This section is mandatory
     ;SectionIn RO
-    
+
     SetOutPath $INSTDIR
-    
+
     ; Create installation directory
     CreateDirectory "$INSTDIR"
-    
+
     !ifdef Download
         ; Download the zip files
         inetc::get /caption "Downloading dmd.${Version2}.zip..." /popup "" "${DownloadDmd2ZipUrl}" "$INSTDIR\dmd2.zip" /end
@@ -132,7 +137,7 @@ Section "-D2" Dmd2Files
     !else
         FILE "/oname=$INSTDIR\dmd2.zip" "${DmdZipPath2}"
     !endif
-    
+
     ; Unzip them right there
     nsisunz::Unzip "$INSTDIR\dmd2.zip" "$INSTDIR"
 
@@ -162,12 +167,12 @@ Section "cURL support" cURLFiles
 
     ; This section is mandatory
     ;SectionIn RO
-    
+
     SetOutPath $INSTDIR
-    
+
     ; Create installation directory
     CreateDirectory "$INSTDIR"
-    
+
     !ifdef Download
         ; Download the zip files
         inetc::get /caption "Downloading ${CurlZipPath}..." /popup "" "${DownloadCurlZipUrl}" "$INSTDIR\curl.zip" /end
@@ -175,10 +180,10 @@ Section "cURL support" cURLFiles
     !else
         FILE "/oname=$INSTDIR\curl.zip" "${CurlZipPath}"
     !endif
-    
+
     ; Unzip them right there
     nsisunz::Unzip "$INSTDIR\curl.zip" "$INSTDIR"
-    
+
     ; Delete the zip files
     Delete "$INSTDIR\curl.zip"
 
@@ -262,12 +267,12 @@ Section /o "-D1" Dmd1Files
 
     ; This section is mandatory
     ;SectionIn RO
-    
+
     SetOutPath $INSTDIR
-    
+
     ; Create installation directory
     CreateDirectory "$INSTDIR"
-    
+
     !ifdef Download
         ; Download the zip files
         inetc::get /caption "Downloading dmd.${Version1}.zip..." /popup "" "${DownloadDmd1ZipUrl}" "$INSTDIR\dmd.zip" /end
@@ -275,10 +280,10 @@ Section /o "-D1" Dmd1Files
     !else
         FILE "/oname=$INSTDIR\dmd.zip" "${DmdZipPath1}"
     !endif
-    
+
     ; Unzip them right there
     nsisunz::Unzip "$INSTDIR\dmd.zip" "$INSTDIR"
-    
+
     ; Delete the zip files
     Delete "$INSTDIR\dmd.zip"
 
@@ -319,12 +324,12 @@ Section "-dmc" DmcFiles
 
     ; This section is mandatory
     ;SectionIn RO
-    
+
     SetOutPath $INSTDIR
-    
+
     ; Create installation directory
     CreateDirectory "$INSTDIR"
-    
+
     !ifdef Download
         ; Download the zip files
         inetc::get /caption "Downloading dm${VersionDMC}c.zip..." /popup "" "${DownloadDmcZipUrl}" "$INSTDIR\dmc.zip" /end
@@ -332,13 +337,13 @@ Section "-dmc" DmcFiles
     !else
         FILE "/oname=$INSTDIR\dmc.zip" "${DmcZipPath}"
     !endif
-    
+
     ; Unzip them right there
     nsisunz::Unzip "$INSTDIR\dmc.zip" "$INSTDIR"
-    
+
     ; Delete the zip files
     Delete "$INSTDIR\dmc.zip"
-    
+
     ; Create command line batch file
     FileOpen $0 "$INSTDIR\dmcvars.bat" w
     FileWrite $0 "@echo.$\n"
@@ -397,6 +402,27 @@ Section "Start Menu Shortcuts" StartMenuShortcuts
     CreateShortCut "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk" "$INSTDIR\uninstall.exe" "" "$INSTDIR\uninstall.exe" 0
 SectionEnd
 
+
+
+Section "Visual D" VisualD
+
+    SetOutPath $INSTDIR
+
+    !ifdef Download
+        ; Download the zip files
+        inetc::get /caption "Downloading VisualD-v${VersionVisualD}.exe..." /popup "" "${DownloadVisualDUrl}" "$INSTDIR\${VisualDPath}" /end
+        Pop $0 # return value = exit code, "OK" means OK
+    !else
+        FILE "/oname=$INSTDIR\${VisualDPath}" "${VisualDPath}"
+    !endif
+
+    DetailPrint "Running Visual D installer"
+    ExecWait "$INSTDIR\${VisualDPath}"
+
+    Delete "$INSTDIR\${VisualDPath}"
+
+SectionEnd
+
 ;--------------------------------------------------------
 ; Installer functions
 ;--------------------------------------------------------
@@ -434,7 +460,7 @@ Section "Uninstall"
 
     ; Remove the uninstaller
     Delete $INSTDIR\uninstall.exe
-    
+
     ; Remove shortcuts
     Delete "$SMPROGRAMS\D\D1 Documentation.lnk"
     Delete "$SMPROGRAMS\D\D2 Documentation.lnk"

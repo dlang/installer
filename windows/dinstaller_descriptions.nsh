@@ -11,6 +11,8 @@ LangString DESC_Dmd1Files ${LANG_ENGLISH} "Digital Mars D version 1 compiler (di
 LangString DESC_DmcFiles ${LANG_ENGLISH} "Digital Mars C/C++ compiler"
 
 
+LangString DESC_VisualD ${LANG_ENGLISH} "Visual Studio package providing both project management and language services. It works with Visual Studio 2005-2013 (and the free VS Shells)"
+
 ; Shortcuts
 LangString SHORTCUT_Uninstall ${LANG_ENGLISH} "Uninstall"
 
@@ -25,4 +27,5 @@ LangString SHORTCUT_Uninstall ${LANG_ENGLISH} "Uninstall"
     !insertmacro MUI_DESCRIPTION_TEXT ${AddD2ToPath} $(DESC_AddD2ToPath)
     !insertmacro MUI_DESCRIPTION_TEXT ${Dmd1Files} $(DESC_Dmd1Files)
     !insertmacro MUI_DESCRIPTION_TEXT ${DmcFiles} $(DESC_DmcFiles)
+    !insertmacro MUI_DESCRIPTION_TEXT ${VisualD} $(DESC_VisualD)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
