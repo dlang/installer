@@ -172,15 +172,13 @@ else
 
 	# generate copyright file
 	mkdir -p usr/share/doc/$PHOBOSPKG
-	for I in ../$UNZIPDIR/license.txt ../$UNZIPDIR/src/druntime/LICENSE
-	do
-		sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
-		if [ $(sed -n '/====/=' $I"_tmp") ]
-		then
-			sed -i '1,/====/d' $I"_tmp"
-		fi
-		sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
-	done
+	I="../$UNZIPDIR/src/druntime/LICENSE"
+	sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
+	if [ $(sed -n '/====/=' $I"_tmp") ]
+	then
+		sed -i '1,/====/d' $I"_tmp"
+	fi
+	sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
 	echo 'Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 	Source: https://github.com/D-Programming-Language
 
