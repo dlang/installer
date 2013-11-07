@@ -170,15 +170,22 @@ else
 	fi
 
 
-	# debianize copyright file
+	# generate copyright file
 	mkdir -p usr/share/doc/$PHOBOSPKG
-	echo "This package was debianized by $MAINTAINER" > usr/share/doc/$PHOBOSPKG/copyright
-	echo "on Wed, 15 Aug 2013 00:00:00 +0200" >> usr/share/doc/$PHOBOSPKG/copyright
-	echo  >> usr/share/doc/$PHOBOSPKG/copyright
-	echo "It was downloaded from http://dlang.org/" >> usr/share/doc/$PHOBOSPKG/copyright
-	echo  >> usr/share/doc/$PHOBOSPKG/copyright
-	echo  >> usr/share/doc/$PHOBOSPKG/copyright
-	cat ../$UNZIPDIR/license.txt | sed 's/\r//' >> usr/share/doc/$PHOBOSPKG/copyright
+	I="../$UNZIPDIR/src/druntime/LICENSE"
+	sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
+	if [ $(sed -n '/====/=' $I"_tmp") ]
+	then
+		sed -i '1,/====/d' $I"_tmp"
+	fi
+	sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
+	echo 'Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+	Source: https://github.com/D-Programming-Language
+
+	Files: usr/lib/*
+	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	License: Boost License 1.0' | sed 's/^\t//' > usr/share/doc/$PHOBOSPKG/copyright
+	cat ../$UNZIPDIR/src/druntime/LICENSE_tmp >> usr/share/doc/$PHOBOSPKG/copyright
 
 
 	# create changelog

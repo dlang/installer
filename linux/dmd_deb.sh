@@ -209,15 +209,37 @@ else
 	cp -f ../$UNZIPDIR/man/man1/dmd.conf.5.gz usr/share/man/man5
 
 
-	# debianize copyright file
+	# generate copyright file
 	mkdir -p usr/share/doc/dmd
-	echo "This package was debianized by $MAINTAINER" > usr/share/doc/dmd/copyright
-	echo "on Wed, 15 Aug 2013 00:00:00 +0200" >> usr/share/doc/dmd/copyright
-	echo  >> usr/share/doc/dmd/copyright
-	echo "It was downloaded from http://dlang.org/" >> usr/share/doc/dmd/copyright
-	echo  >> usr/share/doc/dmd/copyright
-	echo  >> usr/share/doc/dmd/copyright
-	cat ../$UNZIPDIR/license.txt | sed 's/\r//' >> usr/share/doc/dmd/copyright
+	for I in ../$UNZIPDIR/license.txt ../$UNZIPDIR/src/druntime/LICENSE
+	do
+		sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
+		if [ $(sed -n '/====/=' $I"_tmp") ]
+		then
+			sed -i '1,/====/d' $I"_tmp"
+		fi
+		sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
+	done
+	echo 'Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+	Source: https://github.com/D-Programming-Language
+
+	Files: usr/bin/*
+	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	echo "License: Digital Mars License
+
+	Files: usr/lib/*
+	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	License: Boost License 1.0
+
+	Files: usr/include/*
+	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	License: Boost License 1.0
+
+	License: Digital Mars License' | sed 's/^\t//' > usr/share/doc/dmd/copyright
+	cat ../$UNZIPDIR/license.txt_tmp >> usr/share/doc/dmd/copyright
+	echo '
+	License: Boost License 1.0' | sed 's/^\t//' >> usr/share/doc/dmd/copyright
+	cat ../$UNZIPDIR/src/druntime/LICENSE_tmp >> usr/share/doc/dmd/copyright
 
 
 	# link changelog
