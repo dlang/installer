@@ -10,7 +10,7 @@
 
 !define VersionDMC "857"
 
-!define VersionCurl "7.24.0"
+!define VersionCurl "7.33.0"
 
 !define VersionVisualD "0.3.37"
 
@@ -27,14 +27,14 @@
 !define DownloadDmd1ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version1}.zip"
 !define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl  "${BaseURL}/other/dm${VersionDMC}c.zip"
-!define DownloadCurlZipUrl "${BaseURL}/other/curl-${VersionCurl}-dmd-win32.zip"
+!define DownloadCurlZipUrl "${BaseURL}/other/libcurl-${VersionCurl}-WinSSL-zlib-x86-x64.zip"
 !define DownloadVisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/VisualD-v${VersionVisualD}.exe"
 
 ; If not Download, the paths of dmd.zip and dmc.zip
 !define DmdZipPath1 "dmd.${Version1}.zip"
 !define DmdZipPath2 "dmd.${Version2}.zip"
 !define DmcZipPath "dm${VersionDMC}c.zip"
-!define CurlZipPath "curl-${VersionCurl}-dmd-win32.zip"
+!define CurlZipPath "libcurl-${VersionCurl}-WinSSL-zlib-x86-x64.zip"
 !define VisualDPath "VisualD-v${VersionVisualD}.exe"
 
 ;--------------------------------------------------------
@@ -144,11 +144,23 @@ Section "-D2" Dmd2Files
     ; Delete the zip files
     Delete "$INSTDIR\dmd2.zip"
 
-    ; Create command line batch file
-    FileOpen $0 "$INSTDIR\dmd2vars.bat" w
+    ; Create 32-bit command line batch file
+    FileOpen $0 "$INSTDIR\dmd2vars32.bat" w
     FileWrite $0 "@echo.$\n"
-    FileWrite $0 "@echo Setting up environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+    FileWrite $0 "@echo Setting up 32-bit environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
     FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
+    FileClose $0
+
+    ; Create 64-bit command line batch file
+    FileOpen $0 "$INSTDIR\dmd2vars64.bat" w
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Setting up 64-bit environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo dmd must still be called with -m64 in order to generate 64-bit code.$\n"
+    FileWrite $0 "@echo This command prompt adds the path of extra 64-bit DLLs so generated programs$\n"
+    FileWrite $0 "@echo which use the extra DLLs (notably libcurl) can be executed.$\n"
+    FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
+    FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin64;%PATH%$\n"
     FileClose $0
 
     ; Write installation dir in the registry
@@ -384,7 +396,8 @@ Section "Start Menu Shortcuts" StartMenuShortcuts
     IntCmp $0 ${SF_SELECTED} +1 +4
         CreateShortCut "$SMPROGRAMS\D\D2 HTML Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html"
         CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\windows\bin\d.chm"
-        CreateShortCut "$SMPROGRAMS\D\D2 Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars.bat""' "" "" SW_SHOWNORMAL "" "Open D2 Command Prompt"
+        CreateShortCut "$SMPROGRAMS\D\D2 32-bit Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars32.bat""' "" "" SW_SHOWNORMAL "" "Open D2 32-bit Command Prompt"
+        CreateShortCut "$SMPROGRAMS\D\D2 64-bit Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars64.bat""' "" "" SW_SHOWNORMAL "" "Open D2 64-bit Command Prompt"
 
     ; install dmd 1 documentation and command prompt
     SectionGetFlags ${Dmd1Files} $0
