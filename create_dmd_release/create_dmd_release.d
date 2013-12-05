@@ -116,7 +116,7 @@ version(Windows)
 {
     // Cannot start with a period or MS's HTML Help Workshop will fail
     immutable defaultWorkDirName = "create_dmd_release";
-    
+
     immutable makefile      = "win32.mak";
     immutable makefile64    = "win64.mak";
     immutable devNull       = "NUL";
@@ -133,7 +133,7 @@ version(Windows)
     // Building Win64 druntime/phobos relies on an existing DMD, but there's no
     // official Win64 build/makefile of DMD. This is a hack to work around that.
     immutable lib64RequiresDmd32 = true;
-    
+
     immutable osDirName     = osDirNameWindows;
     immutable make          = "make";
     immutable useBitsSuffix = false; // Ie: "bin"/"lib" or "bin32"/"lib32"
@@ -204,7 +204,7 @@ else version(Posix)
         immutable osDirName = osDirNameOSX;
     else
         static assert(false, "Unsupported system");
-    
+
     version(FreeBSD)
         immutable make = "gmake";
     else
@@ -251,12 +251,12 @@ void showHelp()
 
         Generates a platform-specific DMD release as a directory tree.
         Optionally, it can also generate archived releases.
-        
+
         TAG_OR_BRANCH:     GitHub tag/branch of DMD to generate a release for.
-        
+
         Your temp dir is:
         ` ~ defaultWorkDir ~ `
-        
+
         Options:
         --help             Display this message and exit.
         -q,--quiet         Quiet mode.
@@ -282,14 +282,14 @@ void showHelp()
 
         --skip-build       Don't build DMD, assume all tools/libs are already built.
                            Implies --skip-clone. Can be used with --use-clone=path.
-        
+
         --skip-package     Don't create release directory, assume it has already been
                            created. Useful together with --archive-* options.
                            Implies --skip-build.
 
         --archive-zip      Create platform-specific zip archive.
         --archive-7z       Create platform-specific 7z archive.
-        
+
         --combine-zip      (Posix-only) Combine all platform-specific archives in
                            current directory into cross-platform zip archive.
                            Cannot be used on Windows because the symlinks and
@@ -297,14 +297,14 @@ void showHelp()
                            Implies --skip-package.
 
         --combine-7z       (Posix-only) Just like --combine-zip, but makes a 7z.
-        
+
         --clean            Delete temporary dir (see above) and exit.
-        
+
         -j [N],--jobs=[N]  (Posix-only) Pass -j,--jobs through to GNU make.
-        
+
         --only-32          Only build and package 32-bit.
         --only-64          Only build and package 64-bit.
-        
+
         On OSX, --only-32 and --only-64 are not recommended because universal
         binaries will NOT be created, even when using the --combine-* flags.
         `).outdent().strip()
@@ -363,7 +363,7 @@ int main(string[] args)
 
     bool help;
     bool clean;
-    
+
     try
     {
         getopt(
@@ -394,29 +394,29 @@ int main(string[] args)
             errorMsg(e.msg ~ "\nRun with --help to see options.");
             return 1;
         }
-        
+
         throw e;
     }
-    
+
     // Handle command line args
     if(help)
     {
         showHelp();
         return 0;
     }
-    
+
     if(args.length != 2 && !clean)
     {
         errorMsg("Missing TAG_OR_BRANCH.\nSee --help for more info.");
         return 1;
     }
-    
+
     if(quiet && verbose)
     {
         errorMsg("Can't use both --quiet and --verbose");
         return 1;
     }
-    
+
     shouldArchive  = shouldZip  || should7z;
     combineArchive = combineZip || combine7z;
 
@@ -430,20 +430,20 @@ int main(string[] args)
             errorMsg("--combine-* flags cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
             return 1;
         }
-        
+
         if(numJobs != -1)
         {
             errorMsg("--jobs flags cannot be used on Windows because it's unsupported in DM make.");
             return 1;
         }
     }
-    
+
     if(do32Bit && do64Bit)
     {
         errorMsg("--only-32 and --only-64 cannot be used together.");
         return 1;
     }
-    
+
     version(OSX)
     {
         if(do32Bit || do64Bit)
@@ -452,25 +452,25 @@ int main(string[] args)
             return 1;
         }
     }
-    
+
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
-    
+
     if(combineArchive)
         skipPackage = true;
-    
+
     if(skipPackage)
         skipBuild = true;
-    
+
     if(cloneDir != "" || skipBuild)
         skipClone = true;
-    
+
     if(skipPackage && !shouldArchive && !combineArchive)
     {
         errorMsg("Nothing to do! Specified --skip-package, but no --archive-* or --combine-* flags");
         return 1;
     }
-    
+
     if(customExtrasDir == "" && !combineArchive)
     {
         errorMsg("--extras=path is required.\nSee --help for more info.");
@@ -478,7 +478,7 @@ int main(string[] args)
     }
     else
         customExtrasDir = customExtrasDir.absolutePath().chomp("\\").chomp("/");
-    
+
     // Do the work
     try
     {
@@ -493,14 +493,14 @@ int main(string[] args)
 
         string branch = args[1];
         init(branch);
-        
+
         if(!skipClone)
         {
             ensureNotFile(cloneDir);
             removeDir(cloneDir);
             makeDir(cloneDir);
         }
-        
+
         initTools();
 
         if(!skipClone)
@@ -510,32 +510,32 @@ int main(string[] args)
         // the release directory.
         if(!skipPackage)
             ensureSources();
-        
+
         // No need to clean if we just cloned, or if we're not building.
-        if(skipClone && !skipBuild) 
+        if(skipClone && !skipBuild)
             cleanAll();
-        
+
         if(!skipBuild)
             buildAll();
-        
+
         if(!skipPackage)
             createRelease(branch);
 
         if(shouldZip)
             createZip(branch);
-        
+
         if(should7z)
             create7z(branch);
-        
+
         if(combineArchive)
             extractOsArchives(branch);
-        
+
         if(combineZip)
             createCombinedZip(branch);
-        
+
         if(combine7z)
             createCombined7z(branch);
-        
+
         infoMsg("Done!");
     }
     catch(Fail e)
@@ -544,7 +544,7 @@ int main(string[] args)
         errorMsg(e.msg);
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -582,13 +582,13 @@ void init(string branch)
     // Check for required external tools
     if(!skipClone)
         ensureTool("git");
-    
+
     // Check for archival tools
     version(Posix)
     {
         if(needZip)
             ensureTool("zip", "-v", zipBannerRegex);
-        
+
         if(need7z)
             ensureTool(tool7z);
     }
@@ -600,16 +600,16 @@ void init(string branch)
 
         if(!checkTool("unzip", "--help", unzipBannerRegex))
             hasUnzip = false;
-        
+
         if(!checkTool("zip", "-v", zipBannerRegex))
             hasZip = false;
-        
+
         if(!checkTool(tool7z))
             has7z = false;
     }
     else
         static assert(false, "Unsupported platform");
-    
+
     // Check for DMC and MSVC toolchains
     version(Windows)
     {
@@ -629,7 +629,7 @@ void init(string branch)
         enum dummyOptlinkHelp = ".create_release_optlink_help";
         run("dmc "~dummyCFile~" -L/? > "~dummyOptlinkHelp);
         scope(exit) removeFile(dummyOptlinkHelp);
-        
+
         if(!checkTool("type", dummyOptlinkHelp, `OPTLINK \(R\) for Win32`))
             fail("DMC appears to be missing OPTLINK");
 
@@ -652,7 +652,7 @@ void init(string branch)
         ensureFile(customExtrasDir~"/dmd2/windows/lib/wsock32.lib");
         ensureFile(customExtrasDir~"/dmd2/windows/lib/shell32.lib");
         ensureFile(customExtrasDir~"/dmd2/windows/lib/advapi32.lib");
-        
+
         // Check MSVC tools needed for 64-bit
         if(do64Bit)
         {
@@ -664,17 +664,17 @@ void init(string branch)
                     set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
                 `.outdent().strip());
             }
-            
+
             win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
             win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
 
             verboseMsg("VCDIR:  " ~ displayPath(win64vcDir));
             verboseMsg("SDKDIR: " ~ displayPath(win64sdkDir));
-            
+
             msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
             if(!exists(msvcBinDir~"cl.exe"))
                 msvcBinDir = win64vcDir ~ "/bin/amd64";
-            
+
             ensureTool(quote(msvcBinDir~"/cl.exe"), "/?");
             try
             {
@@ -697,7 +697,7 @@ void cloneSources(string branch)
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
     changeDir(cloneDir);
-    
+
     // Try git protocol (It's faster)
     auto prefix = "git@github.com:";
     try
@@ -732,7 +732,7 @@ void cleanAll()
 {
     if(do32Bit)
         cleanAll(Bits.bits32);
-    
+
     if(do64Bit)
         cleanAll(Bits.bits64);
 }
@@ -755,7 +755,7 @@ void cleanAll(Bits bits)
         changeDir(cloneDir~"/dmd/src");
         run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
     }
-    
+
     infoMsg("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
     run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
@@ -792,7 +792,7 @@ void buildAll()
     {
         if(!do32Bit && lib64RequiresDmd32)
             buildAll(Bits.bits32, true);
-        
+
         buildAll(Bits.bits64);
     }
 }
@@ -818,7 +818,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
                 " AR="     ~ quote(`\"` ~ msvcBinDir~"/lib"  ~`\"`);
             }
     }
-    
+
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
     auto libPhobos      = bits == Bits.bits32? libPhobos32 : libPhobos64;
     auto bitsStr = bits == Bits.bits32? "32" : "64";
@@ -827,7 +827,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
     auto hideStdout = verbose? "" : " > "~devNull;
     auto jobs = numJobs==-1? "" : text(" --jobs=", numJobs);
     auto dmdEnv = " DMD=../dmd/src/dmd";
-    
+
     if(build64BitTools || bits == Bits.bits32)
     {
         infoMsg("Building DMD "~bitsDisplay);
@@ -836,7 +836,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
         removeFiles(cloneDir~"/dmd/src", "*{"~obj~","~lib~"}", SpanMode.depth);
     }
-    
+
     // Generate temporary sc.ini/dmd.conf
     version(Windows)
     {
@@ -852,7 +852,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
             enum flags="";
         else
             enum flags=" -L--no-warn-search-mismatch -L--export-dynamic";
-        
+
         std.file.write(cloneDir~"/dmd/src/dmd.conf", (`
             [Environment]
             DFLAGS=-I%@P%/../../phobos -I%@P%/../../druntime/src -L-L%@P%/../../phobos/generated/`~osDirName~`/release/`~bitsStr~` -L-L%@P%/../../druntime/lib`~flags~`
@@ -860,14 +860,14 @@ void buildAll(Bits bits, bool dmdOnly=false)
     }
     else
         static assert(false, "Unsupported platform");
-    
+
     // Copy OPTLINK to same directory as the sc.ini we want it to read
     version(Windows)
         copyFile(customExtrasDir~"/dmd2/windows/bin/link.exe", cloneDir~"/dmd/src/link.exe");
-    
+
     if(dmdOnly)
         return;
-    
+
     infoMsg("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
     run(make~jobs~makeModel~dmdEnv~msvcEnv~" -f "~targetMakefile~hideStdout);
@@ -897,7 +897,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         );
     }
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
-    
+
     // Build docs
     if(!alreadyBuiltDocs)
     {
@@ -913,7 +913,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
                 run("get_dlibcurl32 "~libCurlVersion~hideStdout);
             }
         }
-        
+
         infoMsg("Building Druntime Docs");
         changeDir(cloneDir~"/druntime");
         run(make~jobs~makeModel~dmdEnv~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~targetMakefile~hideStdout);
@@ -959,7 +959,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
 
         alreadyBuiltDocs = true;
     }
-    
+
     if(build64BitTools || bits == Bits.bits32)
     {
         infoMsg("Building Tools "~bitsDisplay);
@@ -969,7 +969,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         run(make~jobs~makeModel~dmdEnv~" findtags  -f "~targetMakefile~hideStdout);
         run(make~jobs~makeModel~dmdEnv~" dustmite  -f "~targetMakefile~hideStdout);
         run(make~jobs~makeModel~dmdEnv~" dman      DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos -f "~targetMakefile~hideStdout);
-        
+
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 }
@@ -981,14 +981,14 @@ void createRelease(string branch)
     infoMsg("Generating release directory");
 
     removeDir(releaseDir);
-    
+
     // Copy extras, if any
     if(customExtrasDir != "")
         copyDir(customExtrasDir, releaseDir);
 
     if(exists(allExtrasDir)) copyDir(allExtrasDir, releaseDir);
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
-    
+
     // Copy sources (should cppunit be omitted??)
     auto dmdSrcFilter = (string a) => !a.match("^cppunit[^/]*/");
     copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd",      a => dmdSrcFilter(a));
@@ -1000,7 +1000,7 @@ void createRelease(string branch)
         copyDir(cloneDir~"/druntime/doc", releaseDir~"/dmd2/src/druntime/doc");
     copyDir(cloneDir~"/druntime/import", releaseDir~"/dmd2/src/druntime/import");
     copyFile(cloneDir~"/dmd/VERSION",    releaseDir~"/dmd2/src/VERSION");
-    
+
     // Copy documentation
     auto dlangFilter = (string a) =>
         !a.startsWith("images/original/") &&
@@ -1018,7 +1018,7 @@ void createRelease(string branch)
     copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
     copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");
     copyFile(cloneDir~"/phobos/etc/c/zlib/zlib.3",    releaseDir~"/dmd2/html/d/zlib/zlib.3");
-    
+
     // Copy lib
     version(OSX)
     {
@@ -1043,12 +1043,12 @@ void createRelease(string branch)
         {
             if(do64Bit)
                 copyFile(cloneDir~"/druntime/lib/gcstub64.obj", releaseLib32Dir~"/gcstub64.obj");
-            
+
             if(do32Bit)
                 copyFile(cloneDir~"/druntime/lib/gcstub.obj",   releaseLib32Dir~"/gcstub.obj");
         }
     }
-    
+
     // Copy bin32
     version(OSX) {} else // OSX doesn't include 32-bit tools
     {
@@ -1058,7 +1058,7 @@ void createRelease(string branch)
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/32", releaseBin32Dir, file => !file.endsWith(obj));
         }
     }
-    
+
     // Copy bin64
     version(Windows) {} else // Win doesn't include 64-bit tools
     {
@@ -1068,14 +1068,14 @@ void createRelease(string branch)
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
         }
     }
-    
+
     verifyExtras();
 }
 
 void verifyExtras()
 {
     infoMsg("Ensuring non-versioned support files exist");
-        
+
     version(Windows)
     {
         auto files = [
@@ -1140,7 +1140,7 @@ void verifyExtras()
     }
     else
         string[] files;
-    
+
 
     bool filesMissing = false;
     foreach(file; files)
@@ -1152,11 +1152,11 @@ void verifyExtras()
                 errorMsg("The following files are missing:");
                 filesMissing = true;
             }
-            
+
             stderr.writeln(displayPath(file));
         }
     }
-    
+
     if(filesMissing)
     {
         fail(
@@ -1186,14 +1186,14 @@ void extractOsArchives(string branch)
     auto outputDir = "dmd."~branch;
     removeDir(outputDir);
     makeDir(outputDir);
-    
+
     foreach(osName; allOsDirNames)
     {
         auto archiveName = "dmd."~branch~"."~osName;
 
         auto archiveZip = archiveName~".zip";
         auto archive7z  = archiveName~".7z";
-        
+
         // Try combined 32/64-bit archives
         if(exists(archive7z))
             extract(archive7z, outputDir);
@@ -1206,7 +1206,7 @@ void extractOsArchives(string branch)
             {
                 archiveZip = archiveName~bitSuffix~".zip";
                 archive7z  = archiveName~bitSuffix~".7z";
-                
+
                 if(exists(archive7z))
                     extract(archive7z, outputDir);
                 else if(exists(archiveZip))
@@ -1273,7 +1273,7 @@ string displayPath(string path)
 {
     version(Windows)
         path = path.replace("/", "\\");
-    
+
     return chompPrefix(path, origDir ~ dirSeparator);
 }
 
@@ -1289,10 +1289,10 @@ string releaseBitSuffix(bool has32, bool has64)
 {
     if(do32Bit && !do64Bit)
         return releaseBitSuffix32;
-    
+
     if(do64Bit && !do32Bit)
         return releaseBitSuffix64;
-    
+
     return "";
 }
 
@@ -1334,7 +1334,7 @@ void removeFiles(string path, string pattern, SpanMode mode,
 {
     if(mode == SpanMode.breadth)
         throw new Exception("removeFiles can only take SpanMode of 'depth' or 'shallow'");
-    
+
     auto displaySuffix = mode==SpanMode.shallow? "" : "/*";
     verboseMsg("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
 
@@ -1366,7 +1366,7 @@ void removeDir(string path)
     if(exists(path))
     {
         verboseMsg("Removing dir: "~displayPath(path));
-        
+
         void removeDirFailed()
         {
             fail(
@@ -1375,7 +1375,7 @@ void removeDir(string path)
                 "    Either delete the directory manually or try again later."
             );
         }
-        
+
         try
         {
             version(Windows)
@@ -1433,7 +1433,7 @@ void copyFiles(string[] relativePaths, string srcPrefix, string destPrefix, bool
     {
         if(filter && !filter(path))
             continue;
-        
+
         auto srcPath  = buildPath(srcPrefix,  path);
         auto destPath = buildPath(destPrefix, path);
 
@@ -1464,7 +1464,7 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
     src = src.replace("\\", "/");
     if(!src.endsWith("/", "\\"))
         src ~= "/";
-    
+
     ensureDir(src);
     makeDir(dest);
     foreach(DirEntry entry; dirEntries(src[0..$-1], SpanMode.breadth, false))
@@ -1474,10 +1474,10 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
         if(!filter || filter(relativePath))
         {
             verboseMsg("    " ~ displayPath(relativePath));
-            
+
             auto destPath = buildPath(dest, relativePath);
             auto srcPath  = buildPath(src,  relativePath);
-            
+
             version(Posix)
             {
                 if(entry.isSymlink)
@@ -1486,7 +1486,7 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
                     continue;
                 }
             }
-            
+
             if(entry.isDir)
                 makeDir(destPath);
             else
@@ -1532,7 +1532,7 @@ bool checkTool(string cmd, string cmdArgs="--help", string regexMatch=null)
     }
     catch(Exception e)
         return false;
-    
+
     return true;
 }
 
@@ -1547,10 +1547,10 @@ void ensureTool(string cmd, string cmdArgs="--help", string regexMatch=null)
 void run(string cmd)
 {
     verboseMsg("Running: "~cmd);
-    
+
     stdout.flush();
     stderr.flush();
-    
+
     auto errlevel = system(cmd);
     if(errlevel != 0)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
@@ -1560,14 +1560,14 @@ void run(string cmd)
 string runCapture(string cmd)
 {
     verboseMsg("Running: "~cmd);
-    
+
     stdout.flush();
     stderr.flush();
-    
+
     auto result = executeShell(cmd);
     if(result.status != 0)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
-    
+
     return result.output;
 }
 
@@ -1579,7 +1579,7 @@ void gitClone(string repo, string path, string branch=null)
 {
     removeDir(path);
     makeDir(path);
-    
+
     infoMsg("Cloning: "~repo);
     auto quietSwitch = verbose? "" : "-q ";
     run("git clone "~quietSwitch~quote(repo)~" "~path);
@@ -1598,12 +1598,12 @@ string[] gitVersionedFiles(string path)
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
     changeDir(path);
-    
+
     Appender!(string[]) versionedFiles;
     auto gitOutput = runCapture("git ls-files").strip();
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
-    
+
     return versionedFiles.data;
 }
 
@@ -1627,13 +1627,13 @@ void archiveZip(string inputDir, string archive)
 {
     archive = absolutePath(archive);
     infoMsg("Generating "~displayPath(archive));
-    
+
     if(exists(archive))
         remove(archive);
 
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
-    
+
     changeDir(dirName(inputDir));
     auto quietSwitch = verbose? "" : "-q ";
 
@@ -1663,7 +1663,7 @@ void archive7z(string inputDir, string archive)
 
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
-    
+
     changeDir(dirName(inputDir));
     auto hideStdout = verbose? "" : " > "~devNull;
 
@@ -1702,10 +1702,10 @@ version(Windows)
         static gotBasicTools = false;
         if(gotBasicTools)
             return;
-        
+
         initDownloader();
         initUnzip();
-        
+
         gotBasicTools = true;
     }
 
@@ -1715,18 +1715,18 @@ version(Windows)
         makeDir(cloneDir);
         std.file.write(dloadToolPath, dloadToolContent);
     }
-    
+
     void setupTool(string url, string targetDir, string targetName)
     {
         // Download
         mkdir(targetDir);
         download(url, targetDir~"/"~targetName);
-        
+
         // Goto dir
         auto saveDir = getcwd();
         scope(exit) changeDir(saveDir);
         changeDir(targetDir);
-        
+
         // Extract
         if(targetName.endsWith(".zip"))
             unzip(targetName);
@@ -1738,12 +1738,12 @@ version(Windows)
             run(targetName~hideOutput);
         }
     }
-    
+
     void initUnzip()
     {
         if(hasUnzip)
             return;
-        
+
         if(!checkTool(unzipArchiveDir~"/unzip", "--help", unzipBannerRegex))
             setupTool(unzipUrl, unzipArchiveDir, unzipArchiveName);
     }
@@ -1752,7 +1752,7 @@ version(Windows)
     {
         if(hasZip)
             return;
-        
+
         if(!checkTool(zipArchiveDir~"/zip", "-v", zipBannerRegex))
         {
             initBasicTools();
@@ -1764,7 +1764,7 @@ version(Windows)
     {
         if(has7z)
             return;
-        
+
         if(!checkTool(tool7zArchiveDir~"/"~tool7z))
         {
             initBasicTools();
@@ -1781,13 +1781,12 @@ version(Windows)
     void unzip(string path)
     {
         infoMsg("Unzipping: "~path);
-        
+
         auto saveDir = getcwd();
         scope(exit) changeDir(saveDir);
         changeDir(dirName(path));
-        
+
         auto unzipTool = hasUnzip? "unzip" : unzipArchiveDir~"/unzip";
         run(unzipTool~" -q "~quote(baseName(path)));
     }
 }
-
