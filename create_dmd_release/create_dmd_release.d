@@ -398,6 +398,13 @@ int main(string[] args)
         throw e;
     }
 
+    if(args.length < 2)
+    {
+        errorMsg("Missing arguments.");
+        showHelp();
+        return 1;
+    }
+
     // Handle command line args
     if(help)
     {
