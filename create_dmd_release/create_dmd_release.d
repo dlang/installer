@@ -705,23 +705,13 @@ void cloneSources(string branch)
     scope(exit) changeDir(saveDir);
     changeDir(cloneDir);
 
-    // Try git protocol (It's faster)
-    auto prefix = "git@github.com:";
-    try
-        gitClone(prefix~"D-Programming-Language/dmd.git", "dmd", branch);
-    catch(Exception e)
-    {
-        // Fallback to https:// (It's more compatible)
-        infoMsg("Couldn't do git protocol, falling back to 'https://'...");
-        prefix = "https://github.com/";
-        gitClone(prefix~"D-Programming-Language/dmd.git", "dmd", branch);
-    }
-
-    gitClone(prefix~"D-Programming-Language/druntime.git",  "druntime",  branch);
-    gitClone(prefix~"D-Programming-Language/phobos.git",    "phobos",    branch);
-    gitClone(prefix~"D-Programming-Language/tools.git",     "tools",     branch);
-    gitClone(prefix~"D-Programming-Language/dlang.org.git", "dlang.org", branch);
-    gitClone(prefix~"D-Programming-Language/installer.git", "installer", branch);
+    auto prefix = "https://github.com/D-Programming-Language/";
+    gitClone(prefix~"dmd.git", "dmd", branch);
+    gitClone(prefix~"druntime.git",  "druntime",  branch);
+    gitClone(prefix~"phobos.git",    "phobos",    branch);
+    gitClone(prefix~"tools.git",     "tools",     branch);
+    gitClone(prefix~"dlang.org.git", "dlang.org", branch);
+    gitClone(prefix~"installer.git", "installer", branch);
 }
 
 void ensureSources()
