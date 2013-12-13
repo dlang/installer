@@ -6,8 +6,6 @@ Prerequisites to Compile:
 Prerequisites to Run:
 ---------------------
 - Git
-- Posix: zip (Info-ZIP) and 7z (p7zip) (On Windows, these will automatically
-  be downloaded if necessary.)
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
 - Windows: Working DMC and MSVC toolchains. The default make must be DM make.
@@ -36,7 +34,7 @@ of the files to the latest versions, or add any new files as desired.
 FreeBSD), genrate the platform-specific releases by running this (from
 whatever directory you want the resulting archives placed):
 
-$ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os] --archive-zip --archive-7z
+$ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os] --archive
 
 Optionally substitute "v2.064" with either "master" or the git tag name of the
 desired release (must be at least "v2.064"). For beta releases, you can use a
@@ -47,11 +45,11 @@ If a working multilib system is any trouble, you can also build 32-bit and
 
 View all options with "create_dmd_release --help".
 
-3. Copy the resulting .zip and .7z files to a single directory on any
+3. Copy the resulting .zip files to a single directory on any
 non-Windows machine (Windows would mess up the symlinks and executable
 attributes), and generate the combined-OS release like this:
 
-$ [path-to]/create_dmd_release v2.064 --combine-zip --combine-7z
+$ [path-to]/create_dmd_release v2.064 --combine
 
 4. Distribute all the .zip and .7z files.
 
@@ -70,7 +68,7 @@ can be resumed or restarted beginning at any of the above steps (see
 the --skip-* flags in the --help screen).
 
 The last two steps, archive and combine, are not performed by default. To
-perform the archive step, supply any (or all) of the --archive-* flags.
+perform the archive step, supply the --archive flag.
 You can create an archive without repeating the earlier clone/build/package
 steps by including the --skip-package flag.
 
@@ -78,27 +76,24 @@ The final step, combine, is completely separate. You must first run this tool
 on each of the target OSes to create the OS-specific archives. Then copy all
 the archives to a single directory on any Posix system (not Windows because
 that would destroy the symlinks and executable attributes in the posix
-archives). Then, from that directory, run this tool with any/all of
-the --combine-* flags.
+archives). Then, from that directory, run this tool with the --combine flag.
 +/
 
 import std.algorithm;
 import std.array;
 import std.conv;
+import std.exception;
 import std.file;
 import std.getopt;
-import std.exception;
 import std.path;
 import std.process;
 import std.regex;
 import std.stdio;
 import std.string;
 import std.typetuple;
+import std.zip;
 version(Posix)
     import core.sys.posix.sys.stat;
-
-immutable unzipBannerRegex = `^UnZip [^\n]+by Info-ZIP`;
-immutable zipBannerRegex   = `^Copyright [^\n]+Info-ZIP`;
 
 immutable osDirNameWindows = "windows";
 immutable osDirNameFreeBSD = "freebsd";
@@ -127,7 +122,6 @@ version(Windows)
     immutable generatedDocs = "dlang.org";
     immutable libPhobos32   = "phobos";
     immutable libPhobos64   = "phobos64";
-    immutable tool7z        = "7za";
     immutable build64BitTools = false;
 
     // Building Win64 druntime/phobos relies on an existing DMD, but there's no
@@ -139,46 +133,6 @@ version(Windows)
     immutable useBitsSuffix = false; // Ie: "bin"/"lib" or "bin32"/"lib32"
 
     immutable libCurlVersion = "7.32.0"; // Windows-only
-
-    // Additional Windows-only stuff for auto-downloading zip/7z tools
-    immutable unzipUrl  = "http://semitwist.com/download/app/unz600xn.exe";
-    immutable zipUrl    = "http://semitwist.com/download/app/zip232xn.zip";
-    immutable tool7zUrl = "http://semitwist.com/download/app/7za920.zip";
-
-    immutable unzipArchiveName  = "unzip-sfx.exe";
-    immutable zipArchiveName    = "zip.zip";
-    immutable tool7zArchiveName = "7z.zip";
-
-    immutable dloadToolFilename = "download.vbs";
-    immutable dloadToolContent =
-`Option Explicit
-Dim args, http, fileSystem, adoStream, url, target, status
-
-Set args = Wscript.Arguments
-Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
-url = args(0)
-target = args(1)
-
-http.Open "GET", url, False
-http.Send
-status = http.Status
-
-If status <> 200 Then
-    WScript.Echo "FAILED to download: HTTP Status " & status
-    WScript.Quit 1
-End If
-
-Set adoStream = CreateObject("ADODB.Stream")
-adoStream.Open
-adoStream.Type = 1
-adoStream.Write http.ResponseBody
-adoStream.Position = 0
-
-Set fileSystem = CreateObject("Scripting.FileSystemObject")
-If fileSystem.FileExists(target) Then fileSystem.DeleteFile target
-adoStream.SaveToFile target
-adoStream.Close
-`;
 }
 else version(Posix)
 {
@@ -192,7 +146,6 @@ else version(Posix)
     immutable generatedDocs = "dlang.org/web";
     immutable libPhobos32   = "libphobos2";
     immutable libPhobos64   = "libphobos2";
-    immutable tool7z        = "7z";
     immutable build64BitTools    = true;
     immutable lib64RequiresDmd32 = false;
 
@@ -247,7 +200,7 @@ void showHelp()
     writeln((`
         Create DMD Release - Build: ` ~ __TIMESTAMP__ ~ `
         Usage:   create_dmd_release --extras=path [options] TAG_OR_BRANCH [options]
-        Example: create_dmd_release --extras=`~osDirName~`-extra --archive-zip v2.064
+        Example: create_dmd_release --extras=`~osDirName~`-extra --archive v2.064
 
         Generates a platform-specific DMD release as a directory tree.
         Optionally, it can also generate archived releases.
@@ -284,19 +237,16 @@ void showHelp()
                            Implies --skip-clone. Can be used with --use-clone=path.
 
         --skip-package     Don't create release directory, assume it has already been
-                           created. Useful together with --archive-* options.
+                           created. Useful together with the --archive option.
                            Implies --skip-build.
 
-        --archive-zip      Create platform-specific zip archive.
-        --archive-7z       Create platform-specific 7z archive.
+        --archive          Create platform-specific zip archive.
 
-        --combine-zip      (Posix-only) Combine all platform-specific archives in
+        --combine          (Posix-only) Combine all platform-specific archives in
                            current directory into cross-platform zip archive.
                            Cannot be used on Windows because the symlinks and
                            executable attributes would be destroyed.
                            Implies --skip-package.
-
-        --combine-7z       (Posix-only) Just like --combine-zip, but makes a 7z.
 
         --clean            Delete temporary dir (see above) and exit.
 
@@ -306,7 +256,7 @@ void showHelp()
         --only-64          Only build and package 64-bit.
 
         On OSX, --only-32 and --only-64 are not recommended because universal
-        binaries will NOT be created, even when using the --combine-* flags.
+        binaries will NOT be created, even when using --combine.
         `).outdent().strip()
     );
 }
@@ -316,28 +266,14 @@ bool verbose;
 bool skipClone;
 bool skipBuild;
 bool skipPackage;
-bool shouldZip;
-bool should7z;
-bool shouldArchive;
-bool combineZip;
-bool combine7z;
-bool combineArchive;
-bool needZip; // Was a flag given that requires using zip?
-bool need7z;  // Was a flag given that requires using 7z?
+bool doArchive;
+bool doCombine;
 int  numJobs = -1;
 bool do32Bit;
 bool do64Bit;
 
 version(Windows)
 {
-    bool hasUnzip; // Is unzip (Info-ZIP) already installed on this system?
-    bool hasZip;   // Is zip (Info-ZIP) already installed on this system?
-    bool has7z;    // Is 7z already installed on this system?
-    string dloadToolPath;
-    string unzipArchiveDir;
-    string zipArchiveDir;
-    string tool7zArchiveDir;
-
     string msvcBinDir;
 }
 
@@ -378,10 +314,8 @@ int main(string[] args)
             "skip-package", &skipPackage,
             "clean",        &clean,
             "extras",       &customExtrasDir,
-            "archive-zip",  &shouldZip,
-            "archive-7z",   &should7z,
-            "combine-zip",  &combineZip,
-            "combine-7z",   &combine7z,
+            "archive",      &doArchive,
+            "combine",      &doCombine,
             "j|jobs",       &numJobs,
             "only-32",      &do32Bit,
             "only-64",      &do64Bit,
@@ -424,17 +358,11 @@ int main(string[] args)
         return 1;
     }
 
-    shouldArchive  = shouldZip  || should7z;
-    combineArchive = combineZip || combine7z;
-
-    needZip = shouldZip || combineZip;
-    need7z  = should7z  || combineArchive;
-
     version(Windows)
     {
-        if(combineArchive)
+        if(doCombine)
         {
-            errorMsg("--combine-* flags cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
+            errorMsg("--combine cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
             return 1;
         }
 
@@ -455,7 +383,7 @@ int main(string[] args)
     {
         if(do32Bit || do64Bit)
         {
-            infoMsg("WARNING: Using --only-32 and --only-64: Universal binaries will not be created, even when using --combine-* flags.");
+            infoMsg("WARNING: Using --only-32 and --only-64: Universal binaries will not be created, even when using --combine.");
             return 1;
         }
     }
@@ -463,7 +391,7 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(combineArchive)
+    if(doCombine)
         skipPackage = true;
 
     if(skipPackage)
@@ -472,13 +400,13 @@ int main(string[] args)
     if(cloneDir != "" || skipBuild)
         skipClone = true;
 
-    if(skipPackage && !shouldArchive && !combineArchive)
+    if(skipPackage && !doArchive && !doCombine)
     {
-        errorMsg("Nothing to do! Specified --skip-package, but no --archive-* or --combine-* flags");
+        errorMsg("Nothing to do! Specified --skip-package, but neither --archive nor --combine flag");
         return 1;
     }
 
-    if(customExtrasDir == "" && !combineArchive)
+    if(customExtrasDir == "" && !doCombine)
     {
         errorMsg("--extras=path is required.\nSee --help for more info.");
         return 1;
@@ -508,8 +436,6 @@ int main(string[] args)
             makeDir(cloneDir);
         }
 
-        initTools();
-
         if(!skipClone)
             cloneSources(branch);
 
@@ -528,20 +454,14 @@ int main(string[] args)
         if(!skipPackage)
             createRelease(branch);
 
-        if(shouldZip)
+        if(doArchive)
             createZip(branch);
 
-        if(should7z)
-            create7z(branch);
-
-        if(combineArchive)
+        if(doCombine)
             extractOsArchives(branch);
 
-        if(combineZip)
+        if(doCombine)
             createCombinedZip(branch);
-
-        if(combine7z)
-            createCombined7z(branch);
 
         infoMsg("Done!");
     }
@@ -583,39 +503,11 @@ void init(string branch)
     {
         unzipArchiveDir  = absolutePath(cloneDir~"/unzip");
         zipArchiveDir    = absolutePath(cloneDir~"/zip");
-        tool7zArchiveDir = absolutePath(cloneDir~"/7z");
     }
 
     // Check for required external tools
     if(!skipClone)
         ensureTool("git");
-
-    // Check for archival tools
-    version(Posix)
-    {
-        if(needZip)
-            ensureTool("zip", "-v", zipBannerRegex);
-
-        if(need7z)
-            ensureTool(tool7z);
-    }
-    else version(Windows)
-    {
-        hasUnzip = true;
-        hasZip = true;
-        has7z = true;
-
-        if(!checkTool("unzip", "--help", unzipBannerRegex))
-            hasUnzip = false;
-
-        if(!checkTool("zip", "-v", zipBannerRegex))
-            hasZip = false;
-
-        if(!checkTool(tool7z))
-            has7z = false;
-    }
-    else
-        static assert(false, "Unsupported platform");
 
     // Check for DMC and MSVC toolchains
     version(Windows)
@@ -1172,12 +1064,6 @@ void createZip(string branch)
     archiveZip(releaseDir~"/dmd2", archiveName);
 }
 
-void create7z(string branch)
-{
-    auto archiveName = baseName(releaseDir)~".7z";
-    archive7z(releaseDir~"/dmd2", archiveName);
-}
-
 void extractOsArchives(string branch)
 {
     auto outputDir = "dmd."~branch;
@@ -1189,12 +1075,9 @@ void extractOsArchives(string branch)
         auto archiveName = "dmd."~branch~"."~osName;
 
         auto archiveZip = archiveName~".zip";
-        auto archive7z  = archiveName~".7z";
 
         // Try combined 32/64-bit archives
-        if(exists(archive7z))
-            extract(archive7z, outputDir);
-        else if(exists(archiveZip))
+        if(exists(archiveZip))
             extract(archiveZip, outputDir);
         else
         {
@@ -1202,11 +1085,8 @@ void extractOsArchives(string branch)
             foreach(bitSuffix; TypeTuple!(releaseBitSuffix64, releaseBitSuffix32))
             {
                 archiveZip = archiveName~bitSuffix~".zip";
-                archive7z  = archiveName~bitSuffix~".7z";
 
-                if(exists(archive7z))
-                    extract(archive7z, outputDir);
-                else if(exists(archiveZip))
+                if(exists(archiveZip))
                     extract(archiveZip, outputDir);
             }
         }
@@ -1217,12 +1097,6 @@ void createCombinedZip(string branch)
 {
     auto dirName = "dmd."~branch;
     archiveZip(dirName~"/dmd2", dirName~".zip");
-}
-
-void createCombined7z(string branch)
-{
-    auto dirName = "dmd."~branch;
-    archive7z(dirName~"/dmd2", dirName~".7z");
 }
 
 // Utils -----------------------
@@ -1606,18 +1480,24 @@ string[] gitVersionedFiles(string path)
 
 void extract(string archive, string outputDir)
 {
+    import std.zip;
+
     infoMsg("Extracting "~displayPath(archive));
 
-    auto hideStdout = verbose? "" : " > "~devNull;
+    scope zip = new ZipArchive(std.file.read(archive));
+    foreach(name, am; zip.directory)
+    {
+        if(!am.expandedSize) continue;
 
-    version(Posix)
-        auto tool = tool7z;
-    else version(Windows)
-        auto tool = has7z? tool7z : tool7zArchiveDir~"/"~tool7z;
-    else
-        static assert(false, "Unsupported system");
-
-    run(tool~" x -y -bd "~quote("-o"~outputDir)~" "~quote(archive)~hideStdout);
+        string path = buildPath(outputDir, name);
+        auto dir = dirName(path);
+        if(dir != "" && !dir.exists)
+            mkdirRecurse(dir);
+        zip.expand(am);
+        if(verbose)
+            infoMsg(path);
+        std.file.write(path, am.expandedData);
+    }
 }
 
 void archiveZip(string inputDir, string archive)
@@ -1625,165 +1505,28 @@ void archiveZip(string inputDir, string archive)
     archive = absolutePath(archive);
     infoMsg("Generating "~displayPath(archive));
 
+    scope zip = new ZipArchive();
+    auto parentDir = chomp(inputDir, baseName(inputDir));
+    foreach (de; dirEntries(inputDir, SpanMode.depth))
+    {
+        if(!de.isFile) continue;
+        auto path = chompPrefix(de.name, parentDir);
+        if(verbose)
+            infoMsg(path);
+        zip.addMember(toArchiveMember(de, path));
+    }
     if(exists(archive))
         remove(archive);
-
-    auto saveDir = getcwd();
-    scope(exit) changeDir(saveDir);
-
-    changeDir(dirName(inputDir));
-    auto quietSwitch = verbose? "" : "-q ";
-
-    version(Posix)
-    {
-        auto tool = "zip";
-        auto switches = "-r9y ";
-    }
-    else version(Windows)
-    {
-        auto tool = hasZip? "zip" : zipArchiveDir~"/zip";
-        auto switches = "-r9 ";
-    }
-    else
-        static assert(false, "Unsupported system");
-
-    run(tool~" "~switches~quietSwitch~archive~" "~baseName(inputDir));
+    std.file.write(archive, zip.build());
 }
 
-void archive7z(string inputDir, string archive)
+ArchiveMember toArchiveMember(ref DirEntry de, string path)
 {
-    archive = absolutePath(archive);
-    infoMsg("Generating "~displayPath(archive));
-
-    if(exists(archive))
-        remove(archive);
-
-    auto saveDir = getcwd();
-    scope(exit) changeDir(saveDir);
-
-    changeDir(dirName(inputDir));
-    auto hideStdout = verbose? "" : " > "~devNull;
-
-    version(Posix)
-        auto tool = tool7z;
-    else version(Windows)
-        auto tool = has7z? tool7z : tool7zArchiveDir~"/"~tool7z;
-    else
-        static assert(false, "Unsupported system");
-
-    run(tool~" a -r -bd -mx=9 "~archive~" "~baseName(inputDir)~hideStdout);
-}
-
-void initTools()
-{
-    // Don't try to auto-install zip/7z on Posix because:
-    // - It's usually trivial compared to Windows.
-    // - AFAIK, it's not always as trivial to do a hygenic non-system-wide install.
-    // - The actual command needed is highly system-specific.
-    // Ie, on Posix: Easy for the user to install, but hard for us to install.
-
-    version(Windows)
-    {
-        if(needZip)
-            initZip();
-
-        if(need7z)
-            init7z();
-    }
-}
-
-version(Windows)
-{
-    void initBasicTools()
-    {
-        static gotBasicTools = false;
-        if(gotBasicTools)
-            return;
-
-        initDownloader();
-        initUnzip();
-
-        gotBasicTools = true;
-    }
-
-    void initDownloader()
-    {
-        dloadToolPath = cloneDir~"/"~dloadToolFilename;
-        makeDir(cloneDir);
-        std.file.write(dloadToolPath, dloadToolContent);
-    }
-
-    void setupTool(string url, string targetDir, string targetName)
-    {
-        // Download
-        mkdir(targetDir);
-        download(url, targetDir~"/"~targetName);
-
-        // Goto dir
-        auto saveDir = getcwd();
-        scope(exit) changeDir(saveDir);
-        changeDir(targetDir);
-
-        // Extract
-        if(targetName.endsWith(".zip"))
-            unzip(targetName);
-        else
-        {
-            // Self-extracting archive
-            infoMsg("Self-Extracting: "~targetName);
-            auto hideOutput = verbose? "" : " > "~devNull~" 2> "~devNull;
-            run(targetName~hideOutput);
-        }
-    }
-
-    void initUnzip()
-    {
-        if(hasUnzip)
-            return;
-
-        if(!checkTool(unzipArchiveDir~"/unzip", "--help", unzipBannerRegex))
-            setupTool(unzipUrl, unzipArchiveDir, unzipArchiveName);
-    }
-
-    void initZip()
-    {
-        if(hasZip)
-            return;
-
-        if(!checkTool(zipArchiveDir~"/zip", "-v", zipBannerRegex))
-        {
-            initBasicTools();
-            setupTool(zipUrl, zipArchiveDir, zipArchiveName);
-        }
-    }
-
-    void init7z()
-    {
-        if(has7z)
-            return;
-
-        if(!checkTool(tool7zArchiveDir~"/"~tool7z))
-        {
-            initBasicTools();
-            setupTool(tool7zUrl, tool7zArchiveDir, tool7zArchiveName);
-        }
-    }
-
-    void download(string url, string target)
-    {
-        infoMsg("Downloading: "~url);
-        run("cscript //Nologo "~quote(dloadToolPath)~" "~quote(url)~" "~quote(target));
-    }
-
-    void unzip(string path)
-    {
-        infoMsg("Unzipping: "~path);
-
-        auto saveDir = getcwd();
-        scope(exit) changeDir(saveDir);
-        changeDir(dirName(path));
-
-        auto unzipTool = hasUnzip? "unzip" : unzipArchiveDir~"/unzip";
-        run(unzipTool~" -q "~quote(baseName(path)));
-    }
+    auto am = new ArchiveMember();
+    am.compressionMethod = CompressionMethod.deflate;
+    am.time = de.timeLastModified;
+    am.name = path;
+    am.expandedData = cast(ubyte[])std.file.read(de.name);
+    am.fileAttributes = de.attributes;
+    return am;
 }
