@@ -10,7 +10,7 @@
 
 !define VersionDMC "857"
 
-!define VersionCurl "7.33.0"
+!define VersionCurl "7.34.0"
 
 !define VersionVisualD "0.3.37"
 
