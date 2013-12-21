@@ -714,9 +714,10 @@ void buildAll(Bits bits, bool dmdOnly=false)
     auto hideStdout = verbose? "" : " > "~devNull;
     auto jobs = numJobs==-1? "" : text(" --jobs=", numJobs);
     auto dmdEnv = " DMD=../dmd/src/dmd";
+    auto isRelease = " RELEASE=1";
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~" -f "~targetMakefile;
+    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~" -f "~targetMakefile;
 
     if(build64BitTools || bits == Bits.bits32)
     {
