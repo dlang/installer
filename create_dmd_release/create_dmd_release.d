@@ -859,6 +859,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         run(make~jobs~makeModel~dmdEnv~" dustmite  -f "~targetMakefile~hideStdout);
         run(make~jobs~makeModel~dmdEnv~" dman      DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos -f "~targetMakefile~hideStdout);
 
+        removeFile(cloneDir~"/tools/generated/"~osDirName~"/"~bitsStr~"/findtags");
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 }
