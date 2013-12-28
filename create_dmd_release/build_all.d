@@ -5,15 +5,12 @@ A working dmd installation to compile this script (also requires libcurl).
 Install Vagrant (https://learnchef.opscode.com/screencasts/install-vagrant/)
 Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-box/)
 +/
-import std.conv, std.exception, std.file, std.path, std.process, std.string, std.net.curl;
+import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.net.curl;
 pragma(lib, "curl");
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 
 // from http://www.vagrantbox.es/
-enum OS { freebsd, linux, }
-enum Model { _32 = 32, _64 = 64, }
-struct Box { OS os; Model model; string url; string setup; }
 
 // FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
 enum freebsd_32 = Box(OS.freebsd, Model._32, "http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box",
@@ -33,57 +30,147 @@ enum linux_64 = Box(OS.linux, Model._64, "http://cloud-images.ubuntu.com/vagrant
 
 enum boxes = [freebsd_32, freebsd_64, linux_32, linux_64];
 
+
+enum OS { freebsd, linux, }
+enum Model { _32 = 32, _64 = 64, }
+
+struct Box
+{
+    void up()
+    {
+        _tmpdir = mkdtemp();
+        std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
+
+        // bring up the virtual box (downloads missing images)
+        run("cd "~_tmpdir~" && vagrant up");
+
+        _isUp = true;
+
+        // save the ssh config file
+        run("cd "~_tmpdir~" && vagrant ssh-config > ssh.cfg");
+
+        provision();
+    }
+
+    ~this()
+    {
+        try
+        {
+            if (_isUp) run("cd "~_tmpdir~" && vagrant destroy -f");
+            if (_tmpdir.length) rmdirRecurse(_tmpdir);
+        }
+        finally
+        {
+            _isUp = false;
+            _tmpdir = null;
+        }
+    }
+
+    ProcessPipes shell(Redirect redirect = Redirect.stdin)
+    in { assert(redirect & Redirect.stdin); }
+    body
+    {
+        auto sh = pipeProcess(["ssh", "-F", sshcfg, "default", "bash"], redirect);
+        // enable verbose echo and stop on error
+        sh.stdin.writeln("set -e -v");
+        return sh;
+    }
+
+    void scp(string src, string tgt)
+    {
+        run("scp -F "~sshcfg~" "~src~" "~tgt);
+    }
+
+private:
+    @property string vagrantFile()
+    {
+        return (`
+            VAGRANTFILE_API_VERSION = "2"
+
+            Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+                config.vm.box = "create_dmd_release-`~osmodel~`"
+                config.vm.box_url = "`~_url~`"
+                # disable shared folders, because the guest additions are missing
+                config.vm.synced_folder ".", "/vagrant", :disabled => true
+
+                config.vm.provider :virtualbox do |vb|
+                  vb.customize ["modifyvm", :id, "--memory", "4096"]
+                  vb.customize ["modifyvm", :id, "--cpus", "4"]
+                end
+            end
+        `).outdent().strip();
+    }
+
+    void provision()
+    {
+        auto sh = shell();
+        // install prerequisites
+        sh.stdin.writeln(_setup);
+        // download create_dmd_release binary
+        sh.stdin.writeln("curl http://dlang.dawg.eu/download/create_dmd_release-"~osmodel~".tar.gz | tar -zxf -");
+        // wait for completion
+        sh.close();
+    }
+
+    void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); wait(spawnShell(cmd)); }
+    @property string osmodel() { return osS ~ "-" ~ modelS; }
+    @property string osS() { return to!string(_os); }
+    @property string modelS() { return to!string(cast(uint)_model); }
+    @property string sshcfg() { return buildPath(_tmpdir, "ssh.cfg"); }
+
+    OS _os;
+    Model _model;
+    string _url; /// optional url of the image
+    string _setup; /// initial provisioning script
+    string _tmpdir;
+    bool _isUp;
+}
+
+void close(ProcessPipes pipes)
+{
+    pipes.stdin.close();
+    wait(pipes.pid);
+}
+
+extern(C) char* mkdtemp(char* template_);
+
+string mkdtemp()
+{
+    import core.stdc.string : strlen;
+
+    auto tmp = buildPath(tempDir(), "tmp.XXXXXX\0").dup;
+    auto dir = mkdtemp(tmp.ptr);
+    return dir[0 .. strlen(dir)].idup;
+}
+
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 void runBuild(Box box, string gitTag)
 {
-    auto os = to!string(box.os);
-    auto model = to!string(cast(uint)box.model);
-    auto osmodel = os~"-"~model;
-
-    auto tmpdir = buildPath(tempDir(), "create_dmd_release", osmodel);
-    if (tmpdir.exists) rmdirRecurse(tmpdir);
-    scope (success) rmdirRecurse(tmpdir);
-    mkdirRecurse(tmpdir);
-
-    std.file.write(buildPath(tmpdir, "Vagrantfile"), (`
-        VAGRANTFILE_API_VERSION = "2"
-
-        Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-            config.vm.box = "create_dmd_release-`~osmodel~`"
-            config.vm.box_url = "`~box.url~`"
-            # disable shared folders, because the guest additions are missing
-            config.vm.synced_folder ".", "/vagrant", :disabled => true
-
-            config.vm.provider :virtualbox do |vb|
-              vb.customize ["modifyvm", :id, "--memory", "4096"]
-              vb.customize ["modifyvm", :id, "--cpus", "4"]
-            end
-        end
-   `).outdent().strip());
-
-    scope run = (string cmd) => wait(spawnShell(cmd));
-    // bring up the virtual box (downloads missing images)
-    run("cd "~tmpdir~" && vagrant up");
-    scope (exit) run("cd "~tmpdir~" && vagrant destroy -f");
-
-    // save the ssh config file
-    auto sshcfg = buildPath(tmpdir, "ssh.cfg");
-    run("cd "~tmpdir~" && vagrant ssh-config > ssh.cfg");
-    // open a remove bash session
-    auto ssh = pipeProcess(["ssh", "-F", sshcfg, "default", "bash"], Redirect.stdin);
-    ssh.stdin.writeln("set -e -v");
-    // install prerequisites
-    ssh.stdin.writeln(box.setup);
-    // download create_dmd_release binary
-    ssh.stdin.writeln("curl http://dlang.dawg.eu/download/create_dmd_release-"~osmodel~".tar.gz | tar -zxf -");
-    // run ./create_dmd_release
-    ssh.stdin.writeln("./create_dmd_release --extras=localextras-"~os~
-                      " --archive --only-"~model~" "~gitTag);
-    ssh.stdin.close();
-    wait(ssh.pid);
-
+    box.up();
+    auto sh = box.shell();
+    sh.stdin.writeln("./create_dmd_release --extras=localextras-"~box.osS~
+                     " --archive --only-"~box.modelS~" "~gitTag);
+    sh.close();
     // copy out created zip file
-    run("scp -F "~sshcfg~" default:dmd."~gitTag~"."~osmodel~".zip .");
+    box.scp("default:dmd."~gitTag~"."~box.osmodel~".zip", ".");
+}
+
+void combine(string gitTag)
+{
+    auto box = linux_64;
+    box.up();
+    // copy local zip files to the box
+    foreach (b; boxes)
+    {
+        auto zip = "dmd."~gitTag~"."~b.osmodel~".zip";
+        box.scp(zip, "default:"~zip);
+    }
+    // combine zips
+    auto sh = box.shell();
+    sh.stdin.writeln("./create_dmd_release --combine "~gitTag);
+    sh.close();
+    // copy out resulting zip
+    box.scp("default:"~"dmd."~gitTag~".zip", ".");
 }
 
 int main(string[] args)
@@ -97,5 +184,6 @@ int main(string[] args)
     auto gitTag = args[1];
     foreach (box; boxes)
         runBuild(box, gitTag);
+    combine(gitTag);
     return 0;
 }
