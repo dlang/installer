@@ -499,12 +499,6 @@ void init(string branch)
     allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
     osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
 
-    version(Windows)
-    {
-        unzipArchiveDir  = absolutePath(cloneDir~"/unzip");
-        zipArchiveDir    = absolutePath(cloneDir~"/zip");
-    }
-
     // Check for required external tools
     if(!skipClone)
         ensureTool("git");
