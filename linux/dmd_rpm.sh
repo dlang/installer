@@ -204,12 +204,14 @@ do
 
 
 		# install man pages
-		gzip ../$UNZIPDIR/man/man1/{dmd.1,dmd.conf.5,dumpobj.1,obj2asm.1,rdmd.1}
-		chmod 0644 ../$UNZIPDIR/man/man1/{dmd.1.gz,dmd.conf.5.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz}
+		gzip ../$UNZIPDIR/man/man1/{dmd.1,dumpobj.1,obj2asm.1,rdmd.1}
+		gzip ../$UNZIPDIR/man/man5/dmd.conf.5
+		chmod 0644 ../$UNZIPDIR/man/man1/{dmd.1.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz}
+		chmod 0644 ../$UNZIPDIR/man/man5/dmd.conf.5.gz
 		mkdir -p usr/share/man/man1/
 		cp -f ../$UNZIPDIR/man/man1/{dmd.1.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz} usr/share/man/man1
 		mkdir -p usr/share/man/man5/
-		cp -f ../$UNZIPDIR/man/man1/dmd.conf.5.gz usr/share/man/man5
+		cp -f ../$UNZIPDIR/man/man5/dmd.conf.5.gz usr/share/man/man5
 
 
 		# rpmize copyright file
