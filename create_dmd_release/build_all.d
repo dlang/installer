@@ -154,7 +154,7 @@ private:
         sh.close();
     }
 
-    void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); wait(spawnShell(cmd)); }
+    void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); enforce(wait(spawnShell(cmd)) == 0); }
     @property string platform() { return _model == Model._both ? osS : osS ~ "-" ~ modelS; }
     @property string osS() { return to!string(_os); }
     @property string modelS() { return _model == Model._both ? "" : to!string(cast(uint)_model); }
@@ -171,7 +171,7 @@ private:
 void close(ProcessPipes pipes)
 {
     pipes.stdin.close();
-    wait(pipes.pid);
+    enforce(wait(pipes.pid) == 0);
 }
 
 extern(C) char* mkdtemp(char* template_);
