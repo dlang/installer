@@ -34,10 +34,14 @@ enum linux_64 = Box(OS.linux, Model._64, "http://cloud-images.ubuntu.com/vagrant
 enum osx_both = Box(OS.osx, Model._both, null,
                   null);
 
-enum boxes = [freebsd_32, freebsd_64, linux_32, linux_64, osx_both];
+// Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
+enum windows_both = Box(OS.windows, Model._both, null,
+                  null);
+
+enum boxes = [freebsd_32, freebsd_64, linux_32, linux_64, osx_both, windows_both];
 
 
-enum OS { freebsd, linux, osx, }
+enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
 
 struct Box
@@ -76,9 +80,17 @@ struct Box
     in { assert(redirect & Redirect.stdin); }
     body
     {
-        auto sh = pipeProcess(["ssh", "-F", sshcfg, "default", "bash"], redirect);
-        // enable verbose echo and stop on error
-        sh.stdin.writeln("set -e -v");
+        ProcessPipes sh;
+        if (_os == OS.windows)
+        {
+            sh = pipeProcess(["ssh", "-F", sshcfg, "default", "powershell", "-Command", "-"], redirect);
+        }
+        else
+        {
+            sh = pipeProcess(["ssh", "-F", sshcfg, "default", "bash"], redirect);
+            // enable verbose echo and stop on error
+            sh.stdin.writeln("set -e -v");
+        }
         return sh;
     }
 
@@ -90,7 +102,8 @@ struct Box
 private:
     @property string vagrantFile()
     {
-        return (`
+        auto res =
+            `
             VAGRANTFILE_API_VERSION = "2"
 
             Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
@@ -103,8 +116,20 @@ private:
                   vb.customize ["modifyvm", :id, "--memory", "4096"]
                   vb.customize ["modifyvm", :id, "--cpus", "4"]
                 end
+            `;
+        if (_os == OS.windows)
+            res ~=
+            `
+                config.vm.guest = :windows
+                # Port forward WinRM and RDP
+                config.vm.network :forwarded_port, guest: 3389, host: 3389
+                config.vm.network :forwarded_port, guest: 5985, host: 5985, id: "winrm", auto_correct: true
+            `;
+        res ~=
+            `
             end
-        `).outdent().strip();
+            `;
+        return res.outdent();
     }
 
     void provision()
@@ -113,7 +138,18 @@ private:
         // install prerequisites
         sh.stdin.writeln(_setup);
         // download create_dmd_release binary
-        sh.stdin.writeln("curl http://dlang.dawg.eu/download/create_dmd_release-"~platform~".tar.gz | tar -zxf -");
+        auto baseURL = "http://dlang.dawg.eu/download/create_dmd_release-"~platform;
+        if (_os == OS.windows)
+        {
+            sh.stdin.writeln(`(new-object System.Net.WebClient).DownloadFile('`~baseURL~`.zip', 'C:\Users\vagrant\cdr.zip')`);
+            sh.stdin.writeln(`$shell = new-object -com shell.application`);
+            sh.stdin.writeln(`$shell.NameSpace('C:\Users\vagrant').CopyHere($shell.NameSpace('C:\Users\vagrant\cdr.zip').Items(), 0x14)`);
+            sh.stdin.writeln(`del 'C:\Users\vagrant\cdr.zip'`);
+        }
+        else
+        {
+            sh.stdin.writeln(`curl `~baseURL~`.tar.gz | tar -zxf -`);
+        }
         // wait for completion
         sh.close();
     }
