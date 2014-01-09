@@ -3,7 +3,7 @@
 ;--------------------------------------------------------
 
 ; Version
-;!define Version2 "2.063" ; <--- UPDATE
+;!define Version2 "2.064.2" ; <--- UPDATE
 !define Version2ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
 !define Version1 "1.076"
 !define Version1ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
@@ -475,6 +475,13 @@ Section "Uninstall"
     ; Remove the uninstaller
     Delete $INSTDIR\uninstall.exe
 
+    Delete $INSTDIR\dmcvars.bat
+    Delete $INSTDIR\dmd1vars.bat
+    Delete $INSTDIR\dmd2vars.bat
+    Delete $INSTDIR\dmd2vars32.bat
+    Delete $INSTDIR\dmd2vars64.bat
+    Delete $INSTDIR\README.txt
+
     ; Remove shortcuts
     Delete "$SMPROGRAMS\D\D1 HTML Documentation.lnk"
     Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
@@ -485,7 +492,7 @@ Section "Uninstall"
     RMDir /r /REBOOTOK "$INSTDIR\dm"
     RMDir /r /REBOOTOK "$INSTDIR\dmd"
     RMDir /r /REBOOTOK "$INSTDIR\dmd2"
-    RMDir /r /REBOOTOK "$INSTDIR"
+    RMDir /REBOOTOK "$INSTDIR"
     RMDir /r /REBOOTOK "$SMPROGRAMS\D"
 
 SectionEnd
