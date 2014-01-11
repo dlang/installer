@@ -118,9 +118,7 @@ fcheck()
 fcheck dpkg
 fcheck dpkg-dev
 fcheck fakeroot
-fcheck gnupg
 fcheck gzip
-fcheck nsis
 fcheck coreutils
 fcheck rpm
 fcheck tar
@@ -167,22 +165,6 @@ fcmd "$BASEDIR/dmd_rpm.sh -v$VER -m32 $FORCE"
 
 # build dmd2 rpm 64-bit
 fcmd "$BASEDIR/dmd_rpm.sh -v$VER -m64 $FORCE"
-
-
-# build dmd2 arch 32-bit
-#fcmd "$BASEDIR/dmd_arch.sh -v$VER -m32 $FORCE"
-
-
-# build dmd2 arch 64-bit
-#fcmd "$BASEDIR/dmd_arch.sh -v$VER -m64 $FORCE"
-
-
-# build dmd2 windows 32-bit
-fcmd "$BASEDIR/dmd_win.sh -v$VER $FORCE"
-
-
-# build apt folder/files
-#fcmd "$BASEDIR/dmd_apt.sh -v$VER"
 
 
 # if everything went well
