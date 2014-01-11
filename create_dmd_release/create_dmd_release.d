@@ -881,6 +881,7 @@ void createRelease(string branch)
     // Copy sources (should cppunit be omitted??)
     auto dmdSrcFilter = (string a) => !a.match("^cppunit[^/]*/");
     copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd",      a => dmdSrcFilter(a));
+    copyDirVersioned(cloneDir~"/dmd/ini",  releaseDir~"/dmd2");
     copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime", a => a != ".gitignore");
     copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos",   a => a != ".gitignore");
 
