@@ -632,21 +632,24 @@ void cleanAll(Bits bits)
     auto makeModel = " MODEL="~bitsStr;
     auto hideStdout = verbose? "" : " > "~devNull;
 
+    // common make arguments
+    auto makecmd = make~makeModel~" -f"~targetMakefile;
+
     // Skip 64-bit tools when not using separate bin32/bin64 dirs
     if(useBitsSuffix || bits == Bits.bits32)
     {
         infoMsg("Cleaning DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-        run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
+        run(makecmd~" clean"~hideStdout);
     }
 
     infoMsg("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
+    run(makecmd~" clean"~hideStdout);
 
     infoMsg("Cleaning Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(make~makeModel~" clean DOCSRC=../dlang.org DOC=doc -f "~targetMakefile~hideStdout);
+    run(makecmd~" clean DOCSRC=../dlang.org DOC=doc"~hideStdout);
     version(Windows)
         removeDir(cloneDir~"/phobos/generated");
 
@@ -655,7 +658,7 @@ void cleanAll(Bits bits)
     {
         infoMsg("Cleaning Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
+        run(makecmd~" clean"~hideStdout);
     }
 
     // Docs are bits-independent, so treat them as 32-bit only
@@ -663,7 +666,7 @@ void cleanAll(Bits bits)
     {
         infoMsg("Cleaning dlang.org");
         changeDir(cloneDir~"/dlang.org");
-        run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
+        run(makecmd~" clean"~hideStdout);
     }
 }
 
@@ -711,12 +714,16 @@ void buildAll(Bits bits, bool dmdOnly=false)
     auto hideStdout = verbose? "" : " > "~devNull;
     auto jobs = numJobs==-1? "" : text(" --jobs=", numJobs);
     auto dmdEnv = " DMD=../dmd/src/dmd";
+    auto isRelease = " RELEASE=1";
+
+    // common make arguments
+    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~" -f "~targetMakefile;
 
     if(build64BitTools || bits == Bits.bits32)
     {
         infoMsg("Building DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-        run(make~jobs~makeModel~" dmd -f "~targetMakefile~hideStdout);
+        run(makecmd~" dmd"~hideStdout);
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
         removeFiles(cloneDir~"/dmd/src", "*{"~obj~","~lib~"}", SpanMode.depth);
     }
@@ -754,13 +761,13 @@ void buildAll(Bits bits, bool dmdOnly=false)
 
     infoMsg("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(make~jobs~makeModel~dmdEnv~msvcEnv~" -f "~targetMakefile~hideStdout);
+    run(makecmd~msvcEnv~hideStdout);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
     infoMsg("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(make~jobs~makeModel~dmdEnv~msvcEnv~" -f "~targetMakefile~hideStdout);
+    run(makecmd~msvcEnv~hideStdout);
 
     version(OSX)
     {
@@ -768,7 +775,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         {
             infoMsg("Building Phobos Universal Binary");
             changeDir(cloneDir~"/phobos");
-            run(make~jobs~makeModel~dmdEnv~" libphobos2.a -f "~targetMakefile~hideStdout);
+            run(makecmd~" libphobos2.a"~hideStdout);
         }
     }
 
@@ -787,11 +794,12 @@ void buildAll(Bits bits, bool dmdOnly=false)
     {
         infoMsg("Building Druntime Docs");
         changeDir(cloneDir~"/druntime");
-        run(make~jobs~makeModel~dmdEnv~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~targetMakefile~hideStdout);
+
+        run(makecmd~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
 
         infoMsg("Building Phobos Docs");
         changeDir(cloneDir~"/phobos");
-        run(make~jobs~makeModel~dmdEnv~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease -f "~targetMakefile~hideStdout);
+        run(makecmd~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease"~hideStdout);
 
         infoMsg("Building dlang.org");
         version(Posix)
@@ -810,7 +818,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         else
             static assert(false, "Unsupported platform");
         // Use 32-bit version of the makefile because dlang.org lacks a win64.mak
-        run(make~jobs~dmdEnv~" -f "~makefile~dlangOrgTarget~hideStdout);
+        run(makecmd~dlangOrgTarget~hideStdout);
         version(Windows)
         {
             copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
@@ -830,7 +838,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
                     zip.expand(am);
                     std.file.write(baseName(file), am.expandedData);
                 }
-                run(make~jobs~dmdEnv~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~makefile~hideStdout);
+                run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
             }
         }
 
@@ -845,11 +853,11 @@ void buildAll(Bits bits, bool dmdOnly=false)
     {
         infoMsg("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(make~jobs~makeModel~dmdEnv~" rdmd      -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" ddemangle -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" findtags  -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" dustmite  -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" dman      DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos -f "~targetMakefile~hideStdout);
+        run(makecmd~" rdmd"~hideStdout);
+        run(makecmd~" ddemangle"~hideStdout);
+        run(makecmd~" findtags"~hideStdout);
+        run(makecmd~" dustmite"~hideStdout);
+        run(makecmd~" dman DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos"~hideStdout);
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
