@@ -132,7 +132,8 @@ version(Windows)
     immutable make          = "make";
     immutable useBitsSuffix = false; // Ie: "bin"/"lib" or "bin32"/"lib32"
 
-    immutable libCurlVersion = "7.32.0"; // Windows-only
+    immutable libCurlVersion = "7.34.0";
+    immutable libCurlZipURL = "http://downloads.dlang.org/other/libcurl-"~libCurlVersion~"-WinSSL-zlib-x86-x64.zip";
 }
 else version(Posix)
 {
@@ -784,19 +785,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
     // Build docs
     if(!alreadyBuiltDocs)
     {
-        version(Windows)
-        {
-            // The chm/libcurl stuff is Win32-only
-            if(bits == Bits.bits32)
-            {
-                // Needed by chmgen to build a chm of the docs on Windows
-                infoMsg("Getting curl Import Lib");
-                changeDir(cloneDir~"/tools");
-                run(cloneDir~"/dmd/src/dmd -gc get_dlibcurl32.d");
-                run("get_dlibcurl32 "~libCurlVersion~hideStdout);
-            }
-        }
-
         infoMsg("Building Druntime Docs");
         changeDir(cloneDir~"/druntime");
         run(make~jobs~makeModel~dmdEnv~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~targetMakefile~hideStdout);
@@ -830,8 +818,18 @@ void buildAll(Bits bits, bool dmdOnly=false)
             // The chm/libcurl stuff is Win32-only
             if(bits == Bits.bits32)
             {
-                copyFile(cloneDir~"/tools/dlibcurl32-"~libCurlVersion~"/libcurl.lib", "./curl.lib");
-                copyDir(cloneDir~"/tools/dlibcurl32-"~libCurlVersion, ".", file => file.endsWith(".dll"));
+                import std.net.curl;
+                ZipArchive zip;
+                try
+                    zip = new ZipArchive(get!(HTTP, ubyte)(libCurlZipURL));
+                catch (CurlException e)
+                    errorMsg("Failed to download "~libCurlZipURL~".\r\n"~e.toString());
+                foreach (file; ["dmd2/windows/lib/curl.lib", "dmd2/windows/bin/libcurl.dll"])
+                {
+                    auto am = zip.directory[file];
+                    zip.expand(am);
+                    std.file.write(baseName(file), am.expandedData);
+                }
                 run(make~jobs~dmdEnv~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~makefile~hideStdout);
             }
         }
