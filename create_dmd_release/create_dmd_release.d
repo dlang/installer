@@ -1482,9 +1482,6 @@ string[] gitVersionedFiles(string path)
 void extract(string archive, string outputDir)
 {
     import std.zip;
-    version (Posix) import core.sys.posix.sys.stat : setFileAttributes = chmod;
-    else version (Windows) import core.sys.windows.windows : setFileAttributes = SetFileAttributes;
-    else static assert(0, "unsupported platform");
 
     infoMsg("Extracting "~displayPath(archive));
 
@@ -1501,7 +1498,7 @@ void extract(string archive, string outputDir)
         if(verbose)
             infoMsg(path);
         std.file.write(path, am.expandedData);
-        setFileAttributes(toStringz(path), am.fileAttributes);
+        std.file.setAttributes(path, am.fileAttributes);
     }
 }
 
