@@ -859,6 +859,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         run(makecmd~" dustmite"~hideStdout);
         run(makecmd~" dman DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos"~hideStdout);
 
+        removeFile(cloneDir~"/tools/generated/"~osDirName~"/"~bitsStr~"/findtags");
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 }
