@@ -742,7 +742,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         version(OSX)
             enum flags="";
         else
-            enum flags=" -L--no-warn-search-mismatch -L--export-dynamic";
+            enum flags=" -L--export-dynamic";
 
         std.file.write(cloneDir~"/dmd/src/dmd.conf", (`
             [Environment]
