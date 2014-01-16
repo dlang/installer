@@ -632,39 +632,24 @@ void cleanAll(Bits bits)
     auto makeModel = " MODEL="~bitsStr;
     auto hideStdout = verbose? "" : " > "~devNull;
 
-<<<<<<< HEAD
     // common make arguments
     auto makecmd = make~makeModel~" -f"~targetMakefile;
 
-=======
->>>>>>> 2.065
     // Skip 64-bit tools when not using separate bin32/bin64 dirs
     if(useBitsSuffix || bits == Bits.bits32)
     {
         infoMsg("Cleaning DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-<<<<<<< HEAD
         run(makecmd~" clean"~hideStdout);
-=======
-        run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
     }
 
     infoMsg("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-<<<<<<< HEAD
     run(makecmd~" clean"~hideStdout);
 
     infoMsg("Cleaning Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
     run(makecmd~" clean DOCSRC=../dlang.org DOC=doc"~hideStdout);
-=======
-    run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
-
-    infoMsg("Cleaning Phobos "~bitsDisplay);
-    changeDir(cloneDir~"/phobos");
-    run(make~makeModel~" clean DOCSRC=../dlang.org DOC=doc -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
     version(Windows)
         removeDir(cloneDir~"/phobos/generated");
 
@@ -673,11 +658,7 @@ void cleanAll(Bits bits)
     {
         infoMsg("Cleaning Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-<<<<<<< HEAD
         run(makecmd~" clean"~hideStdout);
-=======
-        run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
     }
 
     // Docs are bits-independent, so treat them as 32-bit only
@@ -685,11 +666,7 @@ void cleanAll(Bits bits)
     {
         infoMsg("Cleaning dlang.org");
         changeDir(cloneDir~"/dlang.org");
-<<<<<<< HEAD
         run(makecmd~" clean"~hideStdout);
-=======
-        run(make~makeModel~" clean -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
     }
 }
 
@@ -737,23 +714,16 @@ void buildAll(Bits bits, bool dmdOnly=false)
     auto hideStdout = verbose? "" : " > "~devNull;
     auto jobs = numJobs==-1? "" : text(" --jobs=", numJobs);
     auto dmdEnv = " DMD=../dmd/src/dmd";
-<<<<<<< HEAD
     auto isRelease = " RELEASE=1";
 
     // common make arguments
     auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~" -f "~targetMakefile;
-=======
->>>>>>> 2.065
 
     if(build64BitTools || bits == Bits.bits32)
     {
         infoMsg("Building DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-<<<<<<< HEAD
         run(makecmd~" dmd"~hideStdout);
-=======
-        run(make~jobs~makeModel~" dmd -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
         removeFiles(cloneDir~"/dmd/src", "*{"~obj~","~lib~"}", SpanMode.depth);
     }
@@ -772,11 +742,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         version(OSX)
             enum flags="";
         else
-<<<<<<< HEAD
             enum flags=" -L--export-dynamic";
-=======
-            enum flags=" -L--no-warn-search-mismatch -L--export-dynamic";
->>>>>>> 2.065
 
         std.file.write(cloneDir~"/dmd/src/dmd.conf", (`
             [Environment]
@@ -795,21 +761,13 @@ void buildAll(Bits bits, bool dmdOnly=false)
 
     infoMsg("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-<<<<<<< HEAD
     run(makecmd~msvcEnv~hideStdout);
-=======
-    run(make~jobs~makeModel~dmdEnv~msvcEnv~" -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
     infoMsg("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-<<<<<<< HEAD
     run(makecmd~msvcEnv~hideStdout);
-=======
-    run(make~jobs~makeModel~dmdEnv~msvcEnv~" -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
 
     version(OSX)
     {
@@ -817,11 +775,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         {
             infoMsg("Building Phobos Universal Binary");
             changeDir(cloneDir~"/phobos");
-<<<<<<< HEAD
             run(makecmd~" libphobos2.a"~hideStdout);
-=======
-            run(make~jobs~makeModel~dmdEnv~" libphobos2.a -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
         }
     }
 
@@ -838,7 +792,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
     // Build docs
     if(!alreadyBuiltDocs)
     {
-<<<<<<< HEAD
         infoMsg("Building Druntime Docs");
         changeDir(cloneDir~"/druntime");
 
@@ -847,28 +800,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
         infoMsg("Building Phobos Docs");
         changeDir(cloneDir~"/phobos");
         run(makecmd~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease"~hideStdout);
-=======
-        version(Windows)
-        {
-            // The chm/libcurl stuff is Win32-only
-            if(bits == Bits.bits32)
-            {
-                // Needed by chmgen to build a chm of the docs on Windows
-                infoMsg("Getting curl Import Lib");
-                changeDir(cloneDir~"/tools");
-                run(cloneDir~"/dmd/src/dmd -gc get_dlibcurl32.d");
-                run("get_dlibcurl32 "~libCurlVersion~hideStdout);
-            }
-        }
-
-        infoMsg("Building Druntime Docs");
-        changeDir(cloneDir~"/druntime");
-        run(make~jobs~makeModel~dmdEnv~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~targetMakefile~hideStdout);
-
-        infoMsg("Building Phobos Docs");
-        changeDir(cloneDir~"/phobos");
-        run(make~jobs~makeModel~dmdEnv~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease -f "~targetMakefile~hideStdout);
->>>>>>> 2.065
 
         infoMsg("Building dlang.org");
         version(Posix)
@@ -887,11 +818,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
         else
             static assert(false, "Unsupported platform");
         // Use 32-bit version of the makefile because dlang.org lacks a win64.mak
-<<<<<<< HEAD
         run(makecmd~dlangOrgTarget~hideStdout);
-=======
-        run(make~jobs~dmdEnv~" -f "~makefile~dlangOrgTarget~hideStdout);
->>>>>>> 2.065
         version(Windows)
         {
             copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
@@ -899,7 +826,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
             // The chm/libcurl stuff is Win32-only
             if(bits == Bits.bits32)
             {
-<<<<<<< HEAD
                 import std.net.curl;
                 ZipArchive zip;
                 try
@@ -913,11 +839,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
                     std.file.write(baseName(file), am.expandedData);
                 }
                 run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
-=======
-                copyFile(cloneDir~"/tools/dlibcurl32-"~libCurlVersion~"/libcurl.lib", "./curl.lib");
-                copyDir(cloneDir~"/tools/dlibcurl32-"~libCurlVersion, ".", file => file.endsWith(".dll"));
-                run(make~jobs~dmdEnv~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease -f "~makefile~hideStdout);
->>>>>>> 2.065
             }
         }
 
@@ -932,7 +853,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
     {
         infoMsg("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-<<<<<<< HEAD
         run(makecmd~" rdmd"~hideStdout);
         run(makecmd~" ddemangle"~hideStdout);
         run(makecmd~" findtags"~hideStdout);
@@ -940,14 +860,6 @@ void buildAll(Bits bits, bool dmdOnly=false)
         run(makecmd~" dman DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos"~hideStdout);
 
         removeFile(cloneDir~"/tools/generated/"~osDirName~"/"~bitsStr~"/findtags");
-=======
-        run(make~jobs~makeModel~dmdEnv~" rdmd      -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" ddemangle -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" findtags  -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" dustmite  -f "~targetMakefile~hideStdout);
-        run(make~jobs~makeModel~dmdEnv~" dman      DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos -f "~targetMakefile~hideStdout);
-
->>>>>>> 2.065
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 }
@@ -970,10 +882,7 @@ void createRelease(string branch)
     // Copy sources (should cppunit be omitted??)
     auto dmdSrcFilter = (string a) => !a.match("^cppunit[^/]*/");
     copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd",      a => dmdSrcFilter(a));
-<<<<<<< HEAD
     copyDirVersioned(cloneDir~"/dmd/ini",  releaseDir~"/dmd2");
-=======
->>>>>>> 2.065
     copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime", a => a != ".gitignore");
     copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos",   a => a != ".gitignore");
 
@@ -1574,12 +1483,10 @@ string[] gitVersionedFiles(string path)
 void extract(string archive, string outputDir)
 {
     import std.zip;
-<<<<<<< HEAD
-=======
+
     version (Posix) import core.sys.posix.sys.stat : setFileAttributes = chmod;
     else version (Windows) import core.sys.windows.windows : setFileAttributes = SetFileAttributes;
     else static assert(0, "unsupported platform");
->>>>>>> 2.065
 
     infoMsg("Extracting "~displayPath(archive));
 
@@ -1596,11 +1503,7 @@ void extract(string archive, string outputDir)
         if(verbose)
             infoMsg(path);
         std.file.write(path, am.expandedData);
-<<<<<<< HEAD
         std.file.setAttributes(path, am.fileAttributes);
-=======
-        setFileAttributes(toStringz(path), am.fileAttributes);
->>>>>>> 2.065
     }
 }
 
