@@ -1484,10 +1484,6 @@ void extract(string archive, string outputDir)
 {
     import std.zip;
 
-    version (Posix) import core.sys.posix.sys.stat : setFileAttributes = chmod;
-    else version (Windows) import core.sys.windows.windows : setFileAttributes = SetFileAttributes;
-    else static assert(0, "unsupported platform");
-
     infoMsg("Extracting "~displayPath(archive));
 
     scope zip = new ZipArchive(std.file.read(archive));
