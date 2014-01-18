@@ -1495,7 +1495,9 @@ void extract(string archive, string outputDir)
     {
         if(!am.expandedSize) continue;
 
-        string path = buildPath(outputDir, name);
+        const fromWindows = (am.madeVersion & 0xFF00) == 0x0000;
+
+        string path = buildPath(outputDir, fromWindows ? name.replace("\\", "/") : name);
         auto dir = dirName(path);
         if(dir != "" && !dir.exists)
             mkdirRecurse(dir);
@@ -1503,6 +1505,7 @@ void extract(string archive, string outputDir)
         if(verbose)
             infoMsg(path);
         std.file.write(path, am.expandedData);
+        version (Posix) if (fromWindows) continue;
         std.file.setAttributes(path, am.fileAttributes);
     }
 }
