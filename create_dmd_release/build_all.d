@@ -20,13 +20,9 @@ enum freebsd_32 = Box(OS.freebsd, Model._32, "http://dlang.dawg.eu/vagrant/FreeB
 enum freebsd_64 = Box(OS.freebsd, Model._64, "http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box",
                       "sudo pkg_add -r curl git gmake;");
 
-// Official Ubuntu 12.04 daily Cloud Image i386 (VirtualBox 4.1.12)
-enum linux_32 = Box(OS.linux, Model._32, "http://cloud-images.ubuntu.com/vagrant/precise/current/precise-server-cloudimg-i386-vagrant-disk1.box",
-                    "sudo apt-get -y install git;");
-
-// Official Ubuntu 12.04 daily Cloud Image amd64 (VirtualBox 4.1.12)
-enum linux_64 = Box(OS.linux, Model._64, "http://cloud-images.ubuntu.com/vagrant/precise/current/precise-server-cloudimg-amd64-vagrant-disk1.box",
-                    "sudo apt-get -y install git;");
+// Puppetlabs Debian 6.0.7 x86_64, VBox 4.2.10, No Puppet or Chef
+enum linux_both = Box(OS.linux, Model._both, "http://puppet-vagrant-boxes.puppetlabs.com/debian-607-x64-vbox4210-nocm.box",
+                    "sudo apt-get -y update; sudo apt-get -y install git g++-multilib;");
 
 // local boxes
 
@@ -38,7 +34,7 @@ enum osx_both = Box(OS.osx, Model._both, null,
 enum windows_both = Box(OS.windows, Model._both, null,
                   null);
 
-enum boxes = [freebsd_32, freebsd_64, linux_32, linux_64, osx_both, windows_both];
+enum boxes = [freebsd_32, freebsd_64, linux_both, osx_both, windows_both];
 
 
 enum OS { freebsd, linux, osx, windows, }
@@ -204,7 +200,7 @@ void runBuild(Box box, string gitTag)
 
 void combine(string gitTag)
 {
-    auto box = linux_64;
+    auto box = linux_both;
     box.up();
     // copy local zip files to the box
     foreach (b; boxes)
