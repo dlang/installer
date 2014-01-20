@@ -28,11 +28,17 @@ enum linux_32 = Box(OS.linux, Model._32, "http://cloud-images.ubuntu.com/vagrant
 enum linux_64 = Box(OS.linux, Model._64, "http://cloud-images.ubuntu.com/vagrant/precise/current/precise-server-cloudimg-amd64-vagrant-disk1.box",
                     "sudo apt-get -y install git;");
 
-enum boxes = [freebsd_32, freebsd_64, linux_32, linux_64];
+// local boxes
+
+// Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
+enum osx_both = Box(OS.osx, Model._both, null,
+                  null);
+
+enum boxes = [freebsd_32, freebsd_64, linux_32, linux_64, osx_both];
 
 
-enum OS { freebsd, linux, }
-enum Model { _32 = 32, _64 = 64, }
+enum OS { freebsd, linux, osx, }
+enum Model { _both = 0, _32 = 32, _64 = 64 }
 
 struct Box
 {
@@ -88,7 +94,7 @@ private:
             VAGRANTFILE_API_VERSION = "2"
 
             Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-                config.vm.box = "create_dmd_release-`~osmodel~`"
+                config.vm.box = "create_dmd_release-`~platform~`"
                 config.vm.box_url = "`~_url~`"
                 # disable shared folders, because the guest additions are missing
                 config.vm.synced_folder ".", "/vagrant", :disabled => true
@@ -107,15 +113,15 @@ private:
         // install prerequisites
         sh.stdin.writeln(_setup);
         // download create_dmd_release binary
-        sh.stdin.writeln("curl http://dlang.dawg.eu/download/create_dmd_release-"~osmodel~".tar.gz | tar -zxf -");
+        sh.stdin.writeln("curl http://dlang.dawg.eu/download/create_dmd_release-"~platform~".tar.gz | tar -zxf -");
         // wait for completion
         sh.close();
     }
 
     void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); wait(spawnShell(cmd)); }
-    @property string osmodel() { return osS ~ "-" ~ modelS; }
+    @property string platform() { return _model == Model._both ? osS : osS ~ "-" ~ modelS; }
     @property string osS() { return to!string(_os); }
-    @property string modelS() { return to!string(cast(uint)_model); }
+    @property string modelS() { return _model == Model._both ? "" : to!string(cast(uint)_model); }
     @property string sshcfg() { return buildPath(_tmpdir, "ssh.cfg"); }
 
     OS _os;
@@ -148,11 +154,16 @@ void runBuild(Box box, string gitTag)
 {
     box.up();
     auto sh = box.shell();
-    sh.stdin.writeln("./create_dmd_release --extras=localextras-"~box.osS~
-                     " --archive --only-"~box.modelS~" "~gitTag);
+
+    auto cmd = "./create_dmd_release --extras=localextras-"~box.osS~" --archive";
+    if (box._model != Model._both)
+        cmd ~= " --only-" ~ box.modelS;
+    cmd ~= " " ~ gitTag;
+
+    sh.stdin.writeln(cmd);
     sh.close();
     // copy out created zip file
-    box.scp("default:dmd."~gitTag~"."~box.osmodel~".zip", ".");
+    box.scp("default:dmd."~gitTag~"."~box.platform~".zip", ".");
 }
 
 void combine(string gitTag)
@@ -162,7 +173,7 @@ void combine(string gitTag)
     // copy local zip files to the box
     foreach (b; boxes)
     {
-        auto zip = "dmd."~gitTag~"."~b.osmodel~".zip";
+        auto zip = "dmd."~gitTag~"."~b.platform~".zip";
         box.scp(zip, "default:"~zip);
     }
     // combine zips
