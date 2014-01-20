@@ -1516,7 +1516,7 @@ void archiveZip(string inputDir, string archive)
     auto parentDir = chomp(inputDir, baseName(inputDir));
     foreach (de; dirEntries(inputDir, SpanMode.depth))
     {
-        if(!de.isFile) continue;
+        if(!de.isFile || de.baseName.startsWith(".git", ".DS_Store")) continue;
         auto path = chompPrefix(de.name, parentDir);
         if(verbose)
             infoMsg(path);
