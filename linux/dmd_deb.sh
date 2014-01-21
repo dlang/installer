@@ -163,9 +163,9 @@ else
 	# install binaries
 	mkdir -p usr/bin
 	if test "$ARCH" = "amd64" ;then
-		cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman} usr/bin
+		cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite} usr/bin
 	elif test "$ARCH" = "i386" ;then
-		cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman} usr/bin
+		cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite} usr/bin
 	fi
 
 
@@ -345,7 +345,7 @@ else
 	# change folders and files permissions
 	chmod -R 0755 *
 	chmod 0644 $(find -L . ! -type d)
-	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman} DEBIAN/{postinst,postrm}
+	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite} DEBIAN/{postinst,postrm}
 
 
 	# create deb package
