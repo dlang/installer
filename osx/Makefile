@@ -41,7 +41,7 @@ dmd.${VERSION}.dmg: dmd.${VERSION}.zip
 	rm -rf dmg/
 	mkdir -p dmg/DMD2
 	cp uninstall.command dmg/DMD2/
-	${MAKER} -d dmd$2.pmdoc -o dmg/DMD2/DMD2.pkg --target 10.5
+	${MAKER} -d dmd2.pmdoc -o dmg/DMD2/DMD2.pkg --target 10.5
 	hdiutil create -srcfolder dmg/DMD2 $@
 
 clean:
