@@ -181,6 +181,7 @@ void exec(ProcessPipes pipes, string cmd)
 void close(ProcessPipes pipes)
 {
     pipes.stdin.close();
+    // TODO: capture stderr and attach it to enforce
     enforce(wait(pipes.pid) == 0);
 }
 
