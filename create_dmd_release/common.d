@@ -1,5 +1,7 @@
-// Zip tools
-import std.file, std.path, std.zip;
+import std.file, std.path;
+
+//------------------------------------------------------------------------------
+// tmpfile et. al.
 
 // should be in core.stdc.stdlib
 version (Posix) extern(C) char* mkdtemp(char* template_);
@@ -19,6 +21,37 @@ string mkdtemp()
         return buildPath(tempDir(), format("tmp.%06X\0", uniform(0, 0xFFFFFF)));
     }
 }
+
+//------------------------------------------------------------------------------
+// Download helpers
+
+// templated so that we don't drag in libcurl unnecessarily
+template fetchFile()
+{
+    pragma(lib, "curl");
+
+    void fetchFile(string url, string path)
+    {
+        import std.net.curl, std.path, std.stdio;
+        if (path.exists) return;
+        auto client = HTTP(url);
+        size_t cnt;
+        client.onProgress = (dlt, dln, _, _2)
+        {
+            if (dlt && cnt++ % 32 == 0)
+                writef("Progress: %.1f%% of %s kB\r", 100.0 * dln / dlt, dlt / 1024);
+            return 0;
+        };
+        writefln("Downloading file '%s' to '%s'.", url, path);
+        mkdirRecurse(path.dirName);
+        std.file.write(path, get!(HTTP, ubyte)(url, client));
+        writeln(); // CR
+    }
+}
+
+//------------------------------------------------------------------------------
+// Zip tools
+import std.zip;
 
 void extractZip(string archive, string outputDir)
 {

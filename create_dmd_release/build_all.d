@@ -5,9 +5,8 @@ A working dmd installation to compile this script (also requires libcurl).
 Install Vagrant (https://learnchef.opscode.com/screencasts/install-vagrant/)
 Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-box/)
 +/
-import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.net.curl;
+import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string;
 import common;
-pragma(lib, "curl");
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 
