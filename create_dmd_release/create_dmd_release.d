@@ -1298,26 +1298,6 @@ void copyAttributes(string src, string dest)
     }
 }
 
-/// Copy files, creating destination directories as needed
-void copyFiles(string[] relativePaths, string srcPrefix, string destPrefix, bool delegate(string) filter = null)
-{
-    verboseMsg("Copying from '"~displayPath(srcPrefix)~"' to '"~displayPath(destPrefix)~"'");
-    foreach(path; relativePaths)
-    {
-        if(filter && !filter(path))
-            continue;
-
-        auto srcPath  = buildPath(srcPrefix,  path);
-        auto destPath = buildPath(destPrefix, path);
-
-        makeDir(dirName(destPath));
-
-        verboseMsg("    "~path);
-        copy(srcPath, destPath);
-        copyAttributes(srcPath, destPath);
-    }
-}
-
 /// Recursively copy the contents of a directory, excluding anything
 /// untracked or ignored by git.
 void copyDirVersioned(string src, string dest, bool delegate(string) filter = null)

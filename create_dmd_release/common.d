@@ -1,4 +1,26 @@
-import std.file, std.path;
+import std.file, std.path, std.stdio;
+
+//------------------------------------------------------------------------------
+// File/Folder tools
+
+/// Copy files, creating destination directories as needed
+void copyFiles(string[] files, string srcDir, string dstDir, bool delegate(string) filter = null)
+{
+    writefln("Copying the following files from '%s' to '%s':", srcDir, dstDir);
+    writefln("%(\t%s\n%)", files);
+    foreach(file; files)
+    {
+        if (filter && !filter(file)) continue;
+
+        auto srcPath  = buildPath(srcDir, file);
+        auto dstPath = buildPath(dstDir, file);
+
+        mkdirRecurse(dirName(dstPath));
+
+        copy(srcPath, dstPath);
+        setAttributes(dstPath, getAttributes(srcPath));
+    }
+}
 
 //------------------------------------------------------------------------------
 // tmpfile et. al.
