@@ -100,7 +100,7 @@ struct Box
 
     void scp(string src, string tgt)
     {
-        run("scp -F "~sshcfg~" "~src~" "~tgt);
+        run("scp -rq -F "~sshcfg~" "~src~" "~tgt);
     }
 
 private:
