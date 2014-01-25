@@ -1,6 +1,25 @@
 // Zip tools
 import std.file, std.path, std.zip;
 
+// should be in core.stdc.stdlib
+version (Posix) extern(C) char* mkdtemp(char* template_);
+
+string mkdtemp()
+{
+    version (Posix)
+    {
+        import core.stdc.string : strlen;
+        auto tmp = buildPath(tempDir(), "tmp.XXXXXX\0").dup;
+        auto dir = mkdtemp(tmp.ptr);
+        return dir[0 .. strlen(dir)].idup;
+    }
+    else
+    {
+        import std.format, std.random;
+        return buildPath(tempDir(), format("tmp.%06X\0", uniform(0, 0xFFFFFF)));
+    }
+}
+
 void extractZip(string archive, string outputDir)
 {
     import std.array : replace;

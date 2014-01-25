@@ -6,6 +6,7 @@ Install Vagrant (https://learnchef.opscode.com/screencasts/install-vagrant/)
 Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-box/)
 +/
 import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.net.curl;
+import common;
 pragma(lib, "curl");
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
@@ -183,17 +184,6 @@ void close(ProcessPipes pipes)
     pipes.stdin.close();
     // TODO: capture stderr and attach it to enforce
     enforce(wait(pipes.pid) == 0);
-}
-
-extern(C) char* mkdtemp(char* template_);
-
-string mkdtemp()
-{
-    import core.stdc.string : strlen;
-
-    auto tmp = buildPath(tempDir(), "tmp.XXXXXX\0").dup;
-    auto dir = mkdtemp(tmp.ptr);
-    return dir[0 .. strlen(dir)].idup;
 }
 
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
