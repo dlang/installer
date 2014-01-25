@@ -237,6 +237,33 @@ int main(string[] args)
     auto gitTag = args[1];
     auto workDir = mkdtemp();
     scope (success) if (workDir.exists) rmdirRecurse(workDir);
+    // Cache huge downloads
+    enum cacheDir = "cached_downloads";
+
+    enum oldDMD = "dmd.2.065.b1.zip"; // TODO: determine from gitTag
+    enum optlink = "optlink.zip";
+    enum libCurl = "libcurl-7.34.0-WinSSL-zlib-x86-x64.zip";
+
+    fetchFile("http://ftp.digitalmars.com/"~oldDMD, cacheDir~"/"~oldDMD);
+    fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
+    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl);
+
+    // Get previous dmd release
+    extractZip(cacheDir~"/"~oldDMD, workDir~"/old-dmd");
+    // Get latest optlink
+    remove(workDir~"/old-dmd/dmd2/windows/bin/link.exe");
+    extractZip(cacheDir~"/"~optlink, workDir~"/old-dmd/dmd2/windows/bin");
+    // Get libcurl for windows
+    extractZip(cacheDir~"/"~libCurl, workDir~"/old-dmd");
+
+    // Get missing FreeBSD dmd.conf, this is a bug in 2.065.0-b1 and should be fixed in newer releases
+    fetchFile(
+        "https://raw.github.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin32/dmd.conf",
+        buildPath(workDir, "old-dmd/dmd2/freebsd/bin32/dmd.conf"));
+
+    fetchFile(
+        "https://raw.github.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin64/dmd.conf",
+        buildPath(workDir, "old-dmd/dmd2/freebsd/bin64/dmd.conf"));
 
     foreach (box; boxes)
         runBuild(box, gitTag);
