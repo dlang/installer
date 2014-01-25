@@ -91,7 +91,7 @@ import std.regex;
 import std.stdio;
 import std.string;
 import std.typetuple;
-import std.zip;
+import common;
 version(Posix)
     import core.sys.posix.sys.stat;
 
@@ -1080,7 +1080,7 @@ void extractOsArchives(string branch)
 
         // Try combined 32/64-bit archives
         if(exists(archiveZip))
-            extract(archiveZip, outputDir);
+            extractZip(archiveZip, outputDir);
         else
         {
             // Try 32-bit only and 64-bit-only
@@ -1089,7 +1089,7 @@ void extractOsArchives(string branch)
                 archiveZip = archiveName~bitSuffix~".zip";
 
                 if(exists(archiveZip))
-                    extract(archiveZip, outputDir);
+                    extractZip(archiveZip, outputDir);
             }
         }
     }
@@ -1478,61 +1478,4 @@ string[] gitVersionedFiles(string path)
         versionedFiles.put(filename);
 
     return versionedFiles.data;
-}
-
-void extract(string archive, string outputDir)
-{
-    import std.zip;
-
-    infoMsg("Extracting "~displayPath(archive));
-
-    scope zip = new ZipArchive(std.file.read(archive));
-    foreach(name, am; zip.directory)
-    {
-        if(!am.expandedSize) continue;
-
-        const fromWindows = (am.madeVersion & 0xFF00) == 0x0000;
-
-        string path = buildPath(outputDir, fromWindows ? name.replace("\\", "/") : name);
-        auto dir = dirName(path);
-        if(dir != "" && !dir.exists)
-            mkdirRecurse(dir);
-        zip.expand(am);
-        if(verbose)
-            infoMsg(path);
-        std.file.write(path, am.expandedData);
-        version (Posix) if (fromWindows) continue;
-        std.file.setAttributes(path, am.fileAttributes);
-    }
-}
-
-void archiveZip(string inputDir, string archive)
-{
-    archive = absolutePath(archive);
-    infoMsg("Generating "~displayPath(archive));
-
-    scope zip = new ZipArchive();
-    auto parentDir = chomp(inputDir, baseName(inputDir));
-    foreach (de; dirEntries(inputDir, SpanMode.depth))
-    {
-        if(!de.isFile || de.baseName.startsWith(".git", ".DS_Store")) continue;
-        auto path = chompPrefix(de.name, parentDir);
-        if(verbose)
-            infoMsg(path);
-        zip.addMember(toArchiveMember(de, path));
-    }
-    if(exists(archive))
-        remove(archive);
-    std.file.write(archive, zip.build());
-}
-
-ArchiveMember toArchiveMember(ref DirEntry de, string path)
-{
-    auto am = new ArchiveMember();
-    am.compressionMethod = CompressionMethod.deflate;
-    am.time = de.timeLastModified;
-    am.name = path;
-    am.expandedData = cast(ubyte[])std.file.read(de.name);
-    am.fileAttributes = de.attributes;
-    return am;
 }
