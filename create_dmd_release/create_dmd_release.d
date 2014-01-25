@@ -437,7 +437,7 @@ int main(string[] args)
             cleanAll();
 
         if(!skipBuild)
-            buildAll();
+            buildAll(branch);
 
         if(!skipPackage)
             createRelease(branch);
@@ -657,22 +657,22 @@ void cleanAll(Bits bits)
     }
 }
 
-void buildAll()
+void buildAll(string branch)
 {
     if(do32Bit)
-        buildAll(Bits.bits32);
+        buildAll(Bits.bits32, branch);
 
     if(do64Bit)
     {
         if(!do32Bit && lib64RequiresDmd32)
-            buildAll(Bits.bits32, true);
+            buildAll(Bits.bits32, branch, true);
 
-        buildAll(Bits.bits64);
+        buildAll(Bits.bits64, branch);
     }
 }
 
 /// dmdOnly is part of the lib64RequiresDmd32 hack.
-void buildAll(Bits bits, bool dmdOnly=false)
+void buildAll(Bits bits, string branch, bool dmdOnly=false)
 {
     static alreadyBuiltDocs = false;
 
@@ -702,9 +702,10 @@ void buildAll(Bits bits, bool dmdOnly=false)
     version (Windows) auto jobs = ""; else auto jobs = " -j4";
     auto dmdEnv = " DMD=../dmd/src/dmd";
     auto isRelease = " RELEASE=1";
+    auto latest = " LATEST="~branch;
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~" -f "~targetMakefile;
+    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~latest~" -f "~targetMakefile;
 
     if(build64BitTools || bits == Bits.bits32)
     {
