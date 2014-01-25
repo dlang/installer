@@ -119,6 +119,7 @@ private:
                 config.vm.provider :virtualbox do |vb|
                   vb.customize ["modifyvm", :id, "--memory", "4096"]
                   vb.customize ["modifyvm", :id, "--cpus", "4"]
+                  vb.customize ["modifyvm", :id, "--accelerate3d", "off"]
                 end
             `;
         if (_os == OS.windows)
