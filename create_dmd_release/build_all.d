@@ -236,6 +236,9 @@ int main(string[] args)
     }
 
     auto gitTag = args[1];
+    auto workDir = mkdtemp();
+    scope (success) if (workDir.exists) rmdirRecurse(workDir);
+
     foreach (box; boxes)
         runBuild(box, gitTag);
     combine(gitTag);
