@@ -248,8 +248,6 @@ void showHelp()
 
         --clean            Delete temporary dir (see above) and exit.
 
-        -j [N],--jobs=[N]  (Posix-only) Pass -j,--jobs through to GNU make.
-
         --only-32          Only build and package 32-bit.
         --only-64          Only build and package 64-bit.
 
@@ -266,7 +264,6 @@ bool skipBuild;
 bool skipPackage;
 bool doArchive;
 bool doCombine;
-int  numJobs = -1;
 bool do32Bit;
 bool do64Bit;
 
@@ -314,7 +311,6 @@ int main(string[] args)
             "extras",       &customExtrasDir,
             "archive",      &doArchive,
             "combine",      &doCombine,
-            "j|jobs",       &numJobs,
             "only-32",      &do32Bit,
             "only-64",      &do64Bit,
         );
@@ -361,12 +357,6 @@ int main(string[] args)
         if(doCombine)
         {
             errorMsg("--combine cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
-            return 1;
-        }
-
-        if(numJobs != -1)
-        {
-            errorMsg("--jobs flags cannot be used on Windows because it's unsupported in DM make.");
             return 1;
         }
     }
@@ -709,7 +699,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     auto hideStdout = verbose? "" : " > "~devNull;
-    auto jobs = numJobs==-1? "" : text(" --jobs=", numJobs);
+    version (Windows) auto jobs = ""; else auto jobs = " -j4";
     auto dmdEnv = " DMD=../dmd/src/dmd";
     auto isRelease = " RELEASE=1";
 
