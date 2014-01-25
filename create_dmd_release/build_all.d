@@ -58,7 +58,7 @@ struct Box
         provision();
     }
 
-    ~this()
+    void destroy()
     {
         try
         {
@@ -70,6 +70,14 @@ struct Box
             _isUp = false;
             _tmpdir = null;
         }
+    }
+
+    void halt()
+    {
+        try
+            if (_isUp) run("cd "~_tmpdir~" && vagrant halt -f");
+        finally
+            _isUp = false;
     }
 
     ProcessPipes shell(Redirect redirect = Redirect.stdin)
@@ -185,6 +193,9 @@ string mkdtemp()
 void runBuild(Box box, string gitTag)
 {
     box.up();
+    scope (success) box.destroy();
+    scope (failure) box.halt();
+
     auto sh = box.shell();
 
     auto cmd = "./create_dmd_release --extras=localextras-"~box.osS~" --archive";
@@ -202,6 +213,9 @@ void combine(string gitTag)
 {
     auto box = linux_both;
     box.up();
+    scope (success) box.destroy();
+    scope (failure) box.halt();
+
     // copy local zip files to the box
     foreach (b; boxes)
     {
