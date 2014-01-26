@@ -826,7 +826,7 @@ void buildAll(Bits bits, bool dmdOnly=false)
             // The chm/libcurl stuff is Win32-only
             if(bits == Bits.bits32)
             {
-                import std.net.curl;
+                import std.net.curl, std.zip;
                 ZipArchive zip;
                 try
                     zip = new ZipArchive(get!(HTTP, ubyte)(libCurlZipURL));

@@ -34,7 +34,7 @@ enum osx_both = Box(OS.osx, Model._both, null,
 enum windows_both = Box(OS.windows, Model._both, null,
                   null);
 
-enum boxes = [freebsd_32, freebsd_64, linux_both, osx_both, windows_both];
+enum boxes = [windows_both, osx_both, freebsd_32, freebsd_64, linux_both];
 
 
 enum OS { freebsd, linux, osx, windows, }
@@ -141,19 +141,6 @@ private:
         auto sh = shell();
         // install prerequisites
         sh.exec(_setup);
-        // download create_dmd_release binary
-        auto baseURL = "http://dlang.dawg.eu/download/create_dmd_release-"~platform;
-        if (_os == OS.windows)
-        {
-            sh.exec(`(new-object System.Net.WebClient).DownloadFile('`~baseURL~`.zip', 'C:\Users\vagrant\cdr.zip')`);
-            sh.exec(`$shell = new-object -com shell.application`);
-            sh.exec(`$shell.NameSpace('C:\Users\vagrant').CopyHere($shell.NameSpace('C:\Users\vagrant\cdr.zip').Items(), 0x14)`);
-            sh.exec(`del 'C:\Users\vagrant\cdr.zip'`);
-        }
-        else
-        {
-            sh.exec(`curl `~baseURL~`.tar.gz | tar -zxf -`);
-        }
         // wait for completion
         sh.close();
     }
@@ -240,40 +227,45 @@ void copyExtraBinaries(string workDir, Box box)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(Box box, string gitTag)
+void runBuild(Box box, string gitTag, bool combine)
 {
     auto sh = box.shell();
 
-    auto cmd = "./create_dmd_release --extras=extraBins --archive --use-clone=clones";
+    string rdmd;
+    final switch (box._os)
+    {
+    case OS.freebsd:
+        rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~
+            " --compiler=old-dmd/dmd2/freebsd/bin"~box.modelS~"/dmd";
+        break;
+    case OS.linux:
+        rdmd = "old-dmd/dmd2/linux/bin64/rdmd"~
+            " --compiler=old-dmd/dmd2/linux/bin64/dmd";
+        break;
+    case OS.windows:
+        sh.stdin.writeln(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
+        rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`~
+            ` --compiler=old-dmd\dmd2\windows\bin\dmd.exe`;
+        break;
+    case OS.osx:
+        rdmd = "old-dmd/dmd2/osx/bin/rdmd"
+            " --compiler=old-dmd/dmd2/osx/bin/dmd";
+        break;
+    }
+
+    auto cmd = rdmd~" create_dmd_release --extras=extraBins --archive --use-clone=clones";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
     cmd ~= " " ~ gitTag;
 
     sh.exec(cmd);
+    if (combine)
+        sh.exec(rdmd~" create_dmd_release --extras=extraBins --combine --use-clone=clones "~gitTag);
     sh.close();
-    // copy out created zip file
+    // copy out created zip files
     box.scp("default:dmd."~gitTag~"."~box.platform~".zip", ".");
-}
-
-void combine(string gitTag)
-{
-    auto box = linux_both;
-    box.up();
-    scope (success) box.destroy();
-    scope (failure) box.halt();
-
-    // copy local zip files to the box
-    foreach (b; boxes)
-    {
-        auto zip = "dmd."~gitTag~"."~b.platform~".zip";
-        box.scp(zip, "default:"~zip);
-    }
-    // combine zips
-    auto sh = box.shell();
-    sh.exec("./create_dmd_release --combine "~gitTag);
-    sh.close();
-    // copy out resulting zip
-    box.scp("default:"~"dmd."~gitTag~".zip", ".");
+    if (combine)
+        box.scp("default:dmd."~gitTag~".zip", ".");
 }
 
 void cloneSources(string gitTag, string tgtDir)
@@ -325,16 +317,30 @@ int main(string[] args)
 
     cloneSources(gitTag, workDir~"/clones");
 
-    foreach (box; boxes)
+    foreach (i, box; boxes)
     {
         box.up();
         scope (success) box.destroy();
         scope (failure) box.halt();
 
+        box.scp(workDir~"/old-dmd", "default:");
         copyExtraBinaries(workDir, box);
+        // copy create_dmd_release.d and dependencies
+        box.scp("create_dmd_release.d common.d", "default:");
         box.scp(workDir~"/clones", "default:");
-        runBuild(box, gitTag);
+
+        auto combine = i == boxes.length - 1;
+        // copy all zips into the last box to combine them
+        if (combine)
+        {
+            foreach (b; boxes[0 .. $ - 1])
+            {
+                auto zip = "dmd."~gitTag~"."~b.platform~".zip";
+                box.scp(zip, "default:"~zip);
+            }
+        }
+
+        runBuild(box, gitTag, combine);
     }
-    combine(gitTag);
     return 0;
 }
