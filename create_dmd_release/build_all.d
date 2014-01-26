@@ -185,16 +185,65 @@ void close(ProcessPipes pipes)
     enforce(wait(pipes.pid) == 0);
 }
 
+//------------------------------------------------------------------------------
+// Copy additional release binaries from the previous release
+
+void copyExtraBinaries(string workDir, Box box)
+{
+    import std.range;
+
+    static auto addPrefix(R)(string prefix, R rng)
+    {
+        return rng.map!(a => prefix ~ a)();
+    }
+
+    string[] files;
+    final switch (box._os)
+    {
+    case OS.windows:
+        enum binFiles = [
+            "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
+            "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
+            "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll",
+        ];
+        enum libFiles = [
+            "advapi32.lib", "COMCTL32.LIB", "comdlg32.lib", "CTL3D32.LIB",
+            "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
+            "rpcrt4.lib", "shell32.lib", "snn.lib", "user32.lib", "uuid.lib",
+            "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib",
+        ];
+        files = addPrefix("dmd2/windows/", chain(addPrefix("bin/", binFiles), addPrefix("lib/", libFiles)))
+            .array();
+        break;
+
+    case OS.linux:
+        files = addPrefix("dmd2/linux/", ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"])
+            .array();
+        break;
+
+    case OS.freebsd:
+        // no 64-bit binaries for FreeBSD :(
+        files = addPrefix("dmd2/freebsd/", ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"])
+            .array();
+        break;
+
+    case OS.osx:
+        files = addPrefix("dmd2/osx/", ["bin/dumpobj", "bin/obj2asm", "bin/shell"])
+            .array();
+        break;
+    }
+    copyFiles(files, workDir~"/old-dmd", workDir~"/extraBins");
+    box.scp(workDir~"/extraBins", "default:");
+}
+
+//------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
+
 void runBuild(Box box, string gitTag)
 {
-    box.up();
-    scope (success) box.destroy();
-    scope (failure) box.halt();
-
     auto sh = box.shell();
 
-    auto cmd = "./create_dmd_release --extras=localextras-"~box.osS~" --archive";
+    auto cmd = "./create_dmd_release --extras=extraBins --archive";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
     cmd ~= " " ~ gitTag;
@@ -266,7 +315,14 @@ int main(string[] args)
         buildPath(workDir, "old-dmd/dmd2/freebsd/bin64/dmd.conf"));
 
     foreach (box; boxes)
+    {
+        box.up();
+        scope (success) box.destroy();
+        scope (failure) box.halt();
+
+        copyExtraBinaries(workDir, box);
         runBuild(box, gitTag);
+    }
     combine(gitTag);
     return 0;
 }
