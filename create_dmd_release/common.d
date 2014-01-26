@@ -3,6 +3,9 @@ import std.file, std.path, std.stdio;
 //------------------------------------------------------------------------------
 // File/Folder tools
 
+///
+enum allProjects = ["dmd", "druntime", "phobos", "tools", "dlang.org", "installer"];
+
 /// Copy files, creating destination directories as needed
 void copyFiles(string[] files, string srcDir, string dstDir, bool delegate(string) filter = null)
 {
