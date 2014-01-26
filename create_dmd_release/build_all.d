@@ -93,7 +93,7 @@ struct Box
         {
             sh = pipeProcess(["ssh", "-F", sshcfg, "default", "bash"], redirect);
             // enable verbose echo and stop on error
-            sh.stdin.writeln("set -e -v");
+            sh.exec("set -e -v");
         }
         return sh;
     }
@@ -140,19 +140,19 @@ private:
     {
         auto sh = shell();
         // install prerequisites
-        sh.stdin.writeln(_setup);
+        sh.exec(_setup);
         // download create_dmd_release binary
         auto baseURL = "http://dlang.dawg.eu/download/create_dmd_release-"~platform;
         if (_os == OS.windows)
         {
-            sh.stdin.writeln(`(new-object System.Net.WebClient).DownloadFile('`~baseURL~`.zip', 'C:\Users\vagrant\cdr.zip')`);
-            sh.stdin.writeln(`$shell = new-object -com shell.application`);
-            sh.stdin.writeln(`$shell.NameSpace('C:\Users\vagrant').CopyHere($shell.NameSpace('C:\Users\vagrant\cdr.zip').Items(), 0x14)`);
-            sh.stdin.writeln(`del 'C:\Users\vagrant\cdr.zip'`);
+            sh.exec(`(new-object System.Net.WebClient).DownloadFile('`~baseURL~`.zip', 'C:\Users\vagrant\cdr.zip')`);
+            sh.exec(`$shell = new-object -com shell.application`);
+            sh.exec(`$shell.NameSpace('C:\Users\vagrant').CopyHere($shell.NameSpace('C:\Users\vagrant\cdr.zip').Items(), 0x14)`);
+            sh.exec(`del 'C:\Users\vagrant\cdr.zip'`);
         }
         else
         {
-            sh.stdin.writeln(`curl `~baseURL~`.tar.gz | tar -zxf -`);
+            sh.exec(`curl `~baseURL~`.tar.gz | tar -zxf -`);
         }
         // wait for completion
         sh.close();
@@ -170,6 +170,12 @@ private:
     string _setup; /// initial provisioning script
     string _tmpdir;
     bool _isUp;
+}
+
+void exec(ProcessPipes pipes, string cmd)
+{
+    writeln("\033[33m", cmd, "\033[0m");
+    pipes.stdin.writeln(cmd);
 }
 
 void close(ProcessPipes pipes)
@@ -203,7 +209,7 @@ void runBuild(Box box, string gitTag)
         cmd ~= " --only-" ~ box.modelS;
     cmd ~= " " ~ gitTag;
 
-    sh.stdin.writeln(cmd);
+    sh.exec(cmd);
     sh.close();
     // copy out created zip file
     box.scp("default:dmd."~gitTag~"."~box.platform~".zip", ".");
@@ -224,7 +230,7 @@ void combine(string gitTag)
     }
     // combine zips
     auto sh = box.shell();
-    sh.stdin.writeln("./create_dmd_release --combine "~gitTag);
+    sh.exec("./create_dmd_release --combine "~gitTag);
     sh.close();
     // copy out resulting zip
     box.scp("default:"~"dmd."~gitTag~".zip", ".");
