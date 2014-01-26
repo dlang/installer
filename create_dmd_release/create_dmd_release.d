@@ -131,9 +131,6 @@ version(Windows)
     immutable osDirName     = osDirNameWindows;
     immutable make          = "make";
     immutable useBitsSuffix = false; // Ie: "bin"/"lib" or "bin32"/"lib32"
-
-    immutable libCurlVersion = "7.34.0";
-    immutable libCurlZipURL = "http://downloads.dlang.org/other/libcurl-"~libCurlVersion~"-WinSSL-zlib-x86-x64.zip";
 }
 else version(Posix)
 {
@@ -823,23 +820,9 @@ void buildAll(Bits bits, bool dmdOnly=false)
         {
             copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
 
-            // The chm/libcurl stuff is Win32-only
+            // The chm stuff is Win32-only
             if(bits == Bits.bits32)
-            {
-                import std.net.curl, std.zip;
-                ZipArchive zip;
-                try
-                    zip = new ZipArchive(get!(HTTP, ubyte)(libCurlZipURL));
-                catch (CurlException e)
-                    errorMsg("Failed to download "~libCurlZipURL~".\r\n"~e.toString());
-                foreach (file; ["dmd2/windows/lib/curl.lib", "dmd2/windows/bin/libcurl.dll"])
-                {
-                    auto am = zip.directory[file];
-                    zip.expand(am);
-                    std.file.write(baseName(file), am.expandedData);
-                }
                 run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
-            }
         }
 
         // Copy phobos docs into dlang.org docs directory, because

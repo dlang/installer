@@ -244,6 +244,8 @@ void runBuild(Box box, string gitTag, bool combine)
         break;
     case OS.windows:
         sh.stdin.writeln(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
+        sh.stdin.writeln(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
+        sh.stdin.writeln(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
         rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`~
             ` --compiler=old-dmd\dmd2\windows\bin\dmd.exe`;
         break;
