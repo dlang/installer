@@ -158,7 +158,6 @@ private:
         sh.close();
     }
 
-    void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); enforce(wait(spawnShell(cmd)) == 0); }
     @property string platform() { return _model == Model._both ? osS : osS ~ "-" ~ modelS; }
     @property string osS() { return to!string(_os); }
     @property string modelS() { return _model == Model._both ? "" : to!string(cast(uint)_model); }
@@ -171,6 +170,8 @@ private:
     string _tmpdir;
     bool _isUp;
 }
+
+void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); enforce(wait(spawnShell(cmd)) == 0); }
 
 void exec(ProcessPipes pipes, string cmd)
 {
@@ -243,7 +244,7 @@ void runBuild(Box box, string gitTag)
 {
     auto sh = box.shell();
 
-    auto cmd = "./create_dmd_release --extras=extraBins --archive";
+    auto cmd = "./create_dmd_release --extras=extraBins --archive --use-clone=clones";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
     cmd ~= " " ~ gitTag;
@@ -273,6 +274,14 @@ void combine(string gitTag)
     sh.close();
     // copy out resulting zip
     box.scp("default:"~"dmd."~gitTag~".zip", ".");
+}
+
+void cloneSources(string gitTag, string tgtDir)
+{
+    auto prefix = "https://github.com/D-Programming-Language/";
+    auto fmt = "git clone --depth 1 -b "~gitTag~" "~prefix~"%1$s.git "~tgtDir~"/%1$s";
+    foreach (proj; allProjects)
+        run(fmt.format(proj));
 }
 
 int main(string[] args)
@@ -314,6 +323,8 @@ int main(string[] args)
         "https://raw.github.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin64/dmd.conf",
         buildPath(workDir, "old-dmd/dmd2/freebsd/bin64/dmd.conf"));
 
+    cloneSources(gitTag, workDir~"/clones");
+
     foreach (box; boxes)
     {
         box.up();
@@ -321,6 +332,7 @@ int main(string[] args)
         scope (failure) box.halt();
 
         copyExtraBinaries(workDir, box);
+        box.scp(workDir~"/clones", "default:");
         runBuild(box, gitTag);
     }
     combine(gitTag);
