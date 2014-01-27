@@ -46,15 +46,19 @@ if test "${1:0:2}" != "-v" ;then
 	ferror "Unknown first argument (-v)" "Exiting..."
 else
 	VER="${1:2}"
-	if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]]
+	VER_TYPE=0
+	[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$"-b"[0-9]+$ ]] && VER_TYPE=1
+	[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$"-rc"[0-9]+$ ]] && VER_TYPE=2
+	[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]] && VER_TYPE=10
+	if [ $VER_TYPE -eq 0 ]
 	then
-		ferror "incorrect version number" "Exiting..."
+		ferror "incorrect version number" "try '`basename $0` -h' for more information."
 	elif test ${VER:0:1} -ne 2
 	then
-		ferror "for dmd v2 only" "Exiting..."
-	elif test ${VER:0:1}${VER:2:3} -lt 2063
+		ferror "for dmd v2 only" "try '`basename $0` -h' for more information."
+	elif test ${VER:0:1}${VER:2:3} -lt 2065
 	then
-		ferror "dmd v2.063 and newer only" "Exiting..."
+		ferror "dmd v2.065 and newer only" "try '`basename $0` -h' for more information."
 	fi
 fi
 
@@ -107,6 +111,7 @@ DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"
 DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
+VERSION=$(sed 's/-/~/' <<<$VERSION) # replace dash by tilde
 if test "$2" = "-m64" ;then
 	ARCH="amd64"
 elif test "$2" = "-m32" ;then
@@ -301,7 +306,7 @@ else
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPENDS'
 	Suggests: '$SUGGESTS'
-	Provides: dmd'$MINOR'
+	Provides: '$UNZIPDIR-$MINOR'
 	Section: devel
 	Priority: optional
 	Homepage: http://dlang.org/
