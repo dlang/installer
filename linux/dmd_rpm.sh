@@ -52,13 +52,13 @@ else
 	[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]] && VER_TYPE=10
 	if [ $VER_TYPE -eq 0 ]
 	then
-		ferror "incorrect version number" "try '`basename $0` -h' for more information."
+		ferror "incorrect version number" "Exiting..."
 	elif test ${VER:0:1} -ne 2
 	then
-		ferror "for dmd v2 only" "try '`basename $0` -h' for more information."
+		ferror "for dmd v2 only" "Exiting..."
 	elif test ${VER:0:1}${VER:2:3} -lt 2065
 	then
-		ferror "dmd v2.065 and newer only" "try '`basename $0` -h' for more information."
+		ferror "dmd v2.065 and newer only" "Exiting..."
 	fi
 fi
 
