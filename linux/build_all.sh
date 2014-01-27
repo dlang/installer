@@ -89,15 +89,19 @@ fi
 
 
 # check version parameter
-if ! [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]$ || $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]]
+VER_TYPE=0
+[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$"-b"[0-9]+$ ]] && VER_TYPE=1
+[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$"-rc"[0-9]+$ ]] && VER_TYPE=2
+[[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]] && VER_TYPE=10
+if [ $VER_TYPE -eq 0 ]
 then
 	ferror "incorrect version number" "try '`basename $0` -h' for more information."
 elif test ${VER:0:1} -ne 2
 then
 	ferror "for dmd v2 only" "try '`basename $0` -h' for more information."
-elif test ${VER:0:1}${VER:2:3} -lt 2063
+elif test ${VER:0:1}${VER:2:3} -lt 2065
 then
-	ferror "dmd v2.063 and newer only" "try '`basename $0` -h' for more information."
+	ferror "dmd v2.065 and newer only" "try '`basename $0` -h' for more information."
 fi
 
 
