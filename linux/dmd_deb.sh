@@ -232,7 +232,7 @@ else
 
 	Files: usr/bin/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
-	echo "License: Digital Mars License
+	License: Digital Mars License
 
 	Files: usr/lib/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
