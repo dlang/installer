@@ -91,7 +91,7 @@ import std.regex;
 import std.stdio;
 import std.string;
 import std.typetuple;
-import std.zip;
+import common;
 version(Posix)
     import core.sys.posix.sys.stat;
 
@@ -131,9 +131,6 @@ version(Windows)
     immutable osDirName     = osDirNameWindows;
     immutable make          = "make";
     immutable useBitsSuffix = false; // Ie: "bin"/"lib" or "bin32"/"lib32"
-
-    immutable libCurlVersion = "7.34.0";
-    immutable libCurlZipURL = "http://downloads.dlang.org/other/libcurl-"~libCurlVersion~"-WinSSL-zlib-x86-x64.zip";
 }
 else version(Posix)
 {
@@ -251,8 +248,6 @@ void showHelp()
 
         --clean            Delete temporary dir (see above) and exit.
 
-        -j [N],--jobs=[N]  (Posix-only) Pass -j,--jobs through to GNU make.
-
         --only-32          Only build and package 32-bit.
         --only-64          Only build and package 64-bit.
 
@@ -269,7 +264,6 @@ bool skipBuild;
 bool skipPackage;
 bool doArchive;
 bool doCombine;
-int  numJobs = -1;
 bool do32Bit;
 bool do64Bit;
 
@@ -317,7 +311,6 @@ int main(string[] args)
             "extras",       &customExtrasDir,
             "archive",      &doArchive,
             "combine",      &doCombine,
-            "j|jobs",       &numJobs,
             "only-32",      &do32Bit,
             "only-64",      &do64Bit,
         );
@@ -364,12 +357,6 @@ int main(string[] args)
         if(doCombine)
         {
             errorMsg("--combine cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
-            return 1;
-        }
-
-        if(numJobs != -1)
-        {
-            errorMsg("--jobs flags cannot be used on Windows because it's unsupported in DM make.");
             return 1;
         }
     }
@@ -450,7 +437,7 @@ int main(string[] args)
             cleanAll();
 
         if(!skipBuild)
-            buildAll();
+            buildAll(branch);
 
         if(!skipPackage)
             createRelease(branch);
@@ -670,22 +657,22 @@ void cleanAll(Bits bits)
     }
 }
 
-void buildAll()
+void buildAll(string branch)
 {
     if(do32Bit)
-        buildAll(Bits.bits32);
+        buildAll(Bits.bits32, branch);
 
     if(do64Bit)
     {
         if(!do32Bit && lib64RequiresDmd32)
-            buildAll(Bits.bits32, true);
+            buildAll(Bits.bits32, branch, true);
 
-        buildAll(Bits.bits64);
+        buildAll(Bits.bits64, branch);
     }
 }
 
 /// dmdOnly is part of the lib64RequiresDmd32 hack.
-void buildAll(Bits bits, bool dmdOnly=false)
+void buildAll(Bits bits, string branch, bool dmdOnly=false)
 {
     static alreadyBuiltDocs = false;
 
@@ -712,12 +699,13 @@ void buildAll(Bits bits, bool dmdOnly=false)
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     auto hideStdout = verbose? "" : " > "~devNull;
-    auto jobs = numJobs==-1? "" : text(" --jobs=", numJobs);
+    version (Windows) auto jobs = ""; else auto jobs = " -j4";
     auto dmdEnv = " DMD=../dmd/src/dmd";
     auto isRelease = " RELEASE=1";
+    auto latest = " LATEST="~branch;
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~" -f "~targetMakefile;
+    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~latest~" -f "~targetMakefile;
 
     if(build64BitTools || bits == Bits.bits32)
     {
@@ -823,23 +811,9 @@ void buildAll(Bits bits, bool dmdOnly=false)
         {
             copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
 
-            // The chm/libcurl stuff is Win32-only
+            // The chm stuff is Win32-only
             if(bits == Bits.bits32)
-            {
-                import std.net.curl;
-                ZipArchive zip;
-                try
-                    zip = new ZipArchive(get!(HTTP, ubyte)(libCurlZipURL));
-                catch (CurlException e)
-                    errorMsg("Failed to download "~libCurlZipURL~".\r\n"~e.toString());
-                foreach (file; ["dmd2/windows/lib/curl.lib", "dmd2/windows/bin/libcurl.dll"])
-                {
-                    auto am = zip.directory[file];
-                    zip.expand(am);
-                    std.file.write(baseName(file), am.expandedData);
-                }
                 run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
-            }
         }
 
         // Copy phobos docs into dlang.org docs directory, because
@@ -1080,7 +1054,7 @@ void extractOsArchives(string branch)
 
         // Try combined 32/64-bit archives
         if(exists(archiveZip))
-            extract(archiveZip, outputDir);
+            extractZip(archiveZip, outputDir);
         else
         {
             // Try 32-bit only and 64-bit-only
@@ -1089,7 +1063,7 @@ void extractOsArchives(string branch)
                 archiveZip = archiveName~bitSuffix~".zip";
 
                 if(exists(archiveZip))
-                    extract(archiveZip, outputDir);
+                    extractZip(archiveZip, outputDir);
             }
         }
     }
@@ -1298,26 +1272,6 @@ void copyAttributes(string src, string dest)
     }
 }
 
-/// Copy files, creating destination directories as needed
-void copyFiles(string[] relativePaths, string srcPrefix, string destPrefix, bool delegate(string) filter = null)
-{
-    verboseMsg("Copying from '"~displayPath(srcPrefix)~"' to '"~displayPath(destPrefix)~"'");
-    foreach(path; relativePaths)
-    {
-        if(filter && !filter(path))
-            continue;
-
-        auto srcPath  = buildPath(srcPrefix,  path);
-        auto destPath = buildPath(destPrefix, path);
-
-        makeDir(dirName(destPath));
-
-        verboseMsg("    "~path);
-        copy(srcPath, destPath);
-        copyAttributes(srcPath, destPath);
-    }
-}
-
 /// Recursively copy the contents of a directory, excluding anything
 /// untracked or ignored by git.
 void copyDirVersioned(string src, string dest, bool delegate(string) filter = null)
@@ -1478,61 +1432,4 @@ string[] gitVersionedFiles(string path)
         versionedFiles.put(filename);
 
     return versionedFiles.data;
-}
-
-void extract(string archive, string outputDir)
-{
-    import std.zip;
-
-    infoMsg("Extracting "~displayPath(archive));
-
-    scope zip = new ZipArchive(std.file.read(archive));
-    foreach(name, am; zip.directory)
-    {
-        if(!am.expandedSize) continue;
-
-        const fromWindows = (am.madeVersion & 0xFF00) == 0x0000;
-
-        string path = buildPath(outputDir, fromWindows ? name.replace("\\", "/") : name);
-        auto dir = dirName(path);
-        if(dir != "" && !dir.exists)
-            mkdirRecurse(dir);
-        zip.expand(am);
-        if(verbose)
-            infoMsg(path);
-        std.file.write(path, am.expandedData);
-        version (Posix) if (fromWindows) continue;
-        std.file.setAttributes(path, am.fileAttributes);
-    }
-}
-
-void archiveZip(string inputDir, string archive)
-{
-    archive = absolutePath(archive);
-    infoMsg("Generating "~displayPath(archive));
-
-    scope zip = new ZipArchive();
-    auto parentDir = chomp(inputDir, baseName(inputDir));
-    foreach (de; dirEntries(inputDir, SpanMode.depth))
-    {
-        if(!de.isFile || de.baseName.startsWith(".git", ".DS_Store")) continue;
-        auto path = chompPrefix(de.name, parentDir);
-        if(verbose)
-            infoMsg(path);
-        zip.addMember(toArchiveMember(de, path));
-    }
-    if(exists(archive))
-        remove(archive);
-    std.file.write(archive, zip.build());
-}
-
-ArchiveMember toArchiveMember(ref DirEntry de, string path)
-{
-    auto am = new ArchiveMember();
-    am.compressionMethod = CompressionMethod.deflate;
-    am.time = de.timeLastModified;
-    am.name = path;
-    am.expandedData = cast(ubyte[])std.file.read(de.name);
-    am.fileAttributes = de.attributes;
-    return am;
 }
