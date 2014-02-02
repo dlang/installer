@@ -120,6 +120,8 @@ private:
                   vb.customize ["modifyvm", :id, "--memory", "4096"]
                   vb.customize ["modifyvm", :id, "--cpus", "4"]
                   vb.customize ["modifyvm", :id, "--accelerate3d", "off"]
+                  vb.customize ["modifyvm", :id, "--audio", "none"]
+                  vb.customize ["modifyvm", :id, "--usb", "off"]
                 end
             `;
         if (_os == OS.windows)
