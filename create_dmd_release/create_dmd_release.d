@@ -130,7 +130,8 @@ version(Windows)
 
     immutable osDirName     = osDirNameWindows;
     immutable make          = "make";
-    immutable useBitsSuffix = false; // Ie: "bin"/"lib" or "bin32"/"lib32"
+    immutable suffix32      = "";   // bin/lib  TODO: adapt scripts to use 32
+    immutable suffix64      = "64"; // bin64/lib64
 }
 else version(Posix)
 {
@@ -163,12 +164,15 @@ else version(Posix)
 
     version(OSX)
     {
-        immutable useBitsSuffix = false;
+        // TODO: adapt scripts to use 32/64
+        immutable suffix32      = ""; // bin/lib
+        immutable suffix64      = ""; // bin/lib
         immutable dll           = ".dylib";
     }
     else
     {
-        immutable useBitsSuffix = true;
+        immutable suffix32      = "32"; // bin32/lib32
+        immutable suffix64      = "64"; // bin64/lib64
         immutable dll           = ".so";
     }
 }
@@ -477,8 +481,6 @@ void init(string branch)
         cloneDir = defaultWorkDir;
     cloneDir = absolutePath(cloneDir);
 
-    auto suffix32 = useBitsSuffix? "32" : "";
-    auto suffix64 = useBitsSuffix? "64" : "";
     osDir = releaseDir ~ "/dmd2/" ~ osDirName;
     releaseBin32Dir = osDir ~ "/bin" ~ suffix32;
     releaseLib32Dir = osDir ~ "/lib" ~ suffix32;
@@ -622,8 +624,8 @@ void cleanAll(Bits bits)
     // common make arguments
     auto makecmd = make~makeModel~" -f"~targetMakefile;
 
-    // Skip 64-bit tools when not using separate bin32/bin64 dirs
-    if(useBitsSuffix || bits == Bits.bits32)
+    // Windows is 32-bit only currently
+    if (targetMakefile != "win64.mak")
     {
         infoMsg("Cleaning DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
@@ -640,8 +642,8 @@ void cleanAll(Bits bits)
     version(Windows)
         removeDir(cloneDir~"/phobos/generated");
 
-    // Skip 64-bit tools when not using separate bin32/bin64 dirs
-    if(useBitsSuffix || bits == Bits.bits32)
+    // Windows is 32-bit only currently
+    if (targetMakefile != "win64.mak")
     {
         infoMsg("Cleaning Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
