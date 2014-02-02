@@ -896,21 +896,19 @@ void createRelease(string branch)
     }
     else
     {
-        // Generated lib dir contains an empty "etc/c/zlib" that we shouldn't include.
-        auto excludeEtc = delegate bool(string file) => !file.startsWith("etc");
         if(do32Bit)
-            copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/32", releaseLib32Dir, excludeEtc);
-
-        if(do64Bit)
-            copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/64", releaseLib64Dir, excludeEtc);
-
-        version(Windows)
         {
-            if(do64Bit)
-                copyFile(cloneDir~"/druntime/lib/gcstub64.obj", releaseLib32Dir~"/gcstub64.obj");
-
-            if(do32Bit)
-                copyFile(cloneDir~"/druntime/lib/gcstub.obj",   releaseLib32Dir~"/gcstub.obj");
+            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~lib, releaseLib32Dir~"/"~libPhobos32~lib);
+            copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~dll, releaseLib32Dir~"/"~libPhobos32~dll);
+            version (Windows)
+                copyFile(cloneDir~"/druntime/lib/gcstub.obj", releaseLib32Dir~"/gcstub.obj");
+        }
+        if(do64Bit)
+        {
+            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~lib, releaseLib64Dir~"/"~libPhobos64~lib);
+            copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~dll, releaseLib64Dir~"/"~libPhobos64~dll);
+            version (Windows)
+                copyFile(cloneDir~"/druntime/lib/gcstub64.obj", releaseLib64Dir~"/gcstub64.obj");
         }
     }
 
