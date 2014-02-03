@@ -324,6 +324,13 @@ int main(string[] args)
 
     foreach (i, box; boxes)
     {
+        immutable combine = i == boxes.length - 1;
+
+        // skip a box if we already have its zip files
+        if (("dmd."~gitTag~"."~box.platform~".zip").exists &&
+            (!combine || ("dmd."~gitTag~".zip").exists))
+            continue;
+
         box.up();
         scope (success) box.destroy();
         scope (failure) box.halt();
@@ -334,7 +341,6 @@ int main(string[] args)
         box.scp("create_dmd_release.d common.d", "default:");
         box.scp(workDir~"/clones", "default:");
 
-        auto combine = i == boxes.length - 1;
         // copy all zips into the last box to combine them
         if (combine)
         {
