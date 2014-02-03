@@ -15,7 +15,8 @@
 !define VersionVisualD "0.3.37"
 
 
-!define BaseURL "http://downloads.dlang.org" ; alternative base: "http://downloads.dlang.org.s3-website-us-east-1.amazonaws.com"
+!define BaseURL "http://downloads.dlang.org"
+!define BaseURLAlt "http://ftp.digitalmars.com"
 !define VisualDBaseURL "https://github.com/D-Programming-Language/visuald/releases/download"
 
 
@@ -26,6 +27,7 @@
 ; If Download, the urls of the dmd.zip and dmc.zip
 !define DownloadDmd1ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version1}.zip"
 !define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version2ReleaseYear}/dmd.${Version2}.zip"
+!define DownloadDmd2ZipUrlAlt "${BaseURLAlt}/dmd.${Version2}.zip"
 !define DownloadDmcZipUrl  "${BaseURL}/other/dm${VersionDMC}c.zip"
 !define DownloadCurlZipUrl "${BaseURL}/other/libcurl-${VersionCurl}-WinSSL-zlib-x86-x64.zip"
 !define DownloadVisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/VisualD-v${VersionVisualD}.exe"
@@ -133,7 +135,13 @@ Section "-D2" Dmd2Files
     !ifdef Download
         ; Download the zip files
         inetc::get /caption "Downloading dmd.${Version2}.zip..." /popup "" "${DownloadDmd2ZipUrl}" "$INSTDIR\dmd2.zip" /end
-        Pop $0 # return value = exit code, "OK" means OK
+        Pop $R0
+        StrCmp $R0 "OK" done
+        inetc::get /caption "Downloading dmd.${Version2}.zip..." /popup "" "${DownloadDmd2ZipUrlAlt}" "$INSTDIR\dmd2.zip" /end
+        Pop $R0
+        StrCmp $R0 "OK" done
+        MessageBox MB_OK|MB_ICONSTOP "Failed to download dmd.${Version2}.zip"
+        done:
     !else
         FILE "/oname=$INSTDIR\dmd2.zip" "${DmdZipPath2}"
     !endif
@@ -508,4 +516,3 @@ Function un.onInit
     ; (for now)
     ;!insertmacro MUI_UNGETLANGUAGE
 FunctionEnd
-
