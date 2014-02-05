@@ -273,16 +273,15 @@ else
 	;
 	; The special name %@P% is replaced with the path to this file
 	;
-	
-	[Environment]
 
-	DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import' | sed 's/^\t//' > etc/dmd.conf
-	if [ "$ARCH" = "amd64" ]; then
-		echo -n " -L-L/usr/lib/$DIR64 -L-L/usr/lib/$DIR32" >> etc/dmd.conf
-	elif [ "$ARCH" = "i386" ]; then
-		echo -n " -L-L/usr/lib/$DIR32 -L-L/usr/lib/$DIR64" >> etc/dmd.conf
-	fi
-	echo " -L--no-warn-search-mismatch -L--export-dynamic" >> etc/dmd.conf
+	[Environment32]
+
+	DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib/i386-linux-gnu -L--export-dynamic
+
+	[Environment64]
+
+	DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib/x86_64-linux-gnu -L--export-dynamic
+	' | sed 's/^\t//' > etc/dmd.conf
 
 
 	# create conffiles file

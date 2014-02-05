@@ -250,13 +250,18 @@ do
 		; The special name %@P% is replaced with the path to this file
 		;
 		
-		[Environment]
-		
-		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import' | sed 's/^\t\t//' > etc/dmd.conf
-		if [ "$ARCH" = "x86_64" ]; then
-			echo -n ' -L-L/usr/lib64' >> etc/dmd.conf
+		[Environment32]
+
+		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib -L--export-dynamic
+		' | sed 's/^\t\t//' > etc/dmd.conf
+		if [ "$ARCH" = "x86_64" ]
+		then
+			echo -en '
+			[Environment64]
+
+			DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib64 -L--export-dynamic
+			' | sed 's/^\t\t\t//' >> etc/dmd.conf
 		fi
-		echo ' -L-L/usr/lib -L--no-warn-search-mismatch -L--export-dynamic' >> etc/dmd.conf
 
 
 		# change folders and files permissions
