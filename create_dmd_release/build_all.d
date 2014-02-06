@@ -266,11 +266,40 @@ void runBuild(Box box, string gitTag, bool combine)
     sh.exec(cmd);
     if (combine)
         sh.exec(rdmd~" create_dmd_release --extras=extraBins --combine --use-clone=clones "~gitTag);
+
     sh.close();
     // copy out created zip files
     box.scp("default:dmd."~gitTag~"."~box.platform~".zip", ".");
     if (combine)
         box.scp("default:dmd."~gitTag~".zip", ".");
+
+    // Build package installers
+    immutable ver = gitTag.chompPrefix("v");
+
+    final switch (box._os)
+    {
+    case OS.freebsd:
+        break;
+
+    case OS.linux:
+        // TBD
+        break;
+
+    case OS.windows:
+    {
+        sh = box.shell();
+        sh.stdin.writeln(`cd clones\installer\windows`);
+        sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis' /DVersion2=`~ver~` dinstaller.nsi`);
+        sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
+        sh.close();
+        box.scp("default:dmd-"~ver~".exe", ".");
+    }
+    break;
+
+    case OS.osx:
+        // TBD
+        break;
+    }
 }
 
 void cloneSources(string gitTag, string tgtDir)
