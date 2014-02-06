@@ -98,7 +98,7 @@ fi
 for DNAME in fedora openSUSE
 do
 	# assign variables
-	MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
+	MAINTAINER="Martin Nowak <code@dawg.eu>"
 	VERSION=${1:2}
 	MAJOR=0
 	MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
