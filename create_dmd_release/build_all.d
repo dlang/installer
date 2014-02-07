@@ -10,27 +10,34 @@ import common;
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 
-// from http://www.vagrantbox.es/
+// Open Source OS boxes are from http://www.vagrantbox.es/
+// Note: The pull request to add the FreeBSD-8.4 boxes to vagrantbox.es is still pending, https://github.com/garethr/vagrantboxes-heroku/pull/246.
 
-// FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
+/// Name: create_dmd_release-freebsd-64
+/// VagrantBox.es: FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
 enum freebsd_32 = Box(OS.freebsd, Model._32, "http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box",
                       "sudo pkg_add -r curl git gmake;");
 
-// FreeBSD 8.4 amd64 (minimal, No Guest Additions, UFS)
+// Note: pull request for vagrantbox.es pending
+/// Name: create_dmd_release-freebsd-64
+/// VagrantBox.es: FreeBSD 8.4 amd64 (minimal, No Guest Additions, UFS)
 enum freebsd_64 = Box(OS.freebsd, Model._64, "http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box",
                       "sudo pkg_add -r curl git gmake;");
 
-// Puppetlabs Debian 6.0.7 x86_64, VBox 4.2.10, No Puppet or Chef
+/// Name: create_dmd_release-linux
+/// VagrantBox.es: Puppetlabs Debian 6.0.7 x86_64, VBox 4.2.10, No Puppet or Chef
 enum linux_both = Box(OS.linux, Model._both, "http://puppet-vagrant-boxes.puppetlabs.com/debian-607-x64-vbox4210-nocm.box",
                     "sudo apt-get -y update; sudo apt-get -y install git g++-multilib;");
 
-// local boxes
+/// OSes that require licenses must be setup manually
 
-// Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
+/// Name: create_dmd_release-osx
+/// Setup: Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
 enum osx_both = Box(OS.osx, Model._both, null,
                   null);
 
-// Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
+/// Name: create_dmd_release-windows
+/// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
 enum windows_both = Box(OS.windows, Model._both, null,
                   null);
 
