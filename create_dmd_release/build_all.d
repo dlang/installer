@@ -5,7 +5,7 @@ A working dmd installation to compile this script (also requires libcurl).
 Install Vagrant (https://learnchef.opscode.com/screencasts/install-vagrant/)
 Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-box/)
 +/
-import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string;
+import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
 import common;
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
@@ -177,54 +177,40 @@ void close(ProcessPipes pipes)
 }
 
 //------------------------------------------------------------------------------
+
+auto addPrefix(R)(R rng, string prefix)
+{
+    return rng.map!(a => prefix ~ a)();
+}
+
+//------------------------------------------------------------------------------
 // Copy additional release binaries from the previous release
 
-void copyExtraBinaries(string workDir, Box box)
+void prepareExtraBins(string workDir)
 {
-    import std.range;
+    auto winBins = [
+        "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
+        "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
+        "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll",
+    ].addPrefix("bin/");
+    auto winLibs = [
+        "advapi32.lib", "COMCTL32.LIB", "comdlg32.lib", "CTL3D32.LIB",
+        "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
+        "rpcrt4.lib", "shell32.lib", "snn.lib", "user32.lib", "uuid.lib",
+        "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib",
+    ].addPrefix("lib/");
+    auto winFiles = chain(winBins, winLibs).array();
 
-    static auto addPrefix(R)(string prefix, R rng)
-    {
-        return rng.map!(a => prefix ~ a)();
-    }
+    auto extraBins = [
+        "windows" : winFiles,
+        "linux" : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
+        "freebsd" : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
+        "osx" : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
+    ];
 
-    string[] files;
-    final switch (box._os)
-    {
-    case OS.windows:
-        enum binFiles = [
-            "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
-            "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
-            "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll",
-        ];
-        enum libFiles = [
-            "advapi32.lib", "COMCTL32.LIB", "comdlg32.lib", "CTL3D32.LIB",
-            "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
-            "rpcrt4.lib", "shell32.lib", "snn.lib", "user32.lib", "uuid.lib",
-            "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib",
-        ];
-        files = addPrefix("dmd2/windows/", chain(addPrefix("bin/", binFiles), addPrefix("lib/", libFiles)))
-            .array();
-        break;
-
-    case OS.linux:
-        files = addPrefix("dmd2/linux/", ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"])
-            .array();
-        break;
-
-    case OS.freebsd:
-        // no 64-bit binaries for FreeBSD :(
-        files = addPrefix("dmd2/freebsd/", ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"])
-            .array();
-        break;
-
-    case OS.osx:
-        files = addPrefix("dmd2/osx/", ["bin/dumpobj", "bin/obj2asm", "bin/shell"])
-            .array();
-        break;
-    }
-    copyFiles(files, workDir~"/old-dmd", workDir~"/extraBins");
-    box.scp(workDir~"/extraBins", "default:");
+    foreach (os, files; extraBins)
+        copyFiles(files.addPrefix("dmd2/"~os~"/").array(),
+                  workDir~"/old-dmd", workDir~"/"~os~"/extraBins");
 }
 
 //------------------------------------------------------------------------------
@@ -350,6 +336,7 @@ int main(string[] args)
         buildPath(workDir, "old-dmd/dmd2/freebsd/bin64/dmd.conf"));
 
     cloneSources(gitTag, workDir~"/clones");
+    prepareExtraBins(workDir);
 
     foreach (i, box; boxes)
     {
@@ -364,20 +351,16 @@ int main(string[] args)
         scope (success) box.destroy();
         scope (failure) box.halt();
 
-        box.scp(workDir~"/old-dmd", "default:");
-        copyExtraBinaries(workDir, box);
+        auto toCopy = ["old-dmd", "clones", box.osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
+        box.scp(toCopy, "default:");
         // copy create_dmd_release.d and dependencies
         box.scp("create_dmd_release.d common.d", "default:");
-        box.scp(workDir~"/clones", "default:");
 
         // copy all zips into the last box to combine them
         if (combine)
         {
-            foreach (b; boxes[0 .. $ - 1])
-            {
-                auto zip = "dmd."~gitTag~"."~b.platform~".zip";
-                box.scp(zip, "default:"~zip);
-            }
+            toCopy = boxes[0 .. $ - 1].map!(b => "dmd."~gitTag~"."~b.platform~".zip").join(" ");
+            box.scp(toCopy, "default:");
         }
 
         runBuild(box, gitTag, combine);
