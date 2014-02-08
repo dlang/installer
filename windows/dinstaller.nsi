@@ -1,3 +1,10 @@
+; Release Manager:
+; Please use the special build of NSIS that supports large strings.
+; Updating the PATH will often not work or work incorrectly with the
+; regular build of NSIS.
+;
+; http://nsis.sourceforge.net/Special_Builds
+
 ;--------------------------------------------------------
 ; Defines
 ;--------------------------------------------------------
