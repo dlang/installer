@@ -15,8 +15,8 @@ ferror(){
 
 
 # check if in debian like system
-if test ! -f /etc/debian_version ; then
-	ferror "Refusing to build on a non-debian like system" "Exiting..."
+if test ! -f /etc/redhat-release ; then
+	ferror "Refusing to build on a non-redhat like system" "Exiting..."
 fi
 
 
@@ -291,31 +291,33 @@ do
 		Version: '$VERSION'
 		Release: '$REVISION'
 		Summary: Digital Mars D Compiler
-		
+
 		Group: Development/Languages
 		License: see /usr/share/doc/dmd/copyright
 		URL: http://dlang.org/
 		Packager: '$MAINTAINER'
-		
+
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
 		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION'
-		
+
+		%global __requires_exclude ^libphobos2\\.so.*$
+
 		%description
 		D is a systems programming language. Its focus is on combining the power and
 		high performance of C and C++ with the programmer productivity of modern
 		languages like Ruby and Python. Special attention is given to the needs of
 		quality assurance, documentation, management, portability and reliability.
-		
+
 		The D language is statically typed and compiles directly to machine code.
 		It\047s multiparadigm, supporting many programming styles: imperative,
 		object oriented, functional, and metaprogramming. It\047s a member of the C
 		syntax family, and its appearance is very similar to that of C++.
-		
+
 		It is not governed by a corporate agenda or any overarching theory of
 		programming. The needs and contributions of the D programming community form
 		the direction it goes.
-		
+
 		Main designer: Walter Bright
 
 		%post
@@ -325,7 +327,7 @@ do
 		%postun
 
 		ldconfig || :
-		
+
 		%files' | sed 's/^\t\t//' > dmd.spec
 
 
@@ -343,7 +345,6 @@ do
 		echo >> dmd.spec
 		mkdir -p $RPMDIR
 		echo "%define _rpmdir $RPMDIR" >> dmd.spec
-
 
 		# create rpm file
 		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH dmd.spec
