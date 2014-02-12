@@ -438,7 +438,7 @@ int main(string[] args)
 
         // No need to clean if we just cloned, or if we're not building.
         if(skipClone && !skipBuild)
-            cleanAll();
+            cleanAll(branch);
 
         if(!skipBuild)
             buildAll(branch);
@@ -601,16 +601,16 @@ void ensureSources()
     ensureDir(cloneDir~"/installer");
 }
 
-void cleanAll()
+void cleanAll(string branch)
 {
     if(do32Bit)
-        cleanAll(Bits.bits32);
+        cleanAll(Bits.bits32, branch);
 
     if(do64Bit)
-        cleanAll(Bits.bits64);
+        cleanAll(Bits.bits64, branch);
 }
 
-void cleanAll(Bits bits)
+void cleanAll(Bits bits, string branch)
 {
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
@@ -619,10 +619,11 @@ void cleanAll(Bits bits)
     auto bitsStr        = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
+    auto latest = " LATEST="~branch;
     auto hideStdout = verbose? "" : " > "~devNull;
 
     // common make arguments
-    auto makecmd = make~makeModel~" -f"~targetMakefile;
+    auto makecmd = make~makeModel~latest~" -f"~targetMakefile;
 
     // Windows is 32-bit only currently
     if (targetMakefile != "win64.mak")
