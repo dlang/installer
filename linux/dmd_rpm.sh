@@ -295,7 +295,7 @@ do
 		Group: Development/Languages
 		License: see /usr/share/doc/dmd/copyright
 		URL: http://dlang.org/
-		Packager: Jordi Sayol <g.sayol@yahoo.es>
+		Packager: '$MAINTAINER'
 		
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
