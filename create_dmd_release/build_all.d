@@ -239,9 +239,14 @@ void runBuild(Box box, string gitTag, bool combine)
             " --compiler=old-dmd/dmd2/linux/bin64/dmd";
         break;
     case OS.windows:
-        sh.stdin.writeln(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
-        sh.stdin.writeln(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
-        sh.stdin.writeln(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
+        // update DMC's snn.lib and link.exe
+        sh.exec(`copy old-dmd\dmd2\windows\bin\link.exe C:\dm\bin\link.exe`);
+        sh.exec(`copy old-dmd\dmd2\windows\lib\snn.lib C:\dm\lib\snn.lib`);
+        // copy libcurl needed for create_dmd_release and dlang.org
+        sh.exec(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
+        sh.exec(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
+        sh.exec(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
+
         rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`~
             ` --compiler=old-dmd\dmd2\windows\bin\dmd.exe`;
         break;
