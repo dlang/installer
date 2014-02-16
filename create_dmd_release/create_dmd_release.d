@@ -1410,15 +1410,10 @@ void gitClone(string repo, string path, string branch=null)
 
     infoMsg("Cloning: "~repo);
     auto quietSwitch = verbose? "" : "-q ";
-    run("git clone "~quietSwitch~quote(repo)~" "~path);
     if(branch != "")
-    {
-        auto saveDir = getcwd();
-        scope(exit) changeDir(saveDir);
-        changeDir(path);
-
-        run("git checkout "~quietSwitch~quote(branch));
-    }
+        run("git clone --depth 1 -b "~quote(branch)~" "~quietSwitch~quote(repo)~" "~path);
+    else
+        run("git clone --depth 1 "~quietSwitch~quote(repo)~" "~path);
 }
 
 string[] gitVersionedFiles(string path)
