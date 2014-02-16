@@ -25,6 +25,20 @@ void copyFiles(string[] files, string srcDir, string dstDir, bool delegate(strin
     }
 }
 
+void copyFile(string src, string dst)
+{
+    writefln("Copying file '%s' to '%s'.", src, dst);
+    mkdirRecurse(dirName(dst));
+    copy(src, dst);
+    setAttributes(dst, getAttributes(src));
+}
+
+void copyFileIfExists(string src, string dst)
+{
+    if(exists(src))
+        copyFile(src, dst);
+}
+
 //------------------------------------------------------------------------------
 // tmpfile et. al.
 
