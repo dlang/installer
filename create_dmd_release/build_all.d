@@ -319,10 +319,12 @@ int main(string[] args)
 
     enum oldDMD = "dmd.2.065.b1.zip"; // TODO: determine from gitTag
     enum optlink = "optlink.zip";
+    enum libC = "snn.lib";
     enum libCurl = "libcurl-7.34.0-WinSSL-zlib-x86-x64.zip";
 
     fetchFile("http://ftp.digitalmars.com/"~oldDMD, cacheDir~"/"~oldDMD);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
+    fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl);
 
     // Get previous dmd release
@@ -330,6 +332,9 @@ int main(string[] args)
     // Get latest optlink
     remove(workDir~"/old-dmd/dmd2/windows/bin/link.exe");
     extractZip(cacheDir~"/"~optlink, workDir~"/old-dmd/dmd2/windows/bin");
+    // Get latest libC (snn.lib)
+    remove(workDir~"/old-dmd/dmd2/windows/lib/snn.lib");
+    copyFile(cacheDir~"/"~libC, workDir~"/old-dmd/dmd2/windows/lib/"~libC);
     // Get libcurl for windows
     extractZip(cacheDir~"/"~libCurl, workDir~"/old-dmd");
 
