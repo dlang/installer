@@ -75,7 +75,7 @@ struct Box
     void halt()
     {
         try
-            if (_isUp) run("cd "~_tmpdir~" && vagrant halt -f");
+            if (_isUp) run("cd "~_tmpdir~" && vagrant halt");
         finally
             _isUp = false;
     }
