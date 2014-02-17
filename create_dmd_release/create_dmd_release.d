@@ -1329,21 +1329,6 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
     }
 }
 
-/// Like std.file.copy, but with verbose logging and auto-creates dest directory
-void copyFile(string src, string dest)
-{
-    verboseMsg("Copying from '"~displayPath(src)~"' to '"~displayPath(dest)~"'");
-    makeDir(dirName(dest));
-    copy(src, dest);
-    copyAttributes(src, dest);
-}
-
-void copyFileIfExists(string src, string dest)
-{
-    if(exists(src))
-        copyFile(src, dest);
-}
-
 // External Tools -----------------------
 
 /// Check if running "tool --help" succeeds. If not, returns false.
