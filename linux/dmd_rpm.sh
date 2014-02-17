@@ -15,8 +15,8 @@ ferror(){
 
 
 # check if in debian like system
-if test ! -f /etc/redhat-release ; then
-	ferror "Refusing to build on a non-redhat like system" "Exiting..."
+if test ! -f /etc/debian_version ; then
+	ferror "Refusing to build on a non-debian like system" "Exiting..."
 fi
 
 
