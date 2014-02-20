@@ -299,9 +299,7 @@ do
 
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
-		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION'
-
-		%global __requires_exclude ^libphobos2\\.so.*$
+		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION', '$SO_LIB.$SO_VERSION'
 
 		%description
 		D is a systems programming language. Its focus is on combining the power and
