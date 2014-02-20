@@ -301,6 +301,8 @@ do
 		Requires: '$DEPEND'
 		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION', '$SO_LIB.$SO_VERSION'
 
+		%global __requires_exclude ^libphobos2\\.so.*$
+
 		%description
 		D is a systems programming language. Its focus is on combining the power and
 		high performance of C and C++ with the programmer productivity of modern
