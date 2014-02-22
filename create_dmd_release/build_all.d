@@ -256,14 +256,14 @@ void runBuild(Box box, string gitTag, bool combine)
         break;
     }
 
-    auto cmd = rdmd~" create_dmd_release --extras=extraBins --archive --use-clone=clones";
+    auto cmd = rdmd~" create_dmd_release -v --extras=extraBins --archive --use-clone=clones";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
     cmd ~= " " ~ gitTag;
 
     sh.exec(cmd);
     if (combine)
-        sh.exec(rdmd~" create_dmd_release --extras=extraBins --combine --use-clone=clones "~gitTag);
+        sh.exec(rdmd~" create_dmd_release -v --extras=extraBins --combine --use-clone=clones "~gitTag);
 
     sh.close();
     // copy out created zip files
