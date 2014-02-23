@@ -194,18 +194,17 @@ do
 
 
 		# install include
-		find ../$UNZIPDIR/src/ -iname "*.mak" -print0 | xargs -0 rm
-		mkdir -p usr/include/dmd/druntime/
-		cp -Rf ../$UNZIPDIR/src/phobos/ usr/include/dmd
-		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/dmd/druntime
+		mkdir -p usr/include/dmd/{phobos,druntime}
+		cp -Rf ../$UNZIPDIR/src/phobos/{std,etc} usr/include/dmd/phobos/
+		cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/dmd/druntime/
+		# remove unneeded folder
+		rm -rf usr/include/dmd/phobos/etc/c/zlib
 
 
 		# install samples and HTML
 		mkdir -p usr/share/dmd/
 		cp -Rf ../$UNZIPDIR/samples/ usr/share/dmd
 		cp -Rf ../$UNZIPDIR/html/ usr/share/dmd
-		# remove unneeded files
-		find usr/share/dmd/html -regex ".*\.\(d\|c\|h\|lib\|obj\)" -print0 | xargs -0 rm -f
 
 
 		# install man pages
@@ -251,14 +250,12 @@ do
 		;
 		
 		[Environment32]
-
 		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib -L--export-dynamic
 		' | sed 's/^\t\t//' > etc/dmd.conf
 		if [ "$ARCH" = "x86_64" ]
 		then
 			echo -en '
 			[Environment64]
-
 			DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib64 -L--export-dynamic
 			' | sed 's/^\t\t\t//' >> etc/dmd.conf
 		fi
