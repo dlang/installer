@@ -299,7 +299,7 @@ do
 
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
-		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION'
+		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION', '$SO_LIB.$SO_VERSION'
 
 		%global __requires_exclude ^libphobos2\\.so.*$
 
