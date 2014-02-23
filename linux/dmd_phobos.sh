@@ -110,7 +110,7 @@ fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"
-DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.zip"
+DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.linux.zip"
 VERSION=$(sed 's/-/~/' <<<$VERSION) # replace dash by tilde
 if test "$2" = "-m64" ;then
 	ARCH="amd64"
