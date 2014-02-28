@@ -882,6 +882,7 @@ void createRelease(string branch)
     }
     copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
     copyDirVersioned(cloneDir~"/dmd/docs/man", releaseDir~"/dmd2/man");
+    copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
     makeDir(releaseDir~"/dmd2/html/d/zlib");
     copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
     copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");
