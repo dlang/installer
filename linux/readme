@@ -24,17 +24,6 @@ Works with dmd 2.063 and newer.
 
 
 
-"dmd_arch.sh"
-============
-Script to create installable packages for Arch Linux.
-Run it with dmd version and model as argument and you'll get a package in the current directory.
-Resulting package should be installable on Arch Linux systems.
-If "dmd.x.xxx.zip" already exist in the current folder will be used, otherwise will try to download first.
-If "dmd-completion" file is in the script folder, will be included in the package.
-Works with dmd 2.063 and newer.
-
-
-
 "dmd_win.sh"
 ============
 Script to create 32-bit installers for Windows systems.
@@ -43,17 +32,6 @@ Resulting package should be installable on Windows systems. Tested in Windows XP
 This script needs "dmd.x.xxx.zip", "dmc.zip" and "curl-x.xx.x-dmd-win32.zip".
 If they already exists in the current folder will be used, otherwise will try to download first.
 Works with dmd 2.063 and newer.
-
-
-
-"dmd_apt.sh"
-============
-Script to build a minimalist apt server for dmd in a single directory.
-Run it with dmd version as argument.
-Requires both (32-bit and 64-bit) dmd deb files in the current directory, and a PGP key.
-Create an apt folder in the current directory and generate these files in it:
-Packages, Packages.gz, Release, Release.gpg, <public_key>.key, and symbolic links to both deb packages.
-Works with dmd v2.058 and newer.
 
 
 
