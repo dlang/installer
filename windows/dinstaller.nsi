@@ -9,9 +9,21 @@
 ; Defines
 ;--------------------------------------------------------
 
-; Version
-;!define Version2 "2.064.2" ; <--- UPDATE
-!define Version2ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
+; Versions
+; --------
+
+; D2
+; The version will be pulled from the VERSION file in the dmd
+; repository. Change the path to match.
+!define D2VersionPath "..\..\dmd\VERSION"
+!define /file Version2 ${D2VersionPath}
+
+; or manually the verison manually:
+;!define Version2 "2.065"
+
+!define Version2ReleaseYear "2014" ; S3 file hosting includes the year in the URL so update this as needed
+
+
 !define Version1 "1.076"
 !define Version1ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
 
