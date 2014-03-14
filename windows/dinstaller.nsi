@@ -9,6 +9,14 @@
 ; Defines
 ;--------------------------------------------------------
 
+; Installer Type
+; --------------
+
+; Download zip from website. Comment out to embed zip instead (be sure to set
+; paths below).
+!define Download
+
+
 ; Versions
 ; --------
 
@@ -24,26 +32,30 @@
 !define Version2ReleaseYear "2014" ; S3 file hosting includes the year in the URL so update this as needed
 
 
+; D1
 !define Version1 "1.076"
 !define Version1ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
 
+
+; DMC
 !define VersionDMC "857"
 
-!define VersionCurl "7.34.0"
 
+; Extras
+!define VersionCurl "7.34.0"
 !define VersionVisualD "0.3.37"
 
+
+
+; URLS
+; ----
 
 !define BaseURL "http://downloads.dlang.org"
 !define BaseURLAlt "http://ftp.digitalmars.com"
 !define VisualDBaseURL "https://github.com/D-Programming-Language/visuald/releases/download"
 
 
-
-; Download zip from website, or include the compressed zip?
-!define Download
-
-; If Download, the urls of the dmd.zip and dmc.zip
+; The URLs to the release zips (used when Download is defined)
 !define DownloadDmd1ZipUrl "${BaseURL}/releases/${Version1ReleaseYear}/dmd.${Version1}.zip"
 !define DownloadDmd2ZipUrl "${BaseURL}/releases/${Version2ReleaseYear}/dmd.${Version2}.zip"
 !define DownloadDmd2ZipUrlAlt "${BaseURLAlt}/dmd.${Version2}.zip"
@@ -51,12 +63,14 @@
 !define DownloadCurlZipUrl "${BaseURL}/other/libcurl-${VersionCurl}-WinSSL-zlib-x86-x64.zip"
 !define DownloadVisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/VisualD-v${VersionVisualD}.exe"
 
-; If not Download, the paths of dmd.zip and dmc.zip
+; The paths to the release zips (used when Download isn't defined)
 !define DmdZipPath1 "dmd.${Version1}.zip"
 !define DmdZipPath2 "dmd.${Version2}.zip"
 !define DmcZipPath "dm${VersionDMC}c.zip"
 !define CurlZipPath "libcurl-${VersionCurl}-WinSSL-zlib-x86-x64.zip"
 !define VisualDPath "VisualD-v${VersionVisualD}.exe"
+
+
 
 ;--------------------------------------------------------
 ; Includes
@@ -65,6 +79,7 @@
 !include "MUI.nsh"
 !include "EnvVarUpdate.nsh"
 !include "ReplaceInFile.nsh"
+
 
 ;--------------------------------------------------------
 ; General definitions
@@ -85,6 +100,7 @@ InstallDirRegKey HKCU "Software\D" ""
 ; This is so no one can corrupt the installer
 CRCCheck force
 
+
 ;--------------------------------------------------------
 ; Interface settings
 ;--------------------------------------------------------
@@ -95,14 +111,16 @@ CRCCheck force
 !define MUI_ICON "installer-icon.ico"
 !define MUI_UNICON "uninstaller-icon.ico"
 
+
 ;--------------------------------------------------------
-; Langauge selection dialog settings
+; Language selection dialog settings
 ;--------------------------------------------------------
 
 ; Remember the installation language
 !define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
 !define MUI_LANGDLL_REGISTRY_KEY "Software\D"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
+
 
 ;--------------------------------------------------------
 ; Installer pages
@@ -120,6 +138,7 @@ CRCCheck force
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
+
 ;--------------------------------------------------------
 ; The languages
 ;--------------------------------------------------------
@@ -127,18 +146,15 @@ CRCCheck force
 !insertmacro MUI_LANGUAGE "English"
 ;!insertmacro MUI_LANGUAGE "Spanish"
 
-;--------------------------------------------------------
-; Reserve files needed by the installation
-;--------------------------------------------------------
 
+; Reserve files needed by the installation
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
 
 ;--------------------------------------------------------
-; Required section: main program files,
-; registry entries, etc.
+; Sections
 ;--------------------------------------------------------
-;
+
 SectionGroup /e "D2"
 
 Section "-D2" Dmd2Files
@@ -202,6 +218,7 @@ Section "-D2" Dmd2Files
 
 SectionEnd
 
+
 Section "cURL support" cURLFiles
 
     ; This section is mandatory
@@ -227,6 +244,7 @@ Section "cURL support" cURLFiles
     Delete "$INSTDIR\curl.zip"
 
 SectionEnd
+
 
 Section "Detect MSVC" DetectMSVC
     ClearErrors
@@ -287,6 +305,7 @@ Section "Detect MSVC" DetectMSVC
 
 SectionEnd
 
+
 Section "Add to PATH" AddD2ToPath
 
     ; Add dmd 2 directories to path (for all users)
@@ -345,6 +364,7 @@ Section /o "-D1" Dmd1Files
 
 SectionEnd
 
+
 Section /o "Add to PATH" AddD1ToPath
 
     ; Add dmd 1 directories to path (for all users)
@@ -356,6 +376,7 @@ Section /o "Add to PATH" AddD1ToPath
 SectionEnd
 
 SectionGroupEnd
+
 
 SectionGroup "dmc"
 
@@ -402,6 +423,7 @@ Section "-dmc" DmcFiles
 
 SectionEnd
 
+
 Section "Add to PATH" AddDmcToPath
 
     ; Add dmc directories to path (for all users)
@@ -413,6 +435,7 @@ Section "Add to PATH" AddDmcToPath
 SectionEnd
 
 SectionGroupEnd
+
 
 Section "Start Menu Shortcuts" StartMenuShortcuts
     CreateDirectory "$SMPROGRAMS\D"
@@ -464,6 +487,7 @@ Section "Visual D" VisualD
 
 SectionEnd
 
+
 ;--------------------------------------------------------
 ; Installer functions
 ;--------------------------------------------------------
@@ -477,6 +501,7 @@ FunctionEnd
 
 ; Contains descriptions of components and other stuff
 !include dinstaller_descriptions.nsh
+
 
 ;--------------------------------------------------------
 ; Uninstaller
@@ -523,6 +548,7 @@ Section "Uninstall"
     RMDir /r /REBOOTOK "$SMPROGRAMS\D"
 
 SectionEnd
+
 
 ;--------------------------------------------------------
 ; Uninstaller functions
