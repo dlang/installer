@@ -345,11 +345,11 @@ int main(string[] args)
 
     // Get missing FreeBSD dmd.conf, this is a bug in 2.065.0-b1 and should be fixed in newer releases
     fetchFile(
-        "https://raw.github.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin32/dmd.conf",
+        "https://raw.githubusercontent.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin32/dmd.conf",
         buildPath(workDir, "old-dmd/dmd2/freebsd/bin32/dmd.conf"));
 
     fetchFile(
-        "https://raw.github.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin64/dmd.conf",
+        "https://raw.githubusercontent.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin64/dmd.conf",
         buildPath(workDir, "old-dmd/dmd2/freebsd/bin64/dmd.conf"));
 
     cloneSources(gitTag, workDir~"/clones");
