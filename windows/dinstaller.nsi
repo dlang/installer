@@ -24,7 +24,9 @@
 ; The version will be pulled from the VERSION file in the dmd
 ; repository. Change the path to match.
 !define D2VersionPath "..\..\dmd\VERSION"
-!define /file Version2 ${D2VersionPath}
+!ifndef Version2
+    !define /file Version2 ${D2VersionPath}
+!endif
 
 ; or manually the verison manually:
 ;!define Version2 "2.065"
