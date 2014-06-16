@@ -287,7 +287,7 @@ void runBuild(Box box, string gitTag, bool combine)
     {
         sh = box.shell();
         sh.stdin.writeln(`cd clones\installer\windows`);
-        sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis' dinstaller.nsi`);
+        sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis' /DVersion2=`~ver~` dinstaller.nsi`);
         sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
         sh.close();
         box.scp("default:dmd-"~ver~".exe", ".");
@@ -322,7 +322,7 @@ int main(string[] args)
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
-    enum oldDMD = "dmd.2.065.b1.zip"; // TODO: determine from gitTag
+    enum oldDMD = "dmd.2.065.0.zip"; // TODO: determine from gitTag
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.34.0-WinSSL-zlib-x86-x64.zip";
@@ -342,15 +342,6 @@ int main(string[] args)
     copyFile(cacheDir~"/"~libC, workDir~"/old-dmd/dmd2/windows/lib/"~libC);
     // Get libcurl for windows
     extractZip(cacheDir~"/"~libCurl, workDir~"/old-dmd");
-
-    // Get missing FreeBSD dmd.conf, this is a bug in 2.065.0-b1 and should be fixed in newer releases
-    fetchFile(
-        "https://raw.githubusercontent.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin32/dmd.conf",
-        buildPath(workDir, "old-dmd/dmd2/freebsd/bin32/dmd.conf"));
-
-    fetchFile(
-        "https://raw.githubusercontent.com/D-Programming-Language/dmd/"~gitTag~"/ini/freebsd/bin64/dmd.conf",
-        buildPath(workDir, "old-dmd/dmd2/freebsd/bin64/dmd.conf"));
 
     cloneSources(gitTag, workDir~"/clones");
     prepareExtraBins(workDir);
