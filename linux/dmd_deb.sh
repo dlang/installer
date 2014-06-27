@@ -216,7 +216,7 @@ else
 
 
 	# install icons
-	for I in 48 256
+	for I in 16 22 24 32 48 256
 	do
 		mkdir -p usr/share/icons/hicolor/${I}x${I}/mimetypes
 		cp -f $(dirname $0)/icons/${I}/dmd-source.png usr/share/icons/hicolor/${I}x${I}/mimetypes
@@ -237,14 +237,14 @@ else
 
 		<mime-type type="application/x-ddsrc">
 			<comment>Ddoc source code</comment>
-			<sub-class-of type="text/x-csrc"/>
+			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.dd"/>
 			<icon name="dmd-source"/>
 		</mime-type>
 
 		<mime-type type="application/x-disrc">
 			<comment>D interface source code</comment>
-			<sub-class-of type="text/x-csrc"/>
+			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.di"/>
 			<icon name="dmd-source"/>
 		</mime-type>
