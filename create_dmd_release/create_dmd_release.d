@@ -558,7 +558,7 @@ void init(string branch)
             if(!exists(msvcBinDir~"cl.exe"))
                 msvcBinDir = win64vcDir ~ "/bin/amd64";
 
-            ensureTool(quote(msvcBinDir~"/cl.exe"), "/?");
+            ensureTool(quote(msvcBinDir~"/cl.exe"), "/HELP");
             try
             {
                 ensureDir(win64sdkDir);
