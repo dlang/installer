@@ -73,6 +73,9 @@
 !define VisualDPath "VisualD-v${VersionVisualD}.exe"
 
 
+!define DPublisher "Digital Mars"
+!define DName "DMD"
+!define ARP "Software\Microsoft\Windows\CurrentVersion\Uninstall\${DName}"
 
 ;--------------------------------------------------------
 ; Includes
@@ -81,6 +84,18 @@
 !include "MUI.nsh"
 !include "EnvVarUpdate.nsh"
 !include "ReplaceInFile.nsh"
+!include "FileFunc.nsh"
+
+
+;------------------------------------------------------------
+; Variables
+;------------------------------------------------------------
+
+Var I
+Var J
+Var K
+Var InstanceCheck
+
 
 
 ;--------------------------------------------------------
@@ -92,15 +107,30 @@ Name "D Programming Language"
 
 ; Name of the output file of the installer
 OutFile "dmd-${Version2}.exe"
+!define InstallerFilename "dmd-${Version2}.exe"
 
 ; Where the program will be installed
 InstallDir "C:\D"
 
-; Take the instalation directory from the registry, if possible
-InstallDirRegKey HKCU "Software\D" ""
+; Take the installation directory from the registry, if possible
+InstallDirRegKey HKCU "Software\${DName}" "InstallationFolder"
 
 ; This is so no one can corrupt the installer
 CRCCheck force
+
+
+;------------------------------------------------------------
+; Macros definition
+;------------------------------------------------------------
+
+; Check if a dmd installer instance is already running
+!macro OneInstanceOnly
+    System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d_compiler_installer") ?e'
+    Pop $R0
+    StrCmp $R0 0 +3
+        MessageBox MB_OK|MB_ICONSTOP "An instance of DMD installer is already running"
+        Abort
+!macroend
 
 
 ;--------------------------------------------------------
@@ -162,7 +192,7 @@ SectionGroup /e "D2"
 Section "-D2" Dmd2Files
 
     ; This section is mandatory
-    ;SectionIn RO
+    SectionIn RO
 
     SetOutPath $INSTDIR
 
@@ -209,13 +239,17 @@ Section "-D2" Dmd2Files
     FileClose $0
 
     ; Write installation dir in the registry
-    WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
+    WriteRegStr HKLM "SOFTWARE\${DName}" "InstallationFolder" "$INSTDIR"
 
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "DisplayName" "D"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoModify" 1
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoRepair" 1
+    ; Registry keys for dmd uninstaller
+    WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
+    WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version2}"
+    WriteRegStr HKLM "${ARP}" "UninstallString" "$INSTDIR\uninstall.exe"
+    WriteRegStr HKLM "${ARP}" "DisplayIcon" "$INSTDIR\uninstall.exe"
+    WriteRegStr HKLM "${ARP}" "Publisher" "${DPublisher}"
+    WriteRegStr HKLM "${ARP}" "HelpLink" "http://dlang.org/"
+    WriteRegDWORD HKLM "${ARP}" "NoModify" 1
+    WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
     WriteUninstaller "uninstall.exe"
 
 SectionEnd
@@ -354,16 +388,6 @@ Section /o "-D1" Dmd1Files
     FileWrite $0 "@set PATH=%~dp0dmd\windows\bin;%PATH%$\n"
     FileClose $0
 
-    ; Write installation dir in the registry
-    WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
-
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "DisplayName" "D"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoModify" 1
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoRepair" 1
-    WriteUninstaller "uninstall.exe"
-
 SectionEnd
 
 
@@ -412,16 +436,6 @@ Section "-dmc" DmcFiles
     FileWrite $0 "@echo Setting up environment for using dmc from %~dp0dm\bin.$\n"
     FileWrite $0 "@set PATH=%~dp0dm\bin;%PATH%$\n"
     FileClose $0
-
-    ; Write installation dir in the registry
-    WriteRegStr HKLM SOFTWARE\D "Install_Dir" "$INSTDIR"
-
-    ; Write registry keys to make uninstall from Windows
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "DisplayName" "D"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString" '"$INSTDIR\uninstall.exe"'
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoModify" 1
-    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "NoRepair" 1
-    WriteUninstaller "uninstall.exe"
 
 SectionEnd
 
@@ -498,6 +512,69 @@ Function .onInit
     ; This is commented because there's only one language
     ; (for now)
     ;!insertmacro MUI_LANGDLL_DISPLAY
+
+    ; Check if a dmd installer instance is already running
+    !insertmacro OneInstanceOnly
+
+
+    ; Force install without uninstall (useful if uninstall is broken)
+    ${GetParameters} $R0
+    StrCmp $R0 "/f" done
+
+
+    ; Remove previous dmd installation if any
+    ; this section is for previous dmd installer only
+    ReadRegStr $R5 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString"
+    ReadRegStr $R6 HKLM "SOFTWARE\D" "Install_Dir"
+    StrCmp $R5 "" done2
+    MessageBox MB_OKCANCEL|MB_ICONQUESTION \
+    "A previous DMD is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
+    IDOK +2
+    Abort
+    ClearErrors
+    ; Run uninstaller fron installed directory
+    ExecWait '$R5 /S _?=$R6' $K
+    ; Exit if uninstaller return an error
+    IfErrors 0 +3
+        MessageBox MB_OK|MB_ICONSTOP \
+        "An error occurred when removing DMD$\n$\nRun '${InstallerFilename} /f' to force install ${DName} ${Version2}"
+        Abort
+    ; Remove in background the remaining uninstaller program itself
+    Sleep 1000
+    Exec '$R5 /S'
+    ; MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled"
+
+    done2:
+    ; End of removing previous dmd installation section
+
+
+    ; Remove if dmd is already installed
+    ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
+    StrCmp $R0 "" done
+
+    ReadRegStr $I HKLM "${ARP}" "DisplayName"
+    ReadRegStr $J HKLM "${ARP}" "DisplayVersion"
+    MessageBox MB_OKCANCEL|MB_ICONQUESTION \
+    "$I v$J is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
+    IDOK uninst
+    Abort
+
+    uninst:
+        ClearErrors
+        ; Run uninstaller from installed directory
+        ExecWait '$R0 /IC False _?=$INSTDIR' $K
+        ; Exit if uninstaller return an error
+        IfErrors 0 +3
+            MessageBox MB_OK|MB_ICONSTOP \
+            "An error occurred when removing $I v$J$\n$\nRun '${InstallerFilename} /f' to force install ${DName} ${Version2}"
+            Abort
+        ; Exit if uninstaller is cancelled by user
+        StrCmp $K 0 +2
+            Abort
+        ; Remove in background the remaining uninstaller program itself
+        Exec '$R0 /IC False /S'
+
+    done:
 FunctionEnd
 
 
@@ -518,13 +595,12 @@ Section "Uninstall"
     ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin"
 
     ; Remove stuff from registry
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D"
-    DeleteRegKey HKLM SOFTWARE\D
-    DeleteRegKey /ifempty HKLM SOFTWARE\D
+    DeleteRegKey HKLM "${ARP}"
+    DeleteRegKey HKLM "SOFTWARE\${DName}"
 
     ; This is for deleting the remembered language of the installation
-    DeleteRegKey HKCU Software\D
-    DeleteRegKey /ifempty HKCU Software\D
+    ;DeleteRegKey HKCU Software\D
+    ;DeleteRegKey /ifempty HKCU Software\D
 
     ; Remove the uninstaller
     Delete $INSTDIR\uninstall.exe
@@ -541,13 +617,13 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
     Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
     Delete "$SMPROGRAMS\D\$(SHORTCUT_Uninstall).lnk"
+    RMDir /r /REBOOTOK "$SMPROGRAMS\D"
 
     ; Remove used directories
     RMDir /r /REBOOTOK "$INSTDIR\dm"
     RMDir /r /REBOOTOK "$INSTDIR\dmd"
     RMDir /r /REBOOTOK "$INSTDIR\dmd2"
     RMDir /REBOOTOK "$INSTDIR"
-    RMDir /r /REBOOTOK "$SMPROGRAMS\D"
 
 SectionEnd
 
@@ -562,4 +638,13 @@ Function un.onInit
     ; This is commented because there's only one language
     ; (for now)
     ;!insertmacro MUI_UNGETLANGUAGE
+
+
+    ; Check if a dmd installer instance is already running
+    ; Do not check if "/IC False" argument is passed to uninstaller
+    ${GetOptions} $CMDLINE "/IC" $InstanceCheck
+    ${IfNot} "$InstanceCheck" == "False"
+        !insertmacro OneInstanceOnly
+    ${EndIf}
+
 FunctionEnd
