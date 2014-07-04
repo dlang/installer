@@ -45,7 +45,7 @@
 
 ; Extras
 !define VersionCurl "7.34.0"
-!define VersionVisualD "0.3.37"
+!define VersionVisualD "0.3.38-1"
 
 
 
