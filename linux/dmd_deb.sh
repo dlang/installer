@@ -355,7 +355,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPENDS'
-	Recommends:'$RECOMMENDS'
+	Recommends: '$RECOMMENDS'
 	Suggests: '$SUGGESTS'
 	Provides: '$UNZIPDIR-$MINOR'
 	Section: devel
