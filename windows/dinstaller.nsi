@@ -81,6 +81,15 @@
 !include "MUI.nsh"
 !include "EnvVarUpdate.nsh"
 !include "ReplaceInFile.nsh"
+!include "FileFunc.nsh"
+
+
+;------------------------------------------------------------
+; Variables
+;------------------------------------------------------------
+
+Var InstanceCheck
+
 
 
 ;--------------------------------------------------------
@@ -101,6 +110,20 @@ InstallDirRegKey HKCU "Software\D" ""
 
 ; This is so no one can corrupt the installer
 CRCCheck force
+
+
+;------------------------------------------------------------
+; Macros definition
+;------------------------------------------------------------
+
+; Check if a dmd installer instance is already running
+!macro OneInstanceOnly
+    System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d_compiler_installer") ?e'
+    Pop $R0
+    StrCmp $R0 0 +3
+        MessageBox MB_OK|MB_ICONSTOP "An instance of DMD installer is already running"
+        Abort
+!macroend
 
 
 ;--------------------------------------------------------
@@ -498,6 +521,9 @@ Function .onInit
     ; This is commented because there's only one language
     ; (for now)
     ;!insertmacro MUI_LANGDLL_DISPLAY
+
+    ; Check if a dmd installer instance is already running
+    !insertmacro OneInstanceOnly
 FunctionEnd
 
 
@@ -562,4 +588,13 @@ Function un.onInit
     ; This is commented because there's only one language
     ; (for now)
     ;!insertmacro MUI_UNGETLANGUAGE
+
+
+    ; Check if a dmd installer instance is already running
+    ; Do not check if "/IC False" argument is passed to uninstaller
+    ${GetOptions} $CMDLINE "/IC" $InstanceCheck
+    ${IfNot} "$InstanceCheck" == "False"
+        !insertmacro OneInstanceOnly
+    ${EndIf}
+
 FunctionEnd
