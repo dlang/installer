@@ -192,7 +192,7 @@ SectionGroup /e "D2"
 Section "-D2" Dmd2Files
 
     ; This section is mandatory
-    ;SectionIn RO
+    SectionIn RO
 
     SetOutPath $INSTDIR
 
