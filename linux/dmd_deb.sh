@@ -223,6 +223,22 @@ else
 	done
 
 
+	# add dmd-doc.png icon file
+	mkdir -p usr/share/icons/hicolor/128x128/apps
+	cp $(dirname $0)/icons/128/dmd-doc.png usr/share/icons/hicolor/128x128/apps
+
+
+	# create dmd-doc.desktop
+	mkdir -p usr/share/applications
+	echo -e '[Desktop Entry]
+	Type=Application
+	Name=dmd/phobos documentation v'$VERSION'
+	Comment=dmd compiler and phobos library documentation v'$VERSION'
+	Exec=xdg-open /usr/share/dmd/html/d/language-reference.html
+	Icon=dmd-doc
+	Categories=Development;' | sed 's/^\t//' > usr/share/applications/dmd-doc.desktop
+
+
 	# create dmd.xml file
 	mkdir -p usr/share/mime/packages
 	echo -e '<?xml version="1.0" encoding="UTF-8"?>
@@ -339,7 +355,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPENDS'
-	Recommends:'$RECOMMENDS'
+	Recommends: '$RECOMMENDS'
 	Suggests: '$SUGGESTS'
 	Provides: '$UNZIPDIR-$MINOR'
 	Section: devel
