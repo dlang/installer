@@ -219,13 +219,13 @@ else
 	for I in 16 22 24 32 48 256
 	do
 		mkdir -p usr/share/icons/hicolor/${I}x${I}/mimetypes
-		cp -f $(dirname $0)/icons/${I}/dmd-source.png usr/share/icons/hicolor/${I}x${I}/mimetypes
+		cp -f ${DESTDIR}/icons/${I}/dmd-source.png usr/share/icons/hicolor/${I}x${I}/mimetypes
 	done
 
 
 	# add dmd-doc.png icon file
 	mkdir -p usr/share/icons/hicolor/128x128/apps
-	cp $(dirname $0)/icons/128/dmd-doc.png usr/share/icons/hicolor/128x128/apps
+	cp ${DESTDIR}/icons/128/dmd-doc.png usr/share/icons/hicolor/128x128/apps
 
 
 	# create dmd-doc.desktop
