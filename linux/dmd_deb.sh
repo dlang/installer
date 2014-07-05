@@ -215,6 +215,59 @@ else
 	cp -f ../$UNZIPDIR/man/man5/dmd.conf.5.gz usr/share/man/man5
 
 
+	# install icons
+	for I in 16 22 24 32 48 256
+	do
+		mkdir -p usr/share/icons/hicolor/${I}x${I}/mimetypes
+		cp -f $(dirname $0)/icons/${I}/dmd-source.png usr/share/icons/hicolor/${I}x${I}/mimetypes
+	done
+
+
+	# add dmd-doc.png icon file
+	mkdir -p usr/share/icons/hicolor/128x128/apps
+	cp $(dirname $0)/icons/128/dmd-doc.png usr/share/icons/hicolor/128x128/apps
+
+
+	# create dmd-doc.desktop
+	mkdir -p usr/share/applications
+	echo -e '[Desktop Entry]
+	Type=Application
+	Name=dmd/phobos documentation v'$VERSION'
+	Comment=dmd compiler and phobos library documentation v'$VERSION'
+	Exec=xdg-open /usr/share/dmd/html/d/language-reference.html
+	Icon=dmd-doc
+	Categories=Development;' | sed 's/^\t//' > usr/share/applications/dmd-doc.desktop
+
+
+	# create dmd.xml file
+	mkdir -p usr/share/mime/packages
+	echo -e '<?xml version="1.0" encoding="UTF-8"?>
+	<mime-info xmlns=\x27http://www.freedesktop.org/standards/shared-mime-info\x27>
+
+		<mime-type type="application/x-dsrc">
+			<comment>D source code</comment>
+			<sub-class-of type="text/x-csrc"/>
+			<glob pattern="*.d"/>
+			<icon name="dmd-source"/>
+		</mime-type>
+
+		<mime-type type="application/x-ddsrc">
+			<comment>Ddoc source code</comment>
+			<sub-class-of type="application/x-dsrc"/>
+			<glob pattern="*.dd"/>
+			<icon name="dmd-source"/>
+		</mime-type>
+
+		<mime-type type="application/x-disrc">
+			<comment>D interface source code</comment>
+			<sub-class-of type="application/x-dsrc"/>
+			<glob pattern="*.di"/>
+			<icon name="dmd-source"/>
+		</mime-type>
+
+	</mime-info>' | sed 's/^\t//' > usr/share/mime/packages/dmd.xml
+
+
 	# generate copyright file
 	mkdir -p usr/share/doc/dmd
 	for I in ../$UNZIPDIR/license.txt ../$UNZIPDIR/src/druntime/LICENSE
@@ -302,7 +355,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPENDS'
-	Recommends:'$RECOMMENDS'
+	Recommends: '$RECOMMENDS'
 	Suggests: '$SUGGESTS'
 	Provides: '$UNZIPDIR-$MINOR'
 	Section: devel
