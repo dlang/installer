@@ -325,7 +325,7 @@ int main(string[] args)
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
-    enum oldDMD = executeShell("git describe --abbrev=0" ~ gitTag ~ "^2").output ~ ".zip";
+    enum oldDMD = executeShell("git describe --abbrev=0" ~ gitTag ~ "^2").output[0..$-1] ~ ".zip";
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.34.0-WinSSL-zlib-x86-x64.zip";
