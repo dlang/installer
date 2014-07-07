@@ -168,7 +168,19 @@ private:
     bool _isUp;
 }
 
-void run(string cmd) { writeln("\033[36m", cmd, "\033[0m"); enforce(wait(spawnShell(cmd)) == 0); }
+string runCapture(string cmd)
+{
+    writeln("\033[36m", cmd, "\033[0m");
+    auto result = executeShell(cmd);
+    enforce(result.status == 0);
+    return result.output.strip;
+}
+
+void run(string cmd)
+{
+    writeln("\033[36m", cmd, "\033[0m");
+    enforce(wait(spawnShell(cmd)) == 0);
+}
 
 void exec(ProcessPipes pipes, string cmd)
 {
@@ -306,7 +318,7 @@ void cloneSources(string gitTag, string tgtDir)
     auto fmt = "git clone --depth 1 -b "~gitTag~" "~prefix~"%1$s.git "~tgtDir~"/%1$s";
     foreach (proj; allProjects)
         run(fmt.format(proj));
-    
+
     import std.file;
     write(tgtDir~"/dmd/VERSION", gitTag.chompPrefix("v"));
 }
@@ -326,8 +338,9 @@ int main(string[] args)
     enum cacheDir = "cached_downloads";
 
     // Determine previous dmd release from gitTag
-    immutable oldDMD = executeShell("git describe --abbrev=0" ~ gitTag ~ "^2").output[0..$-1] ~ ".zip";
-    
+    immutable oldVer = runCapture("git describe --abbrev=0 " ~ gitTag ~ "^");
+    immutable oldDMD = "dmd." ~ oldVer.chompPrefix("v") ~ ".zip";
+
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.34.0-WinSSL-zlib-x86-x64.zip";
