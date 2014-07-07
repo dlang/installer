@@ -326,7 +326,7 @@ int main(string[] args)
     enum cacheDir = "cached_downloads";
 
     // Determine previous dmd release from gitTag
-    immutable oldDMD = executeShell("git describe --abbrev=0" ~ gitTag ~ "^2").output[0..$-1] ~ ".zip";
+    immutable oldDMD = "dmd." ~ executeShell("git describe --abbrev=0" ~ gitTag ~ "^2").output[0..$-1] ~ ".zip";
     
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
