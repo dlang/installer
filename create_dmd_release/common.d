@@ -71,20 +71,61 @@ template fetchFile()
 
     void fetchFile(string url, string path)
     {
-        import std.net.curl, std.path, std.stdio;
-        if (path.exists) return;
+        import std.array, std.datetime, std.exception, std.net.curl,
+            std.path, std.stdio, std.string;
         auto client = HTTP(url);
         size_t cnt;
+        auto app = appender!(ubyte[])();
+        ushort statusCode;
+        string etag;
+        bool abort;
+        client.onReceiveStatusLine = (status)
+        {
+            statusCode = status.code;
+        };
+        client.onReceiveHeader = (key, value)
+        {
+            if (key != "etag") return;
+
+            auto petag = path~".etag";
+            if (path.exists && petag.exists && cast(string)std.file.read(petag) == value)
+            {
+                writefln("Using cached download '%s'.", path);
+                abort = true;
+                return;
+            }
+            etag = value.idup;
+            writefln("Downloading file '%s' to '%s'.", url, path);
+        };
+        client.onReceive = (data)
+        {
+            if (!abort) app.put(data);
+            return data.length;
+        };
         client.onProgress = (dlt, dln, _, _2)
         {
-            if (dlt && cnt++ % 32 == 0)
+            if (!abort && dlt && cnt++ % 32 == 0)
                 writef("Progress: %.1f%% of %s kB\r", 100.0 * dln / dlt, dlt / 1024);
-            return 0;
+            return abort ? 1 : 0;
         };
-        writefln("Downloading file '%s' to '%s'.", url, path);
+        try
+            client.perform();
+        catch (CurlException ce)
+        {
+            // stupid std.net.curl throws an exception when aborting, ignore it
+            if (abort) return;
+            throw ce;
+        }
+        enforce(statusCode / 100 == 2,
+                format("Download of '%s' failed with HTTP status code '%s'.",
+                       url, statusCode));
         mkdirRecurse(path.dirName);
-        std.file.write(path, get!(HTTP, ubyte)(url, client));
+        std.file.write(path, app.data);
+        app.clear();
+        if (etag.length)
+            std.file.write(path~".etag", etag);
         writeln(); // CR
+        stdout.flush();
     }
 }
 
