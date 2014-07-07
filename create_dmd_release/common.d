@@ -101,10 +101,7 @@ void extractZip(string archive, string outputDir)
     {
         if(!am.expandedSize) continue;
 
-        const os = am.fileAttributes & 0xFF00;
-        const fromWindows = os == 0x0000 || os == 0x0b00;
-
-        string path = buildPath(outputDir, fromWindows ? replace(name, "\\", "/") : name);
+        string path = buildPath(outputDir, name.replace("\\", "/"));
         auto dir = dirName(path);
         if (dir != "" && !dir.exists)
             mkdirRecurse(dir);
@@ -113,8 +110,8 @@ void extractZip(string archive, string outputDir)
         import std.datetime : DosFileTimeToSysTime;
         auto mtime = DosFileTimeToSysTime(am.time);
         setTimes(path, mtime, mtime);
-        version (Posix) if (fromWindows) continue;
-        std.file.setAttributes(path, am.fileAttributes);
+        if (auto attrs = am.fileAttributes)
+            std.file.setAttributes(path, attrs);
     }
 }
 
