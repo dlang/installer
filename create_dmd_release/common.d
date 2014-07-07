@@ -101,7 +101,7 @@ void extractZip(string archive, string outputDir)
     {
         if(!am.expandedSize) continue;
 
-        const os = am.madeVersion & 0xFF00;
+        const os = am.fileAttributes & 0xFF00;
         const fromWindows = os == 0x0000 || os == 0x0b00;
 
         string path = buildPath(outputDir, fromWindows ? replace(name, "\\", "/") : name);
