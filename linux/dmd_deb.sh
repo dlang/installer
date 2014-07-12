@@ -149,16 +149,29 @@ else
 	unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
 
 
-	# add dmd-completion if present
-	if test -f `dirname $0`"/"dmd-completion ;then
-		mkdir -p $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/"
-		cp `dirname $0`"/"dmd-completion $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
-	fi
-
-
 	# change unzipped folders and files permissions
 	chmod -R 0755 $TEMPDIR/$UNZIPDIR/*
 	chmod 0644 $(find -L $TEMPDIR/$UNZIPDIR ! -type d)
+
+
+	# add dmd-completion if present
+	if test -f "$(dirname $0)/dmd-completion" ;then
+		mkdir -p "$TEMPDIR/$DMDDIR/etc/bash_completion.d/"
+		cp "$(dirname $0)/dmd-completion" "$TEMPDIR/$DMDDIR/etc/bash_completion.d/dmd"
+	fi
+
+
+	# add mime type icons files
+	for I in 16 22 24 32 48 256
+	do
+		mkdir -p "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/dmd-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+	done
+
+
+	# add dmd-doc.png icon file
+	mkdir -p "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/128x128/apps"
+	cp "$(dirname $0)/icons/128/dmd-doc.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/128x128/apps"
 
 
 	# switch to temp dir
@@ -213,19 +226,6 @@ else
 	cp -f ../$UNZIPDIR/man/man1/{dmd.1.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz} usr/share/man/man1
 	mkdir -p usr/share/man/man5/
 	cp -f ../$UNZIPDIR/man/man5/dmd.conf.5.gz usr/share/man/man5
-
-
-	# install icons
-	for I in 16 22 24 32 48 256
-	do
-		mkdir -p usr/share/icons/hicolor/${I}x${I}/mimetypes
-		cp -f ${DESTDIR}/icons/${I}/dmd-source.png usr/share/icons/hicolor/${I}x${I}/mimetypes
-	done
-
-
-	# add dmd-doc.png icon file
-	mkdir -p usr/share/icons/hicolor/128x128/apps
-	cp ${DESTDIR}/icons/128/dmd-doc.png usr/share/icons/hicolor/128x128/apps
 
 
 	# create dmd-doc.desktop
