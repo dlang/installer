@@ -264,7 +264,7 @@ else
 		</mime-type>
 
 		<mime-type type="application/x-disrc">
-			<comment>D interface source code</comment>
+			<comment>D interface code</comment>
 			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.di"/>
 			<icon name="dmd-source"/>
