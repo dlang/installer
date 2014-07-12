@@ -215,6 +215,11 @@ else
 	mkdir -p usr/share/dmd/
 	cp -Rf ../$UNZIPDIR/samples/ usr/share/dmd
 	cp -Rf ../$UNZIPDIR/html/ usr/share/dmd
+	# create *.html symblinks to avoid local broken links
+	for F in $(find usr/share/dmd/html/ -iname "*.html")
+	do
+		ln -s "$(basename "$F")" "${F%.*}"
+	done
 
 
 	# install man pages
