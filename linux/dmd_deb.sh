@@ -99,10 +99,10 @@ fi
 
 # assign variables
 MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
-VERSION=${1:2}
+VERSION1=${1:2}
 MAJOR=0
-MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
-RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION)
+MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION1)
+RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION1)
 if [ "$REVISION" == "" ]
 then
 	REVISION=0
@@ -110,15 +110,15 @@ fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"
-DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.linux.zip"
-VERSION=$(sed 's/-/~/' <<<$VERSION) # replace dash by tilde
+DMDURL="http://ftp.digitalmars.com/dmd.$VERSION1.linux.zip"
+VERSION2=$(sed 's/-/~/' <<<$VERSION1) # replace dash by tilde
 if test "$2" = "-m64" ;then
 	ARCH="amd64"
 elif test "$2" = "-m32" ;then
 	ARCH="i386"
 fi
 ZIPFILE=`basename $DMDURL`
-DMDDIR="dmd_"$VERSION"-"$REVISION"_"$ARCH
+DMDDIR="dmd_"$VERSION2"-"$REVISION"_"$ARCH
 DIR32="i386-linux-gnu"
 DIR64="x86_64-linux-gnu"
 DEBFILE=$DMDDIR".deb"
@@ -237,8 +237,8 @@ else
 	mkdir -p usr/share/applications
 	echo -e '[Desktop Entry]
 	Type=Application
-	Name=dmd/phobos documentation v'$VERSION'
-	Comment=dmd compiler and phobos library documentation v'$VERSION'
+	Name=dmd/phobos documentation v'$VERSION1'
+	Comment=dmd compiler and phobos library documentation v'$VERSION1'
 	Exec=xdg-open /usr/share/dmd/html/d/language-reference.html
 	Icon=dmd-doc
 	Categories=Development;' | sed 's/^\t//' > usr/share/applications/dmd-doc.desktop
@@ -355,7 +355,7 @@ else
 
 	# create control file
 	echo -e 'Package: dmd
-	Version: '$VERSION-$REVISION'
+	Version: '$VERSION2-$REVISION'
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
