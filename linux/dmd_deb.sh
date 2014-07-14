@@ -99,10 +99,10 @@ fi
 
 # assign variables
 MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
-VERSION=${1:2}
+VERSION1=${1:2}
 MAJOR=0
-MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)
-RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION)
+MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION1)
+RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION1)
 if [ "$REVISION" == "" ]
 then
 	REVISION=0
@@ -110,15 +110,15 @@ fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"
-DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.linux.zip"
-VERSION=$(sed 's/-/~/' <<<$VERSION) # replace dash by tilde
+DMDURL="http://ftp.digitalmars.com/dmd.$VERSION1.linux.zip"
+VERSION2=$(sed 's/-/~/' <<<$VERSION1) # replace dash by tilde
 if test "$2" = "-m64" ;then
 	ARCH="amd64"
 elif test "$2" = "-m32" ;then
 	ARCH="i386"
 fi
 ZIPFILE=`basename $DMDURL`
-DMDDIR="dmd_"$VERSION"-"$REVISION"_"$ARCH
+DMDDIR="dmd_"$VERSION2"-"$REVISION"_"$ARCH
 DIR32="i386-linux-gnu"
 DIR64="x86_64-linux-gnu"
 DEBFILE=$DMDDIR".deb"
@@ -149,16 +149,29 @@ else
 	unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
 
 
-	# add dmd-completion if present
-	if test -f `dirname $0`"/"dmd-completion ;then
-		mkdir -p $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/"
-		cp `dirname $0`"/"dmd-completion $TEMPDIR"/"$DMDDIR"/etc/bash_completion.d/dmd"
-	fi
-
-
 	# change unzipped folders and files permissions
 	chmod -R 0755 $TEMPDIR/$UNZIPDIR/*
 	chmod 0644 $(find -L $TEMPDIR/$UNZIPDIR ! -type d)
+
+
+	# add dmd-completion if present
+	if test -f "$(dirname $0)/dmd-completion" ;then
+		mkdir -p "$TEMPDIR/$DMDDIR/etc/bash_completion.d/"
+		cp "$(dirname $0)/dmd-completion" "$TEMPDIR/$DMDDIR/etc/bash_completion.d/dmd"
+	fi
+
+
+	# add mime type icons files
+	for I in 16 22 24 32 48 256
+	do
+		mkdir -p "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/dmd-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+	done
+
+
+	# add dmd-doc.png icon file
+	mkdir -p "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/128x128/apps"
+	cp "$(dirname $0)/icons/128/dmd-doc.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/128x128/apps"
 
 
 	# switch to temp dir
@@ -202,6 +215,11 @@ else
 	mkdir -p usr/share/dmd/
 	cp -Rf ../$UNZIPDIR/samples/ usr/share/dmd
 	cp -Rf ../$UNZIPDIR/html/ usr/share/dmd
+	# create *.html symblinks to avoid local broken links
+	for F in $(find usr/share/dmd/html/ -iname "*.html")
+	do
+		ln -s "$(basename "$F")" "${F%.*}"
+	done
 
 
 	# install man pages
@@ -215,25 +233,12 @@ else
 	cp -f ../$UNZIPDIR/man/man5/dmd.conf.5.gz usr/share/man/man5
 
 
-	# install icons
-	for I in 16 22 24 32 48 256
-	do
-		mkdir -p usr/share/icons/hicolor/${I}x${I}/mimetypes
-		cp -f ${DESTDIR}/icons/${I}/dmd-source.png usr/share/icons/hicolor/${I}x${I}/mimetypes
-	done
-
-
-	# add dmd-doc.png icon file
-	mkdir -p usr/share/icons/hicolor/128x128/apps
-	cp ${DESTDIR}/icons/128/dmd-doc.png usr/share/icons/hicolor/128x128/apps
-
-
 	# create dmd-doc.desktop
 	mkdir -p usr/share/applications
 	echo -e '[Desktop Entry]
 	Type=Application
-	Name=dmd/phobos documentation v'$VERSION'
-	Comment=dmd compiler and phobos library documentation v'$VERSION'
+	Name=dmd/phobos documentation v'$VERSION1'
+	Comment=dmd compiler and phobos library documentation v'$VERSION1'
 	Exec=xdg-open /usr/share/dmd/html/d/language-reference.html
 	Icon=dmd-doc
 	Categories=Development;' | sed 's/^\t//' > usr/share/applications/dmd-doc.desktop
@@ -259,7 +264,7 @@ else
 		</mime-type>
 
 		<mime-type type="application/x-disrc">
-			<comment>D interface source code</comment>
+			<comment>D interface code</comment>
 			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.di"/>
 			<icon name="dmd-source"/>
@@ -350,7 +355,7 @@ else
 
 	# create control file
 	echo -e 'Package: dmd
-	Version: '$VERSION-$REVISION'
+	Version: '$VERSION2-$REVISION'
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
