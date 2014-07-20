@@ -297,9 +297,10 @@ void runBuild(Box box, string gitTag, bool combine)
 
     case OS.windows:
     {
+        immutable build_dir = buildPath("dmd."~ver~".windows-32", "dmd2");
         sh = box.shell();
         sh.stdin.writeln(`cd clones\installer\windows`);
-        sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis' /DVersion2=`~ver~` dinstaller.nsi`);
+        sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis' /DEmbedD2Dir=`~build_dir~` /DVersion2=`~ver~` d2-installer.nsi`);
         sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
         sh.close();
         box.scp("default:dmd-"~ver~".exe", ".");
