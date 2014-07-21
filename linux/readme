@@ -24,17 +24,6 @@ Works with dmd 2.063 and newer.
 
 
 
-"dmd_win.sh"
-============
-Script to create 32-bit installers for Windows systems.
-Run it with dmd version as argument and you'll get an executable installer in the current directory.
-Resulting package should be installable on Windows systems. Tested in Windows XP (32-bit) and Windows 7 (64-bit).
-This script needs "dmd.x.xxx.zip", "dmc.zip" and "curl-x.xx.x-dmd-win32.zip".
-If they already exists in the current folder will be used, otherwise will try to download first.
-Works with dmd 2.063 and newer.
-
-
-
 "build_all.sh"
 ==============
 Script to build all deb/rpm packages and Windows installer.
@@ -44,7 +33,6 @@ Works with dmd 2.063 and newer.
 
 
 NOTE:
-"dmd_win.sh" script uses all image files, nsi headers files (nsh) and a modified version of "dinstaller.nsi" from DMD Windows installer.
 "dmd-completion" is a modified bash-completion script from https://github.com/Lutger/d_utils
 
 
