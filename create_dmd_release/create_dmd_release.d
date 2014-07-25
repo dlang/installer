@@ -857,11 +857,10 @@ void createRelease(string branch)
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
     // Copy sources (should cppunit be omitted??)
-    auto dmdSrcFilter = (string a) => !a.match("^cppunit[^/]*/");
-    copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd",      a => dmdSrcFilter(a));
+    copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd");
     copyDirVersioned(cloneDir~"/dmd/ini",  releaseDir~"/dmd2");
-    copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime", a => a != ".gitignore");
-    copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos",   a => a != ".gitignore");
+    copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime");
+    copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos");
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
     if(exists(cloneDir~"/druntime/doc"))
@@ -1300,33 +1299,35 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
     {
         auto relativePath = entry.name.replace("\\", "/").chompPrefix(src);
 
-        if(!filter || filter(relativePath))
+        if (relativePath.baseName.startsWith(".") ||
+            filter !is null && !filter(relativePath))
         {
-            verboseMsg("    " ~ displayPath(relativePath));
+            verboseMsg("    Skipping: " ~ displayPath(relativePath));
+            continue;
+        }
 
-            auto destPath = buildPath(dest, relativePath);
-            auto srcPath  = buildPath(src,  relativePath);
+        verboseMsg("    " ~ displayPath(relativePath));
 
-            version(Posix)
+        auto destPath = buildPath(dest, relativePath);
+        auto srcPath  = buildPath(src,  relativePath);
+
+        version(Posix)
+        {
+            if(entry.isSymlink)
             {
-                if(entry.isSymlink)
-                {
-                    run("cp -P "~srcPath~" "~destPath);
-                    continue;
-                }
-            }
-
-            if(entry.isDir)
-                makeDir(destPath);
-            else
-            {
-                makeDir(dirName(destPath));
-                copy(srcPath, destPath);
-                copyAttributes(srcPath, destPath);
+                run("cp -P "~srcPath~" "~destPath);
+                continue;
             }
         }
-        else if(filter)
-            verboseMsg("    Skipping: " ~ displayPath(relativePath));
+
+        if(entry.isDir)
+            makeDir(destPath);
+        else
+        {
+            makeDir(dirName(destPath));
+            copy(srcPath, destPath);
+            copyAttributes(srcPath, destPath);
+        }
     }
 }
 
