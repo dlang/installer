@@ -300,7 +300,7 @@ void runBuild(Box box, string gitTag, bool combine)
         sh = box.shell();
         sh.stdin.writeln(`cd clones\installer\windows`);
         sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis'`~
-                         ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~gitTag~`.windows\dmd2'`~
+                         ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~gitTag~`.windows'`~
                          ` '/DVersion2=`~ver~`' d2-installer.nsi`);
         sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
         sh.close();
