@@ -152,7 +152,8 @@ SetCompressor /SOLID lzma
   !endif
 
   ; failed
-  ; we could show an error message here
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download ${Filename}$\r$\n$\r$\n${Url}"
+
   Goto dandr_done
 
   run:
