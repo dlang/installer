@@ -61,7 +61,7 @@
 !define BaseURLAlt "http://ftp.digitalmars.com"
 !define VisualDBaseURL "https://github.com/D-Programming-Language/visuald/releases/download"
 
-!define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}.exe"
+!define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}"
 
 !define DmcUrl  "${BaseURL}/other/${DmcFilename}"
 !define DmcAltUrl "${BaseURLAlt}/${DmcFilename}"
