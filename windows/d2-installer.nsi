@@ -452,11 +452,11 @@ Section "Uninstall"
   ; Remove shortcuts
   Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
   Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
-  RMDir /r /REBOOTOK "$SMPROGRAMS\D"
+  RMDir /r "$SMPROGRAMS\D"
 
   ; Remove used directories
-  RMDir /r /REBOOTOK "$INSTDIR\dmd2"
-  RMDir /REBOOTOK "$INSTDIR"
+  RMDir /r "$INSTDIR\dmd2"
+  RMDir "$INSTDIR"
 SectionEnd
 
 
