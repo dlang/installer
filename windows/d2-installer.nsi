@@ -61,7 +61,7 @@
 !define BaseURLAlt "http://ftp.digitalmars.com"
 !define VisualDBaseURL "https://github.com/D-Programming-Language/visuald/releases/download"
 
-!define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}.exe"
+!define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}"
 
 !define DmcUrl  "${BaseURL}/other/${DmcFilename}"
 !define DmcAltUrl "${BaseURLAlt}/${DmcFilename}"
@@ -152,7 +152,8 @@ SetCompressor /SOLID lzma
   !endif
 
   ; failed
-  ; we could show an error message here
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download ${Filename}$\r$\n$\r$\n${Url}"
+
   Goto dandr_done
 
   run:
@@ -452,11 +453,11 @@ Section "Uninstall"
   ; Remove shortcuts
   Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
   Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
-  RMDir /r /REBOOTOK "$SMPROGRAMS\D"
+  RMDir /r "$SMPROGRAMS\D"
 
   ; Remove used directories
-  RMDir /r /REBOOTOK "$INSTDIR\dmd2"
-  RMDir /REBOOTOK "$INSTDIR"
+  RMDir /r "$INSTDIR\dmd2"
+  RMDir "$INSTDIR"
 SectionEnd
 
 
