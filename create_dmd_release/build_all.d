@@ -210,15 +210,17 @@ void prepareExtraBins(string workDir)
     auto winBins = [
         "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
         "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
-        "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll",
+        "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll", "libcurl.dll",
     ].addPrefix("bin/");
+    auto winBins64 = ["libcurl.dll"].addPrefix("bin64/");
     auto winLibs = [
         "advapi32.lib", "COMCTL32.LIB", "comdlg32.lib", "CTL3D32.LIB",
         "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
         "rpcrt4.lib", "shell32.lib", "snn.lib", "user32.lib", "uuid.lib",
         "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib",
     ].addPrefix("lib/");
-    auto winFiles = chain(winBins, winLibs).array();
+    auto winLibs64 = ["curl.lib"].addPrefix("lib64/");
+    auto winFiles = chain(winBins, winBins64, winLibs, winLibs64).array();
 
     auto extraBins = [
         "windows" : winFiles,
