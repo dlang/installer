@@ -87,12 +87,12 @@ SetCompressor /SOLID lzma
 ; Macros definition
 ;------------------------------------------------------------
 
-; Check if a dmd installer instance is already running
+; Check if a dmd 1 installer instance is already running
 !macro OneInstanceOnly
-  System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d_compiler_installer") ?e'
+  System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d1_compiler_installer") ?e'
   Pop $R0
   StrCmp $R0 0 +3
-    MessageBox MB_OK|MB_ICONSTOP "An instance of DMD installer is already running"
+    MessageBox MB_OK|MB_ICONSTOP "An instance of DMD 1 installer is already running"
     Abort
 !macroend
 
@@ -171,7 +171,7 @@ SectionGroup /e "D1"
     ; Write installation dir in the registry
     WriteRegStr HKLM "SOFTWARE\${DName}" "InstallationFolder" "$INSTDIR"
 
-    ; Registry keys for dmd uninstaller
+    ; Registry keys for dmd 1 uninstaller
     WriteRegStr HKLM "${ARP}" "DisplayName" "${DName}"
     WriteRegStr HKLM "${ARP}" "DisplayVersion" "${Version1}"
     WriteRegStr HKLM "${ARP}" "UninstallString" "$INSTDIR\uninstall.exe"
@@ -203,7 +203,7 @@ SectionGroupEnd
 ;--------------------------------------------------------
 
 Function .onInit
-  ; Check if a dmd installer instance is already running
+  ; Check if a dmd 1 installer instance is already running
   !insertmacro OneInstanceOnly
 
 
@@ -212,7 +212,7 @@ Function .onInit
   StrCmp $R0 "/f" done
 
 
-  ; Remove if dmd is already installed
+  ; Remove if dmd 1 is already installed
   ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
   StrCmp $R0 "" done
 
@@ -279,7 +279,7 @@ SectionEnd
 ;--------------------------------------------------------
 
 Function un.onInit
-  ; Check if a dmd installer instance is already running
+  ; Check if a dmd 1 installer instance is already running
   ; Do not check if "/IC False" argument is passed to uninstaller
   ${GetOptions} $CMDLINE "/IC" $InstanceCheck
   ${IfNot} "$InstanceCheck" == "False"
