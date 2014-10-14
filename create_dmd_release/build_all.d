@@ -402,7 +402,7 @@ int main(string[] args)
         box.scp("create_dmd_release.d common.d", "default:");
 
         // copy all zips into the last box to combine them
-        if (combine)
+        if (combine && boxes.length > 1)
         {
             toCopy = boxes[0 .. $ - 1].map!(b => "dmd."~gitTag~"."~b.platform~".zip").join(" ");
             box.scp(toCopy, "default:");
