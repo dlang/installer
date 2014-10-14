@@ -237,7 +237,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(Box box, string gitTag, bool combine)
+void runBuild(Box box, string gitTag, bool isBranch, bool combine)
 {
     auto sh = box.shell();
 
@@ -288,7 +288,7 @@ void runBuild(Box box, string gitTag, bool combine)
     // Build package installers
     immutable ver = gitTag.chompPrefix("v");
 
-    final switch (box._os)
+    if (!isBranch) final switch (box._os)
     {
     case OS.freebsd:
         break;
@@ -344,7 +344,6 @@ int main(string[] args)
     import std.regex;
     enum verRE = regex(`^v(\d+)\.(\d+)\.(\d+)(-.*)?$`);
 
-    immutable gitTag = args[2];
     auto workDir = mkdtemp();
     scope (success) if (workDir.exists) rmdirRecurse(workDir);
     // Cache huge downloads
@@ -354,6 +353,9 @@ int main(string[] args)
     if (!oldVer.match(verRE))
         return error("Expected a version tag like 'v2.066.0' not '%s'", oldVer);
     immutable oldDMD = "dmd." ~ oldVer["v".length .. $] ~ ".zip";
+
+    immutable gitTag = args[2];
+    immutable isBranch = !gitTag.match(verRE);
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
@@ -406,7 +408,7 @@ int main(string[] args)
             box.scp(toCopy, "default:");
         }
 
-        runBuild(box, gitTag, combine);
+        runBuild(box, gitTag, isBranch, combine);
     }
     return 0;
 }
