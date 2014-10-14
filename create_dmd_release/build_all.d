@@ -327,23 +327,33 @@ void cloneSources(string gitTag, string tgtDir)
     write(tgtDir~"/dmd/VERSION", gitTag.chompPrefix("v"));
 }
 
+int error(Args...)(string fmt, Args args)
+{
+    stderr.write("\033[031m");
+    scope (exit) stderr.write("\033[0m");
+    stderr.writefln(fmt, args);
+    import core.stdc.stdlib : EXIT_FAILURE;
+    return EXIT_FAILURE;
+}
+
 int main(string[] args)
 {
-    if (args.length != 2)
-    {
-        stderr.writeln("Expected <git-branch-or-tag> as only argument, e.g. v2.064.2.");
-        return 1;
-    }
+    if (args.length != 3)
+        return error("Expected <old-dmd-version> <git-branch-or-tag> as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
 
-    auto gitTag = args[1];
+    import std.regex;
+    enum verRE = regex(`^v(\d+)\.(\d+)\.(\d+)(-.*)?$`);
+
+    immutable gitTag = args[2];
     auto workDir = mkdtemp();
     scope (success) if (workDir.exists) rmdirRecurse(workDir);
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
-    // Determine previous dmd release from gitTag
-    immutable oldVer = runCapture("git describe --abbrev=0 " ~ gitTag ~ "^");
-    immutable oldDMD = "dmd." ~ oldVer.chompPrefix("v") ~ ".zip";
+    immutable oldVer = args[1];
+    if (!oldVer.match(verRE))
+        return error("Expected a version tag like 'v2.066.0' not '%s'", oldVer);
+    immutable oldDMD = "dmd." ~ oldVer["v".length .. $] ~ ".zip";
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
