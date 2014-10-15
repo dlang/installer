@@ -25,9 +25,9 @@ enum freebsd_64 = Box(OS.freebsd, Model._64, "http://dlang.dawg.eu/vagrant/FreeB
                       "sudo pkg_add -r curl git gmake;");
 
 /// Name: create_dmd_release-linux
-/// VagrantBox.es: Puppetlabs Debian 6.0.7 x86_64, VBox 4.2.10, No Puppet or Chef
-enum linux_both = Box(OS.linux, Model._both, "http://puppet-vagrant-boxes.puppetlabs.com/debian-607-x64-vbox4210-nocm.box",
-                    "sudo apt-get -y update; sudo apt-get -y install git g++-multilib;");
+/// VagrantBox.es: Opscode debian-7.4
+enum linux_both = Box(OS.linux, Model._both, "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-7.4_chef-provisionerless.box",
+                      "sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm unzip;");
 
 /// OSes that require licenses must be setup manually
 
@@ -237,7 +237,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(Box box, string gitTag, bool isBranch, bool combine)
+void runBuild(Box box, string ver, bool isBranch, bool combine)
 {
     auto sh = box.shell();
 
@@ -273,45 +273,52 @@ void runBuild(Box box, string gitTag, bool isBranch, bool combine)
     auto cmd = rdmd~" create_dmd_release -v --extras=extraBins --archive --use-clone=clones";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
-    cmd ~= " " ~ gitTag;
+    cmd ~= " " ~ ver;
 
     sh.exec(cmd);
     if (combine)
-        sh.exec(rdmd~" create_dmd_release -v --extras=extraBins --combine --use-clone=clones "~gitTag);
+        sh.exec(rdmd~" create_dmd_release -v --extras=extraBins --combine --use-clone=clones "~ver);
 
     sh.close();
     // copy out created zip files
-    box.scp("default:dmd."~gitTag~"."~box.platform~".zip", ".");
+    box.scp("default:dmd."~ver~"."~box.platform~".zip", ".");
     if (combine)
-        box.scp("default:dmd."~gitTag~".zip", ".");
+        box.scp("default:dmd."~ver~".zip", ".");
 
     // Build package installers
-    immutable ver = gitTag.chompPrefix("v");
-
     if (!isBranch) final switch (box._os)
     {
     case OS.freebsd:
         break;
 
     case OS.linux:
-        // TBD
+        sh = box.shell();
+        sh.stdin.writeln(`cp dmd.`~ver~`.linux.zip clones/installer/linux`);
+        sh.stdin.writeln(`cd clones/installer/linux`);
+        sh.stdin.writeln(`./build_all.sh -v`~ver);
+        sh.stdin.writeln(`ls *.deb`);
+        sh.close();
+        box.scp("'default:clones/installer/linux/*.{rpm,deb}'", ".");
         break;
 
     case OS.windows:
-    {
         sh = box.shell();
         sh.stdin.writeln(`cd clones\installer\windows`);
         sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis'`~
-                         ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~gitTag~`.windows\dmd2'`~
+                         ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~ver~`.windows\dmd2'`~
                          ` '/DVersion2=`~ver~`' d2-installer.nsi`);
         sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
         sh.close();
         box.scp("default:dmd-"~ver~".exe", ".");
-    }
-    break;
+        break;
 
     case OS.osx:
-        // TBD
+        sh = box.shell();
+        sh.stdin.writeln(`cp dmd.`~ver~`.osx.zip clones/installer/osx`);
+        sh.stdin.writeln(`cd clones/installer/osx`);
+        sh.stdin.writeln(`make dmd.`~ver~`.dmg VERSION=`~ver);
+        sh.close();
+        box.scp("'default:clones/installer/osx/*.dmg'", ".");
         break;
     }
 }
@@ -352,7 +359,7 @@ int main(string[] args)
     immutable oldVer = args[1];
     if (!oldVer.match(verRE))
         return error("Expected a version tag like 'v2.066.0' not '%s'", oldVer);
-    immutable oldDMD = "dmd." ~ oldVer["v".length .. $] ~ ".zip";
+    immutable oldDMD = "dmd." ~ oldVer.chompPrefix("v") ~ ".zip";
 
     immutable gitTag = args[2];
     immutable isBranch = !gitTag.match(verRE);
@@ -380,6 +387,8 @@ int main(string[] args)
     cloneSources(gitTag, workDir~"/clones");
     prepareExtraBins(workDir);
 
+    immutable ver = gitTag.chompPrefix("v");
+
     foreach (i, box; boxes)
     {
         immutable combine = i == boxes.length - 1;
@@ -404,11 +413,11 @@ int main(string[] args)
         // copy all zips into the last box to combine them
         if (combine && boxes.length > 1)
         {
-            toCopy = boxes[0 .. $ - 1].map!(b => "dmd."~gitTag~"."~b.platform~".zip").join(" ");
+            toCopy = boxes[0 .. $ - 1].map!(b => "dmd."~ver~"."~b.platform~".zip").join(" ");
             box.scp(toCopy, "default:");
         }
 
-        runBuild(box, gitTag, isBranch, combine);
+        runBuild(box, ver, isBranch, combine);
     }
     return 0;
 }
