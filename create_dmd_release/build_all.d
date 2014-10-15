@@ -281,9 +281,9 @@ void runBuild(Box box, string ver, bool isBranch, bool combine)
 
     sh.close();
     // copy out created zip files
-    box.scp("default:dmd."~ver~"."~box.platform~".zip", ".");
+    box.scp("default:dmd."~ver~"."~box.platform~".zip", "build/");
     if (combine)
-        box.scp("default:dmd."~ver~".zip", ".");
+        box.scp("default:dmd."~ver~".zip", "build/");
 
     // Build package installers
     if (!isBranch) final switch (box._os)
@@ -298,7 +298,7 @@ void runBuild(Box box, string ver, bool isBranch, bool combine)
         sh.stdin.writeln(`./build_all.sh -v`~ver);
         sh.stdin.writeln(`ls *.deb`);
         sh.close();
-        box.scp("'default:clones/installer/linux/*.{rpm,deb}'", ".");
+        box.scp("'default:clones/installer/linux/*.{rpm,deb}'", "build/");
         break;
 
     case OS.windows:
@@ -309,7 +309,7 @@ void runBuild(Box box, string ver, bool isBranch, bool combine)
                          ` '/DVersion2=`~ver~`' d2-installer.nsi`);
         sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
         sh.close();
-        box.scp("default:dmd-"~ver~".exe", ".");
+        box.scp("default:dmd-"~ver~".exe", "build/");
         break;
 
     case OS.osx:
@@ -318,7 +318,7 @@ void runBuild(Box box, string ver, bool isBranch, bool combine)
         sh.stdin.writeln(`cd clones/installer/osx`);
         sh.stdin.writeln(`make dmd.`~ver~`.dmg VERSION=`~ver);
         sh.close();
-        box.scp("'default:clones/installer/osx/*.dmg'", ".");
+        box.scp("'default:clones/installer/osx/*.dmg'", "build/");
         break;
     }
 }
@@ -388,6 +388,7 @@ int main(string[] args)
     prepareExtraBins(workDir);
 
     immutable ver = gitTag.chompPrefix("v");
+    mkdirRecurse("build");
 
     foreach (i, box; boxes)
     {
@@ -405,7 +406,7 @@ int main(string[] args)
         // copy all zips into the last box to combine them
         if (combine && boxes.length > 1)
         {
-            toCopy = boxes[0 .. $ - 1].map!(b => "dmd."~ver~"."~b.platform~".zip").join(" ");
+            toCopy = boxes[0 .. $ - 1].map!(b => "build/dmd."~ver~"."~b.platform~".zip").join(" ");
             box.scp(toCopy, "default:");
         }
 
