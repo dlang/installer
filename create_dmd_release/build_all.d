@@ -393,14 +393,6 @@ int main(string[] args)
     {
         immutable combine = i == boxes.length - 1;
 
-        // skip a box if we already have its zip files
-        if (("dmd."~gitTag~"."~box.platform~".zip").exists &&
-            (!combine || ("dmd."~gitTag~".zip").exists))
-        {
-            writeln("\033[31m", "Skipping already build platform '"~box.platform~"'.", "\033[0m");
-            continue;
-        }
-
         box.up();
         scope (success) box.destroy();
         scope (failure) box.halt();
