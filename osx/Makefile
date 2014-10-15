@@ -27,14 +27,10 @@ fi)
 all: dmd.${VERSION}.dmg
 	rsync -az $< ${TARGET_SITE}:${TARGET_DIR}/dmd.${VERSION}.dmg
 
-dmd.${VERSION}.dmg:
+dmd.${VERSION}.dmg: dmd.${VERSION}.osx.zip
 	rm -rf dmd
 	mkdir -p dmd
-	if [ -f ${PWD}/../create_dmd_release/dmd.${VERSION}.osx.zip ];\
-		then unzip -q ${PWD}/../create_dmd_release/dmd.${VERSION}.osx.zip -d dmd/;\
-		else curl --progress-bar -O ftp://ftp.digitalmars.com/dmd.${VERSION}.osx.zip;\
-			unzip -q dmd.${VERSION}.osx.zip -d dmd/;\
-	fi;\
+	unzip -q dmd.${VERSION}.osx.zip -d dmd/
 	mv $(addprefix dmd/dmd2/,html license.txt man README.TXT samples src osx/bin osx/lib) dmd/
 	rm -rf dmd/dmd2/
 	cp dmd2.conf dmd/bin/dmd.conf
@@ -46,4 +42,3 @@ dmd.${VERSION}.dmg:
 
 clean:
 	rm -rf dmd.*.zip dmd.*.dmg dmd.*.tmp
-
