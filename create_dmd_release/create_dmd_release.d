@@ -833,7 +833,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd"~hideStdout);
         run(makecmd~" ddemangle"~hideStdout);
         run(makecmd~" dustmite"~hideStdout);
-        run(makecmd~" dman DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos"~hideStdout);
+        run(makecmd~" dman"~hideStdout);
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
