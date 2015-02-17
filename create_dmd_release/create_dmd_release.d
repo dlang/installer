@@ -702,8 +702,16 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     auto hideStdout = verbose? "" : " > "~devNull;
-    version (Windows) auto jobs = ""; else auto jobs = " -j4";
-    auto dmdEnv = " DMD=../dmd/src/dmd";
+    version (Windows)
+    {
+        auto jobs = "";
+        auto dmdEnv = ` DMD=..\dmd\src\dmd`;
+    }
+    else
+    {
+        auto jobs = " -j4";
+        auto dmdEnv = " DMD=../dmd/src/dmd";
+    }
     auto isRelease = " RELEASE=1";
     auto latest = " LATEST="~branch;
 
