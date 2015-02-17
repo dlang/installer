@@ -832,11 +832,9 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         changeDir(cloneDir~"/tools");
         run(makecmd~" rdmd"~hideStdout);
         run(makecmd~" ddemangle"~hideStdout);
-        run(makecmd~" findtags"~hideStdout);
         run(makecmd~" dustmite"~hideStdout);
         run(makecmd~" dman DOC=../"~generatedDocs~" PHOBOSDOC=../"~generatedDocs~"/phobos"~hideStdout);
 
-        removeFile(cloneDir~"/tools/generated/"~osDirName~"/"~bitsStr~"/findtags");
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 }
