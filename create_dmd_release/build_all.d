@@ -288,7 +288,7 @@ void runBuild(Box box, string ver, bool isBranch, bool combine, bool skipDocs)
         box.scp("default:dmd."~ver~".zip", "build/");
 
     // Build package installers
-    if (!isBranch) final switch (box._os)
+    if (!isBranch && !skipDocs) final switch (box._os)
     {
     case OS.freebsd:
         break;
