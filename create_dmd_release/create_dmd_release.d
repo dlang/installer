@@ -266,6 +266,7 @@ bool verbose;
 bool skipClone;
 bool skipBuild;
 bool skipPackage;
+bool skipDocs;
 bool doArchive;
 bool doCombine;
 bool do32Bit;
@@ -310,6 +311,7 @@ int main(string[] args)
             "skip-clone",   &skipClone,
             "use-clone",    &cloneDir,
             "skip-build",   &skipBuild,
+            "skip-docs",    &skipDocs,
             "skip-package", &skipPackage,
             "clean",        &clean,
             "extras",       &customExtrasDir,
@@ -789,7 +791,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     // Build docs
-    if(!alreadyBuiltDocs)
+    if(!alreadyBuiltDocs && !skipDocs)
     {
         infoMsg("Building Druntime Docs");
         changeDir(cloneDir~"/druntime");
@@ -841,7 +843,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd"~hideStdout);
         run(makecmd~" ddemangle"~hideStdout);
         run(makecmd~" dustmite"~hideStdout);
-        run(makecmd~" dman"~hideStdout);
+        if (!skipDocs) run(makecmd~" dman"~hideStdout);
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
@@ -875,23 +877,26 @@ void createRelease(string branch)
     copyFile(cloneDir~"/dmd/VERSION",    releaseDir~"/dmd2/src/VERSION");
 
     // Copy documentation
-    auto dlangFilter = (string a) =>
-        !a.startsWith("images/original/") &&
-        !a.startsWith("chm/") &&
-        ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
-    copyDir(cloneDir~"/"~generatedDocs, releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-    version(Windows)
+    if (!skipDocs)
     {
-        if(do32Bit)
-            copyFile(cloneDir~"/"~generatedDocs~"/d.chm", releaseBin32Dir~"/d.chm");
+        auto dlangFilter = (string a) =>
+            !a.startsWith("images/original/") &&
+            !a.startsWith("chm/") &&
+            ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
+        copyDir(cloneDir~"/"~generatedDocs, releaseDir~"/dmd2/html/d", a => dlangFilter(a));
+        version(Windows)
+        {
+            if(do32Bit)
+                copyFile(cloneDir~"/"~generatedDocs~"/d.chm", releaseBin32Dir~"/d.chm");
+        }
+        copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
+        copyDirVersioned(cloneDir~"/dmd/docs/man", releaseDir~"/dmd2/man");
+        copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
+        makeDir(releaseDir~"/dmd2/html/d/zlib");
+        copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
+        copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");
+        copyFile(cloneDir~"/phobos/etc/c/zlib/zlib.3",    releaseDir~"/dmd2/html/d/zlib/zlib.3");
     }
-    copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
-    copyDirVersioned(cloneDir~"/dmd/docs/man", releaseDir~"/dmd2/man");
-    copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
-    makeDir(releaseDir~"/dmd2/html/d/zlib");
-    copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
-    copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");
-    copyFile(cloneDir~"/phobos/etc/c/zlib/zlib.3",    releaseDir~"/dmd2/html/d/zlib/zlib.3");
 
     // Copy lib
     version(OSX)

@@ -237,7 +237,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(Box box, string ver, bool isBranch, bool combine)
+void runBuild(Box box, string ver, bool isBranch, bool combine, bool skipDocs)
 {
     auto sh = box.shell();
 
@@ -273,6 +273,8 @@ void runBuild(Box box, string ver, bool isBranch, bool combine)
     auto cmd = rdmd~" create_dmd_release -v --extras=extraBins --archive --use-clone=clones";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
+    if (skipDocs)
+        cmd ~= " --skip-docs";
     cmd ~= " " ~ ver;
 
     sh.exec(cmd);
@@ -345,8 +347,9 @@ int error(Args...)(string fmt, Args args)
 
 int main(string[] args)
 {
-    if (args.length != 3)
-        return error("Expected <old-dmd-version> <git-branch-or-tag> as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
+    if (args.length < 3 || args.length == 4 && args[$-1] != "--skip-docs" || args.length > 4)
+        return error("Expected <old-dmd-version> <git-branch-or-tag> [--skip-docs] as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
+    immutable skipDocs = args[$-1] == "--skip-docs";
 
     import std.regex;
     enum verRE = regex(`^v(\d+)\.(\d+)\.(\d+)(-.*)?$`);
@@ -410,7 +413,7 @@ int main(string[] args)
             box.scp(toCopy, "default:");
         }
 
-        runBuild(box, ver, isBranch, combine);
+        runBuild(box, ver, isBranch, combine, skipDocs);
     }
     return 0;
 }
