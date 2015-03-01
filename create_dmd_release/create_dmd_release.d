@@ -80,7 +80,6 @@ version(Windows)
 
     immutable makefile      = "win32.mak";
     immutable makefile64    = "win64.mak";
-    immutable devNull       = "NUL";
     immutable exe           = ".exe";
     immutable lib           = ".lib";
     immutable obj           = ".obj";
@@ -104,7 +103,6 @@ else version(Posix)
     immutable defaultWorkDirName = ".create_dmd_release";
     immutable makefile      = "posix.mak";
     immutable makefile64    = "posix.mak";
-    immutable devNull       = "/dev/null";
     immutable exe           = "";
     immutable lib           = ".a";
     immutable obj           = ".o";
@@ -163,8 +161,6 @@ string toString(Bits bits)
     return bits == Bits.bits32? "32-bit" : "64-bit";
 }
 
-bool quiet;
-bool verbose;
 bool skipDocs;
 bool do32Bit;
 bool do64Bit;
@@ -200,8 +196,6 @@ int main(string[] args)
     getopt(
         args,
         std.getopt.config.caseSensitive,
-        "q|quiet",      &quiet,
-        "v|verbose",    &verbose,
         "use-clone",    &cloneDir,
         "skip-docs",    &skipDocs,
         "clean",        &clean,
@@ -212,26 +206,20 @@ int main(string[] args)
 
     if(args.length < 2)
     {
-        errorMsg("Missing arguments.");
+        fatal("Missing arguments.");
         return 1;
     }
 
     // Handle command line args
     if(args.length != 2 && !clean)
     {
-        errorMsg("Missing TAG_OR_BRANCH.");
-        return 1;
-    }
-
-    if(quiet && verbose)
-    {
-        errorMsg("Can't use both --quiet and --verbose");
+        fatal("Missing TAG_OR_BRANCH.");
         return 1;
     }
 
     if(do32Bit && do64Bit)
     {
-        errorMsg("--only-32 and --only-64 cannot be used together.");
+        fatal("--only-32 and --only-64 cannot be used together.");
         return 1;
     }
 
@@ -239,7 +227,7 @@ int main(string[] args)
     {
         if(do32Bit || do64Bit)
         {
-            infoMsg("WARNING: Using --only-32 and --only-64: Universal binaries will not be created.");
+            info("WARNING: Using --only-32 and --only-64: Universal binaries will not be created.");
             return 1;
         }
     }
@@ -249,7 +237,7 @@ int main(string[] args)
 
     if(customExtrasDir == "")
     {
-        errorMsg("--extras=path is required.");
+        fatal("--extras=path is required.");
         return 1;
     }
     else
@@ -276,12 +264,12 @@ int main(string[] args)
         createRelease(branch);
         createZip(branch);
 
-        infoMsg("Done!");
+        info("Done!");
     }
     catch(Fail e)
     {
         // Just show the message, omit the stack trace.
-        errorMsg(e.msg);
+        fatal(e.msg);
         return 1;
     }
 
@@ -368,8 +356,8 @@ void init(string branch)
             win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
             win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
 
-            verboseMsg("VCDIR:  " ~ displayPath(win64vcDir));
-            verboseMsg("SDKDIR: " ~ displayPath(win64sdkDir));
+            trace("VCDIR:  " ~ displayPath(win64vcDir));
+            trace("SDKDIR: " ~ displayPath(win64sdkDir));
 
             msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
             if(!exists(msvcBinDir~"cl.exe"))
@@ -422,7 +410,6 @@ void cleanAll(Bits bits, string branch)
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     auto latest = " LATEST="~branch;
-    auto hideStdout = verbose? "" : " > "~devNull;
 
     // common make arguments
     auto makecmd = make~makeModel~latest~" -f"~targetMakefile;
@@ -430,35 +417,35 @@ void cleanAll(Bits bits, string branch)
     // Windows is 32-bit only currently
     if (targetMakefile != "win64.mak")
     {
-        infoMsg("Cleaning DMD "~bitsDisplay);
+        info("Cleaning DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" clean"~hideStdout);
+        run(makecmd~" clean");
     }
 
-    infoMsg("Cleaning Druntime "~bitsDisplay);
+    info("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~" clean"~hideStdout);
+    run(makecmd~" clean");
 
-    infoMsg("Cleaning Phobos "~bitsDisplay);
+    info("Cleaning Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~" clean DOCSRC=../dlang.org DOC=doc"~hideStdout);
+    run(makecmd~" clean DOCSRC=../dlang.org DOC=doc");
     version(Windows)
         removeDir(cloneDir~"/phobos/generated");
 
     // Windows is 32-bit only currently
     if (targetMakefile != "win64.mak")
     {
-        infoMsg("Cleaning Tools "~bitsDisplay);
+        info("Cleaning Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" clean"~hideStdout);
+        run(makecmd~" clean");
     }
 
     // Docs are bits-independent, so treat them as 32-bit only
     if(bits == Bits.bits32)
     {
-        infoMsg("Cleaning dlang.org");
+        info("Cleaning dlang.org");
         changeDir(cloneDir~"/dlang.org");
-        run(makecmd~" clean"~hideStdout);
+        run(makecmd~" clean");
     }
 }
 
@@ -503,7 +490,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto bitsStr = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
-    auto hideStdout = verbose? "" : " > "~devNull;
     version (Windows)
     {
         auto jobs = "";
@@ -522,9 +508,9 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     if(build64BitTools || bits == Bits.bits32)
     {
-        infoMsg("Building DMD "~bitsDisplay);
+        info("Building DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" dmd"~hideStdout);
+        run(makecmd~" dmd");
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
         removeFiles(cloneDir~"/dmd/src", "*{"~obj~","~lib~"}", SpanMode.depth);
     }
@@ -560,23 +546,23 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     if(dmdOnly)
         return;
 
-    infoMsg("Building Druntime "~bitsDisplay);
+    info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~msvcEnv~hideStdout);
+    run(makecmd~msvcEnv);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
-    infoMsg("Building Phobos "~bitsDisplay);
+    info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~msvcEnv~hideStdout);
+    run(makecmd~msvcEnv);
 
     version(OSX)
     {
         if(bits == Bits.bits64)
         {
-            infoMsg("Building Phobos Universal Binary");
+            info("Building Phobos Universal Binary");
             changeDir(cloneDir~"/phobos");
-            run(makecmd~" libphobos2.a"~hideStdout);
+            run(makecmd~" libphobos2.a");
         }
     }
 
@@ -593,16 +579,16 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     // Build docs
     if(!alreadyBuiltDocs && !skipDocs)
     {
-        infoMsg("Building Druntime Docs");
+        info("Building Druntime Docs");
         changeDir(cloneDir~"/druntime");
 
-        run(makecmd~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
+        run(makecmd~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease");
 
-        infoMsg("Building Phobos Docs");
+        info("Building Phobos Docs");
         changeDir(cloneDir~"/phobos");
-        run(makecmd~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease"~hideStdout);
+        run(makecmd~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease");
 
-        infoMsg("Building dlang.org");
+        info("Building dlang.org");
         version(Posix)
         {
             // Backwards compatability with older versions of the makefile
@@ -619,14 +605,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         else
             static assert(false, "Unsupported platform");
         // Use 32-bit version of the makefile because dlang.org lacks a win64.mak
-        run(makecmd~dlangOrgTarget~hideStdout);
+        run(makecmd~dlangOrgTarget);
         version(Windows)
         {
             copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
 
             // The chm stuff is Win32-only
             if(bits == Bits.bits32)
-                run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
+                run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease");
         }
 
         // Copy phobos docs into dlang.org docs directory, because
@@ -638,12 +624,12 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     if(build64BitTools || bits == Bits.bits32)
     {
-        infoMsg("Building Tools "~bitsDisplay);
+        info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" rdmd"~hideStdout);
-        run(makecmd~" ddemangle"~hideStdout);
-        run(makecmd~" dustmite"~hideStdout);
-        if (!skipDocs) run(makecmd~" dman"~hideStdout);
+        run(makecmd~" rdmd");
+        run(makecmd~" ddemangle");
+        run(makecmd~" dustmite");
+        if (!skipDocs) run(makecmd~" dman");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
@@ -653,7 +639,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 /// differences between 'posix.mak' and 'win*.mak'.
 void createRelease(string branch)
 {
-    infoMsg("Generating release directory");
+    info("Generating release directory");
 
     removeDir(releaseDir);
 
@@ -751,7 +737,7 @@ void createRelease(string branch)
 
 void verifyExtras()
 {
-    infoMsg("Ensuring non-versioned support files exist");
+    info("Ensuring non-versioned support files exist");
 
     version(Windows)
     {
@@ -826,7 +812,7 @@ void verifyExtras()
         {
             if(!filesMissing)
             {
-                errorMsg("The following files are missing:");
+                fatal("The following files are missing:");
                 filesMissing = true;
             }
 
@@ -854,19 +840,17 @@ void createZip(string branch)
 
 // Utils -----------------------
 
-void verboseMsg(lazy string msg)
+void trace(string msg)
 {
-    if(verbose)
-        infoMsg(msg);
+    writeln(msg);
 }
 
-void infoMsg(lazy string msg)
+void info(string msg)
 {
-    if(!quiet)
-        writeln(msg);
+    writeln(msg);
 }
 
-void errorMsg(string msg)
+void fatal(string msg)
 {
     stderr.writeln("create_dmd_release: Error: "~msg);
 }
@@ -942,7 +926,7 @@ void removeFiles(string path, string pattern, SpanMode mode,
         throw new Exception("removeFiles can only take SpanMode of 'depth' or 'shallow'");
 
     auto displaySuffix = mode==SpanMode.shallow? "" : "/*";
-    verboseMsg("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
+    trace("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
 
     // Needed to generate 'relativePath' correctly.
     path = path.replace("\\", "/");
@@ -957,11 +941,11 @@ void removeFiles(string path, string pattern, SpanMode mode,
 
             if(!filter || filter(relativePath))
             {
-                verboseMsg("    " ~ displayPath(relativePath));
+                trace("    " ~ displayPath(relativePath));
                 entry.remove();
             }
             else if(filter)
-                verboseMsg("    Skipping: " ~ displayPath(relativePath));
+                trace("    Skipping: " ~ displayPath(relativePath));
         }
     }
 }
@@ -971,7 +955,7 @@ void removeDir(string path)
 {
     if(exists(path))
     {
-        verboseMsg("Removing dir: "~displayPath(path));
+        trace("Removing dir: "~displayPath(path));
 
         void removeDirFailed()
         {
@@ -1002,14 +986,14 @@ void makeDir(string path)
 {
     if(!exists(path))
     {
-        verboseMsg("Creating dir: "~displayPath(path));
+        trace("Creating dir: "~displayPath(path));
         mkdirRecurse(path);
     }
 }
 
 void changeDir(string path)
 {
-    verboseMsg("Entering dir: "~displayPath(path));
+    trace("Entering dir: "~displayPath(path));
 
     try
         chdir(path);
@@ -1044,7 +1028,7 @@ void copyDirVersioned(string src, string dest, bool delegate(string) filter = nu
 /// Takes optional delegate to filter out any files to not copy.
 void copyDir(string src, string dest, bool delegate(string) filter = null)
 {
-    verboseMsg("Copying from '"~displayPath(src)~"' to '"~displayPath(dest)~"'");
+    trace("Copying from '"~displayPath(src)~"' to '"~displayPath(dest)~"'");
 
     // Needed to generate 'relativePath' correctly.
     src = src.replace("\\", "/");
@@ -1060,11 +1044,11 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
         if (relativePath.baseName.startsWith(".") ||
             filter !is null && !filter(relativePath))
         {
-            verboseMsg("    Skipping: " ~ displayPath(relativePath));
+            trace("    Skipping: " ~ displayPath(relativePath));
             continue;
         }
 
-        verboseMsg("    " ~ displayPath(relativePath));
+        trace("    " ~ displayPath(relativePath));
 
         auto destPath = buildPath(dest, relativePath);
         auto srcPath  = buildPath(src,  relativePath);
@@ -1095,7 +1079,7 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
 bool checkTool(string cmd, string cmdArgs="--help", string regexMatch=null)
 {
     auto cmdLine = cmd~" "~cmdArgs;
-    verboseMsg("Checking: "~cmdLine);
+    trace("Checking: "~cmdLine);
 
     try
     {
@@ -1119,7 +1103,7 @@ void ensureTool(string cmd, string cmdArgs="--help", string regexMatch=null)
 /// Like system(), but throws useful Fail message upon failure.
 void run(string cmd)
 {
-    verboseMsg("Running: "~cmd);
+    trace("Running: "~cmd);
 
     stdout.flush();
     stderr.flush();
@@ -1132,7 +1116,7 @@ void run(string cmd)
 /// Like run(), but captures the standard output and returns it.
 string runCapture(string cmd)
 {
-    verboseMsg("Running: "~cmd);
+    trace("Running: "~cmd);
 
     stdout.flush();
     stderr.flush();

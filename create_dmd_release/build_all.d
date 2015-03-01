@@ -270,7 +270,7 @@ void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
         break;
     }
 
-    auto cmd = rdmd~" create_dmd_release -v --extras=extraBins --use-clone=clones";
+    auto cmd = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones";
     if (box._model != Model._both)
         cmd ~= " --only-" ~ box.modelS;
     if (skipDocs)
