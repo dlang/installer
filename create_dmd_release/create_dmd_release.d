@@ -203,9 +203,6 @@ void showHelp()
 
         --use-clone=path   Use the existing clones in the given path.
 
-        --skip-build       Don't build DMD, assume all tools/libs are already built.
-                           Implies --skip-clone. Can be used with --use-clone=path.
-
         --skip-package     Don't create release directory, assume it has already been
                            created. Useful together with the --archive option.
                            Implies --skip-build.
@@ -225,7 +222,6 @@ void showHelp()
 
 bool quiet;
 bool verbose;
-bool skipBuild;
 bool skipPackage;
 bool skipDocs;
 bool doArchive;
@@ -269,7 +265,6 @@ int main(string[] args)
             "q|quiet",      &quiet,
             "v|verbose",    &verbose,
             "use-clone",    &cloneDir,
-            "skip-build",   &skipBuild,
             "skip-docs",    &skipDocs,
             "skip-package", &skipPackage,
             "clean",        &clean,
@@ -334,9 +329,6 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(skipPackage)
-        skipBuild = true;
-
     if(skipPackage && !doArchive)
     {
         errorMsg("Nothing to do! Specified --skip-package, but not --archive.");
@@ -371,12 +363,8 @@ int main(string[] args)
         if(!skipPackage)
             ensureSources();
 
-        // No need to clean if we're not building.
-        if(!skipBuild)
-            cleanAll(branch);
-
-        if(!skipBuild)
-            buildAll(branch);
+        cleanAll(branch);
+        buildAll(branch);
 
         if(!skipPackage)
             createRelease(branch);
