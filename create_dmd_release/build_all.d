@@ -237,7 +237,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(Box box, string ver, bool isBranch, bool combine, bool skipDocs)
+void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
 {
     auto sh = box.shell();
 
@@ -278,14 +278,10 @@ void runBuild(Box box, string ver, bool isBranch, bool combine, bool skipDocs)
     cmd ~= " " ~ ver;
 
     sh.exec(cmd);
-    if (combine)
-        sh.exec(rdmd~" create_dmd_release -v --extras=extraBins --combine --use-clone=clones "~ver);
-
     sh.close();
+
     // copy out created zip files
     box.scp("default:dmd."~ver~"."~box.platform~".zip", "build/");
-    if (combine)
-        box.scp("default:dmd."~ver~".zip", "build/");
 
     // Build package installers
     if (!isBranch && !skipDocs) final switch (box._os)
@@ -334,6 +330,25 @@ void cloneSources(string gitTag, string tgtDir)
 
     import std.file;
     write(tgtDir~"/dmd/VERSION", gitTag.chompPrefix("v"));
+}
+
+void combineZips(string gitTag)
+{
+    auto workDir = mkdtemp();
+    scope (success) if (workDir.exists) rmdirRecurse(workDir);
+
+    auto baseName = "build/dmd."~gitTag;
+    writefln("Creating combined '%s.zip'.", baseName);
+    foreach (os; ["windows", "linux", "freebsd", "osx"])
+    {
+        auto name = baseName ~ "." ~ os;
+        foreach (suf; [".zip", "-32.zip", "-64.zip"])
+        {
+            if (exists(name ~ suf))
+                extractZip(name ~ suf, workDir);
+        }
+    }
+    archiveZip(workDir~"/dmd2", baseName~".zip");
 }
 
 int error(Args...)(string fmt, Args args)
@@ -393,10 +408,8 @@ int main(string[] args)
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
 
-    foreach (i, box; boxes)
+    foreach (box; boxes)
     {
-        immutable combine = i == boxes.length - 1;
-
         box.up();
         scope (success) box.destroy();
         scope (failure) box.halt();
@@ -406,14 +419,8 @@ int main(string[] args)
         // copy create_dmd_release.d and dependencies
         box.scp("create_dmd_release.d common.d", "default:");
 
-        // copy all zips into the last box to combine them
-        if (combine && boxes.length > 1)
-        {
-            toCopy = boxes[0 .. $ - 1].map!(b => "build/dmd."~ver~"."~b.platform~".zip").join(" ");
-            box.scp(toCopy, "default:");
-        }
-
-        runBuild(box, ver, isBranch, combine, skipDocs);
+        runBuild(box, ver, isBranch, skipDocs);
     }
+    combineZips(ver);
     return 0;
 }

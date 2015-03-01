@@ -45,13 +45,7 @@ If a working multilib system is any trouble, you can also build 32-bit and
 
 View all options with "create_dmd_release --help".
 
-3. Copy the resulting .zip files to a single directory on any
-non-Windows machine (Windows would mess up the symlinks and executable
-attributes), and generate the combined-OS release like this:
-
-$ [path-to]/create_dmd_release v2.064 --combine
-
-4. Distribute all the .zip and .7z files.
+3. Distribute all the .zip and .7z files.
 
 Extra notes:
 ------------
@@ -61,22 +55,15 @@ This tool keeps a deliberately strong separation between each of the main stages
 2. Build   (compile everything, including docs, within the temp dir)
 3. Package (generate an OS-specific release as a directory)
 4. Archive (zip the OS-specific packaged release directory)
-5. Combine (create the all-OS release archive from multiple OS-specific ones)
 
 Aside from helping to ensure correctness, this separation means the process
 can be resumed or restarted beginning at any of the above steps (see
 the --skip-* flags in the --help screen).
 
-The last two steps, archive and combine, are not performed by default. To
+The last step archive is not performed by default. To
 perform the archive step, supply the --archive flag.
 You can create an archive without repeating the earlier clone/build/package
 steps by including the --skip-package flag.
-
-The final step, combine, is completely separate. You must first run this tool
-on each of the target OSes to create the OS-specific archives. Then copy all
-the archives to a single directory on any Posix system (not Windows because
-that would destroy the symlinks and executable attributes in the posix
-archives). Then, from that directory, run this tool with the --combine flag.
 +/
 
 import std.algorithm;
@@ -95,17 +82,8 @@ import common;
 version(Posix)
     import core.sys.posix.sys.stat;
 
-immutable osDirNameWindows = "windows";
-immutable osDirNameFreeBSD = "freebsd";
-immutable osDirNameLinux   = "linux";
-immutable osDirNameOSX     = "osx";
-
 immutable releaseBitSuffix32 = "-32"; // Ex: "dmd.v2.064.linux-32.zip"
 immutable releaseBitSuffix64 = "-64";
-
-immutable allOsDirNames = [
-    osDirNameFreeBSD, osDirNameOSX, osDirNameWindows, osDirNameLinux
-];
 
 version(Windows)
 {
@@ -128,7 +106,7 @@ version(Windows)
     // official Win64 build/makefile of DMD. This is a hack to work around that.
     immutable lib64RequiresDmd32 = true;
 
-    immutable osDirName     = osDirNameWindows;
+    immutable osDirName     = "windows";
     immutable make          = "make";
     immutable suffix32      = "";   // bin/lib  TODO: adapt scripts to use 32
     immutable suffix64      = "64"; // bin64/lib64
@@ -149,11 +127,11 @@ else version(Posix)
     immutable lib64RequiresDmd32 = false;
 
     version(FreeBSD)
-        immutable osDirName = osDirNameFreeBSD;
+        immutable osDirName = "freebsd";
     else version(linux)
-        immutable osDirName = osDirNameLinux;
+        immutable osDirName = "linux";
     else version(OSX)
-        immutable osDirName = osDirNameOSX;
+        immutable osDirName = "osx";
     else
         static assert(false, "Unsupported system");
 
@@ -244,19 +222,13 @@ void showHelp()
 
         --archive          Create platform-specific zip archive.
 
-        --combine          (Posix-only) Combine all platform-specific archives in
-                           current directory into cross-platform zip archive.
-                           Cannot be used on Windows because the symlinks and
-                           executable attributes would be destroyed.
-                           Implies --skip-package.
-
         --clean            Delete temporary dir (see above) and exit.
 
         --only-32          Only build and package 32-bit.
         --only-64          Only build and package 64-bit.
 
         On OSX, --only-32 and --only-64 are not recommended because universal
-        binaries will NOT be created, even when using --combine.
+        binaries will NOT be created.
         `).outdent().strip()
     );
 }
@@ -268,7 +240,6 @@ bool skipBuild;
 bool skipPackage;
 bool skipDocs;
 bool doArchive;
-bool doCombine;
 bool do32Bit;
 bool do64Bit;
 
@@ -316,7 +287,6 @@ int main(string[] args)
             "clean",        &clean,
             "extras",       &customExtrasDir,
             "archive",      &doArchive,
-            "combine",      &doCombine,
             "only-32",      &do32Bit,
             "only-64",      &do64Bit,
         );
@@ -358,15 +328,6 @@ int main(string[] args)
         return 1;
     }
 
-    version(Windows)
-    {
-        if(doCombine)
-        {
-            errorMsg("--combine cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
-            return 1;
-        }
-    }
-
     if(do32Bit && do64Bit)
     {
         errorMsg("--only-32 and --only-64 cannot be used together.");
@@ -377,7 +338,7 @@ int main(string[] args)
     {
         if(do32Bit || do64Bit)
         {
-            infoMsg("WARNING: Using --only-32 and --only-64: Universal binaries will not be created, even when using --combine.");
+            infoMsg("WARNING: Using --only-32 and --only-64: Universal binaries will not be created.");
             return 1;
         }
     }
@@ -385,22 +346,19 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(doCombine)
-        skipPackage = true;
-
     if(skipPackage)
         skipBuild = true;
 
     if(cloneDir != "" || skipBuild)
         skipClone = true;
 
-    if(skipPackage && !doArchive && !doCombine)
+    if(skipPackage && !doArchive)
     {
-        errorMsg("Nothing to do! Specified --skip-package, but neither --archive nor --combine flag");
+        errorMsg("Nothing to do! Specified --skip-package, but not --archive.");
         return 1;
     }
 
-    if(customExtrasDir == "" && !doCombine)
+    if(customExtrasDir == "")
     {
         errorMsg("--extras=path is required.\nSee --help for more info.");
         return 1;
@@ -450,12 +408,6 @@ int main(string[] args)
 
         if(doArchive)
             createZip(branch);
-
-        if(doCombine)
-            extractOsArchives(branch);
-
-        if(doCombine)
-            createCombinedZip(branch);
 
         infoMsg("Done!");
     }
@@ -1050,41 +1002,6 @@ void createZip(string branch)
 {
     auto archiveName = baseName(releaseDir)~".zip";
     archiveZip(releaseDir~"/dmd2", archiveName);
-}
-
-void extractOsArchives(string branch)
-{
-    auto outputDir = "dmd."~branch;
-    removeDir(outputDir);
-    makeDir(outputDir);
-
-    foreach(osName; allOsDirNames)
-    {
-        auto archiveName = "dmd."~branch~"."~osName;
-
-        auto archiveZip = archiveName~".zip";
-
-        // Try combined 32/64-bit archives
-        if(exists(archiveZip))
-            extractZip(archiveZip, outputDir);
-        else
-        {
-            // Try 32-bit only and 64-bit-only
-            foreach(bitSuffix; TypeTuple!(releaseBitSuffix64, releaseBitSuffix32))
-            {
-                archiveZip = archiveName~bitSuffix~".zip";
-
-                if(exists(archiveZip))
-                    extractZip(archiveZip, outputDir);
-            }
-        }
-    }
-}
-
-void createCombinedZip(string branch)
-{
-    auto dirName = "dmd."~branch;
-    archiveZip(dirName~"/dmd2", dirName~".zip");
 }
 
 // Utils -----------------------
