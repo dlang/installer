@@ -201,17 +201,7 @@ void showHelp()
                            the release. This is required, in order to include all
                            the DM bins/libs that are not on GitHub.
 
-        --skip-clone       Instead of cloning DMD repos from GitHub, use
-                           already-existing clones. Useful if you've already run
-                           create_release and don't want to repeat the cloning process.
-                           The repositories will NOT be switched to TAG_OR_BRANCH,
-                           TAG_OR_BRANCH will ONLY be used for directory/archive names.
-                           Default path is the temp dir (see above).
-
-        --use-clone=path   Instead of cloning DMD repos from GitHub, use the existing
-                           clones in the given path. Implies --skip-clone.
-                           Use with caution! There's no guarantee the result will
-                           be consistent with GitHub!
+        --use-clone=path   Use the existing clones in the given path.
 
         --skip-build       Don't build DMD, assume all tools/libs are already built.
                            Implies --skip-clone. Can be used with --use-clone=path.
@@ -235,7 +225,6 @@ void showHelp()
 
 bool quiet;
 bool verbose;
-bool skipClone;
 bool skipBuild;
 bool skipPackage;
 bool skipDocs;
@@ -279,7 +268,6 @@ int main(string[] args)
             "help",         &help,
             "q|quiet",      &quiet,
             "v|verbose",    &verbose,
-            "skip-clone",   &skipClone,
             "use-clone",    &cloneDir,
             "skip-build",   &skipBuild,
             "skip-docs",    &skipDocs,
@@ -349,9 +337,6 @@ int main(string[] args)
     if(skipPackage)
         skipBuild = true;
 
-    if(cloneDir != "" || skipBuild)
-        skipClone = true;
-
     if(skipPackage && !doArchive)
     {
         errorMsg("Nothing to do! Specified --skip-package, but not --archive.");
@@ -381,23 +366,13 @@ int main(string[] args)
         string branch = args[1];
         init(branch);
 
-        if(!skipClone)
-        {
-            ensureNotFile(cloneDir);
-            removeDir(cloneDir);
-            makeDir(cloneDir);
-        }
-
-        if(!skipClone)
-            cloneSources(branch);
-
         // No need for the cloned repos if we're not generating
         // the release directory.
         if(!skipPackage)
             ensureSources();
 
-        // No need to clean if we just cloned, or if we're not building.
-        if(skipClone && !skipBuild)
+        // No need to clean if we're not building.
+        if(!skipBuild)
             cleanAll(branch);
 
         if(!skipBuild)
@@ -442,10 +417,6 @@ void init(string branch)
     releaseLib64Dir = osDir ~ "/lib" ~ suffix64;
     allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
     osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
-
-    // Check for required external tools
-    if(!skipClone)
-        ensureTool("git");
 
     // Check for DMC and MSVC toolchains
     version(Windows)
@@ -527,21 +498,6 @@ void init(string branch)
     else
         // Check for GNU make
         ensureTool(make);
-}
-
-void cloneSources(string branch)
-{
-    auto saveDir = getcwd();
-    scope(exit) changeDir(saveDir);
-    changeDir(cloneDir);
-
-    auto prefix = "https://github.com/D-Programming-Language/";
-    gitClone(prefix~"dmd.git", "dmd", branch);
-    gitClone(prefix~"druntime.git",  "druntime",  branch);
-    gitClone(prefix~"phobos.git",    "phobos",    branch);
-    gitClone(prefix~"tools.git",     "tools",     branch);
-    gitClone(prefix~"dlang.org.git", "dlang.org", branch);
-    gitClone(prefix~"installer.git", "installer", branch);
 }
 
 void ensureSources()
@@ -1312,23 +1268,6 @@ string runCapture(string cmd)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
 
     return result.output;
-}
-
-/// Clone a git repository to a specific path. Optionally to a
-/// specific branch (default is master).
-///
-/// Requires a command-line git client.
-void gitClone(string repo, string path, string branch=null)
-{
-    removeDir(path);
-    makeDir(path);
-
-    infoMsg("Cloning: "~repo);
-    auto quietSwitch = verbose? "" : "-q ";
-    if(branch != "")
-        run("git clone --depth 1 -b "~quote(branch)~" "~quietSwitch~quote(repo)~" "~path);
-    else
-        run("git clone --depth 1 "~quietSwitch~quote(repo)~" "~path);
 }
 
 string[] gitVersionedFiles(string path)
