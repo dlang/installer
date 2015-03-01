@@ -43,8 +43,6 @@ branch name like "2.064".
 If a working multilib system is any trouble, you can also build 32-bit and
 64-bit versions separately using the --only-32 and --only-64 flags.
 
-View all options with "create_dmd_release --help".
-
 3. Distribute all the .zip files.
 
 Extra notes:
@@ -165,45 +163,6 @@ string toString(Bits bits)
     return bits == Bits.bits32? "32-bit" : "64-bit";
 }
 
-void showHelp()
-{
-    writeln((`
-        Create DMD Release - Build: ` ~ __TIMESTAMP__ ~ `
-        Usage:   create_dmd_release --extras=path [options] TAG_OR_BRANCH [options]
-        Example: create_dmd_release --extras=`~osDirName~`-extra v2.064
-
-        Generates a platform-specific DMD release as a directory tree.
-        Optionally, it can also generate archived releases.
-
-        TAG_OR_BRANCH:     GitHub tag/branch of DMD to generate a release for.
-
-        Your temp dir is:
-        ` ~ defaultWorkDir ~ `
-
-        Options:
-        --help             Display this message and exit.
-        -q,--quiet         Quiet mode.
-        -v,--verbose       Verbose mode.
-
-        --extras=path      Include additional files from 'path'. The path should be a
-                           directory tree matching the DMD release structure (including
-                           the 'dmd2' dir). All files in 'path' will be included in
-                           the release. This is required, in order to include all
-                           the DM bins/libs that are not on GitHub.
-
-        --use-clone=path   Use the existing clones in the given path.
-
-        --clean            Delete temporary dir (see above) and exit.
-
-        --only-32          Only build and package 32-bit.
-        --only-64          Only build and package 64-bit.
-
-        On OSX, --only-32 and --only-64 are not recommended because universal
-        binaries will NOT be created.
-        `).outdent().strip()
-    );
-}
-
 bool quiet;
 bool verbose;
 bool skipDocs;
@@ -243,7 +202,6 @@ int main(string[] args)
         getopt(
             args,
             std.getopt.config.caseSensitive,
-            "help",         &help,
             "q|quiet",      &quiet,
             "v|verbose",    &verbose,
             "use-clone",    &cloneDir,
@@ -258,7 +216,7 @@ int main(string[] args)
     {
         if(isUnrecognizedOptionException(e))
         {
-            errorMsg(e.msg ~ "\nRun with --help to see options.");
+            errorMsg(e.msg);
             return 1;
         }
 
@@ -268,20 +226,13 @@ int main(string[] args)
     if(args.length < 2)
     {
         errorMsg("Missing arguments.");
-        showHelp();
         return 1;
     }
 
     // Handle command line args
-    if(help)
-    {
-        showHelp();
-        return 0;
-    }
-
     if(args.length != 2 && !clean)
     {
-        errorMsg("Missing TAG_OR_BRANCH.\nSee --help for more info.");
+        errorMsg("Missing TAG_OR_BRANCH.");
         return 1;
     }
 
@@ -311,7 +262,7 @@ int main(string[] args)
 
     if(customExtrasDir == "")
     {
-        errorMsg("--extras=path is required.\nSee --help for more info.");
+        errorMsg("--extras=path is required.");
         return 1;
     }
     else
