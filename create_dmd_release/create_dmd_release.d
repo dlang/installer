@@ -203,10 +203,6 @@ void showHelp()
 
         --use-clone=path   Use the existing clones in the given path.
 
-        --skip-package     Don't create release directory, assume it has already been
-                           created. Useful together with the --archive option.
-                           Implies --skip-build.
-
         --archive          Create platform-specific zip archive.
 
         --clean            Delete temporary dir (see above) and exit.
@@ -222,7 +218,6 @@ void showHelp()
 
 bool quiet;
 bool verbose;
-bool skipPackage;
 bool skipDocs;
 bool doArchive;
 bool do32Bit;
@@ -266,7 +261,6 @@ int main(string[] args)
             "v|verbose",    &verbose,
             "use-clone",    &cloneDir,
             "skip-docs",    &skipDocs,
-            "skip-package", &skipPackage,
             "clean",        &clean,
             "extras",       &customExtrasDir,
             "archive",      &doArchive,
@@ -329,7 +323,7 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(skipPackage && !doArchive)
+    if(!doArchive)
     {
         errorMsg("Nothing to do! Specified --skip-package, but not --archive.");
         return 1;
@@ -358,16 +352,10 @@ int main(string[] args)
         string branch = args[1];
         init(branch);
 
-        // No need for the cloned repos if we're not generating
-        // the release directory.
-        if(!skipPackage)
-            ensureSources();
-
+        ensureSources();
         cleanAll(branch);
         buildAll(branch);
-
-        if(!skipPackage)
-            createRelease(branch);
+        createRelease(branch);
 
         if(doArchive)
             createZip(branch);
