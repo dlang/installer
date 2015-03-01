@@ -119,6 +119,8 @@ private:
                 config.vm.box = "create_dmd_release-`~platform~`"
                 # disable shared folders, because the guest additions are missing
                 config.vm.synced_folder ".", "/vagrant", :disabled => true
+                # use insecure ssh keys
+                config.ssh.insert_key = false
 
                 config.vm.provider :virtualbox do |vb|
                   vb.customize ["modifyvm", :id, "--memory", "4096"]
@@ -131,10 +133,8 @@ private:
         if (_os == OS.windows)
             res ~=
             `
+                config.ssh.shell = 'powershell -Command -'
                 config.vm.guest = :windows
-                # Port forward WinRM and RDP
-                config.vm.network :forwarded_port, guest: 3389, host: 3389
-                config.vm.network :forwarded_port, guest: 5985, host: 5985, id: "winrm", auto_correct: true
             `;
         res ~=
             `
