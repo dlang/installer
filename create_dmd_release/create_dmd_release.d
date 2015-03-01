@@ -197,31 +197,18 @@ int main(string[] args)
     bool help;
     bool clean;
 
-    try
-    {
-        getopt(
-            args,
-            std.getopt.config.caseSensitive,
-            "q|quiet",      &quiet,
-            "v|verbose",    &verbose,
-            "use-clone",    &cloneDir,
-            "skip-docs",    &skipDocs,
-            "clean",        &clean,
-            "extras",       &customExtrasDir,
-            "only-32",      &do32Bit,
-            "only-64",      &do64Bit,
-        );
-    }
-    catch(Exception e)
-    {
-        if(isUnrecognizedOptionException(e))
-        {
-            errorMsg(e.msg);
-            return 1;
-        }
-
-        throw e;
-    }
+    getopt(
+        args,
+        std.getopt.config.caseSensitive,
+        "q|quiet",      &quiet,
+        "v|verbose",    &verbose,
+        "use-clone",    &cloneDir,
+        "skip-docs",    &skipDocs,
+        "clean",        &clean,
+        "extras",       &customExtrasDir,
+        "only-32",      &do32Bit,
+        "only-64",      &do64Bit,
+    );
 
     if(args.length < 2)
     {
@@ -882,24 +869,6 @@ void infoMsg(lazy string msg)
 void errorMsg(string msg)
 {
     stderr.writeln("create_dmd_release: Error: "~msg);
-}
-
-/// Ugly hack around the lack of an UnrecognizedOptionException
-bool isUnrecognizedOptionException(Exception e)
-{
-    return e && e.msg.startsWith("Unrecognized option");
-}
-
-// Test assumptions made by isUnrecognizedOptionException
-unittest
-{
-    bool bar;
-    auto args = ["someapp", "--foo"];
-    auto e = collectException!Exception(getopt(args, "bar", &bar));
-    assert(
-        isUnrecognizedOptionException(e),
-        "getopt's behavior upon unrecognized options is not as expected"
-    );
 }
 
 /// Cleanup a path for display to the user:
