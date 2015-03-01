@@ -55,12 +55,12 @@ struct Box
         std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
 
         // bring up the virtual box (downloads missing images)
-        run("cd "~_tmpdir~" && vagrant up");
+        run("cd "~_tmpdir~"; vagrant up");
 
         _isUp = true;
 
         // save the ssh config file
-        run("cd "~_tmpdir~" && vagrant ssh-config > ssh.cfg");
+        run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg");
 
         provision();
     }
@@ -69,7 +69,7 @@ struct Box
     {
         try
         {
-            if (_isUp) run("cd "~_tmpdir~" && vagrant destroy -f");
+            if (_isUp) run("cd "~_tmpdir~"; vagrant destroy -f");
             if (_tmpdir.length) rmdirRecurse(_tmpdir);
         }
         finally
@@ -82,7 +82,7 @@ struct Box
     void halt()
     {
         try
-            if (_isUp) run("cd "~_tmpdir~" && vagrant halt");
+            if (_isUp) run("cd "~_tmpdir~"; vagrant halt");
         finally
             _isUp = false;
     }
