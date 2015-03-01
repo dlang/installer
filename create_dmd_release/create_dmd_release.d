@@ -34,7 +34,7 @@ of the files to the latest versions, or add any new files as desired.
 FreeBSD), genrate the platform-specific releases by running this (from
 whatever directory you want the resulting archives placed):
 
-$ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os] --archive
+$ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os]
 
 Optionally substitute "v2.064" with either "master" or the git tag name of the
 desired release (must be at least "v2.064"). For beta releases, you can use a
@@ -45,7 +45,7 @@ If a working multilib system is any trouble, you can also build 32-bit and
 
 View all options with "create_dmd_release --help".
 
-3. Distribute all the .zip and .7z files.
+3. Distribute all the .zip files.
 
 Extra notes:
 ------------
@@ -53,17 +53,7 @@ This tool keeps a deliberately strong separation between each of the main stages
 
 1. Clone   (from GitHub, into a temp dir)
 2. Build   (compile everything, including docs, within the temp dir)
-3. Package (generate an OS-specific release as a directory)
-4. Archive (zip the OS-specific packaged release directory)
-
-Aside from helping to ensure correctness, this separation means the process
-can be resumed or restarted beginning at any of the above steps (see
-the --skip-* flags in the --help screen).
-
-The last step archive is not performed by default. To
-perform the archive step, supply the --archive flag.
-You can create an archive without repeating the earlier clone/build/package
-steps by including the --skip-package flag.
+3. Package (generate an OS-specific zip)
 +/
 
 import std.algorithm;
@@ -180,7 +170,7 @@ void showHelp()
     writeln((`
         Create DMD Release - Build: ` ~ __TIMESTAMP__ ~ `
         Usage:   create_dmd_release --extras=path [options] TAG_OR_BRANCH [options]
-        Example: create_dmd_release --extras=`~osDirName~`-extra --archive v2.064
+        Example: create_dmd_release --extras=`~osDirName~`-extra v2.064
 
         Generates a platform-specific DMD release as a directory tree.
         Optionally, it can also generate archived releases.
@@ -203,8 +193,6 @@ void showHelp()
 
         --use-clone=path   Use the existing clones in the given path.
 
-        --archive          Create platform-specific zip archive.
-
         --clean            Delete temporary dir (see above) and exit.
 
         --only-32          Only build and package 32-bit.
@@ -219,7 +207,6 @@ void showHelp()
 bool quiet;
 bool verbose;
 bool skipDocs;
-bool doArchive;
 bool do32Bit;
 bool do64Bit;
 
@@ -263,7 +250,6 @@ int main(string[] args)
             "skip-docs",    &skipDocs,
             "clean",        &clean,
             "extras",       &customExtrasDir,
-            "archive",      &doArchive,
             "only-32",      &do32Bit,
             "only-64",      &do64Bit,
         );
@@ -323,12 +309,6 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(!doArchive)
-    {
-        errorMsg("Nothing to do! Specified --skip-package, but not --archive.");
-        return 1;
-    }
-
     if(customExtrasDir == "")
     {
         errorMsg("--extras=path is required.\nSee --help for more info.");
@@ -356,9 +336,7 @@ int main(string[] args)
         cleanAll(branch);
         buildAll(branch);
         createRelease(branch);
-
-        if(doArchive)
-            createZip(branch);
+        createZip(branch);
 
         infoMsg("Done!");
     }
