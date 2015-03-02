@@ -191,6 +191,7 @@ void run(string cmd)
 
 auto addPrefix(R)(R rng, string prefix)
 {
+    import std.algorithm : map;
     return rng.map!(a => prefix ~ a)();
 }
 
