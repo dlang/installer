@@ -16,13 +16,13 @@ version (Posix) {} else { static assert(0, "This must be run on a Posix machine.
 /// Name: create_dmd_release-freebsd-64
 /// VagrantBox.es: FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
 /// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box
-/// Setup: sudo pkg_add -r curl git gmake
+/// Setup: sudo pkg_add -r curl git gmake rsync
 enum freebsd_32 = Box(OS.freebsd, Model._32);
 
 /// Name: create_dmd_release-freebsd-64
 /// VagrantBox.es: FreeBSD 8.4 amd64 (minimal, No Guest Additions, UFS)
 /// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box
-/// Setup: sudo pkg_add -r curl git gmake
+/// Setup: sudo pkg_add -r curl git gmake rsync
 enum freebsd_64 = Box(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
@@ -105,7 +105,10 @@ struct Box
 
     void scp(string src, string tgt)
     {
-        run("scp -rq -F "~sshcfg~" "~src~" "~tgt);
+        if (_os == OS.windows)
+            run("scp -rq -F "~sshcfg~" "~src~" "~tgt);
+        else
+            run("rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt);
     }
 
 private:
