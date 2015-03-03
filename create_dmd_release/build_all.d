@@ -18,35 +18,36 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 /// VagrantBox.es: FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
 /// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box
 /// Setup: sudo pkg_add -r curl git gmake rsync
-enum freebsd_32 = Box(OS.freebsd, Model._32);
+enum freebsd_32 = Platform(OS.freebsd, Model._32);
 
 /// Name: create_dmd_release-freebsd-64
 /// VagrantBox.es: FreeBSD 8.4 amd64 (minimal, No Guest Additions, UFS)
 /// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box
 /// Setup: sudo pkg_add -r curl git gmake rsync
-enum freebsd_64 = Box(OS.freebsd, Model._64);
+enum freebsd_64 = Platform(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
 /// VagrantBox.es: Opscode debian-7.4
 /// URL: http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-7.4_chef-provisionerless.box
 /// Setup: sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm unzip;
-enum linux_both = Box(OS.linux, Model._both);
+enum linux_both = Platform(OS.linux, Model._both);
 
 /// OSes that require licenses must be setup manually
 
 /// Name: create_dmd_release-osx
 /// Setup: Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
-enum osx_both = Box(OS.osx, Model._both);
+enum osx_both = Platform(OS.osx, Model._both);
 
 /// Name: create_dmd_release-windows
 /// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
-enum windows_both = Box(OS.windows, Model._both);
+enum windows_both = Platform(OS.windows, Model._both);
 
-enum boxes = [windows_both, osx_both, freebsd_32, freebsd_64, linux_both];
+enum platforms = [windows_both, osx_both, freebsd_32, freebsd_64, linux_both];
 
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
+struct Platform { OS os; Model model; }
 
 struct Shell
 {
@@ -75,45 +76,26 @@ struct Shell
 
 struct Box
 {
-    void up()
+    @disable this(this);
+
+    this(Platform platform)
     {
+        _platform = platform;
+
         _tmpdir = mkdtemp();
         std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
 
         // bring up the virtual box (downloads missing images)
         run("cd "~_tmpdir~"; vagrant up");
-
         _isUp = true;
 
         // save the ssh config file
         run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg");
     }
 
-    void destroy()
-    {
-        try
-        {
-            if (_isUp) run("cd "~_tmpdir~"; vagrant destroy -f");
-            if (_tmpdir.length) rmdirRecurse(_tmpdir);
-        }
-        finally
-        {
-            _isUp = false;
-            _tmpdir = null;
-        }
-    }
-
-    void halt()
-    {
-        try
-            if (_isUp) run("cd "~_tmpdir~"; vagrant halt");
-        finally
-            _isUp = false;
-    }
-
     Shell shell()
     {
-        if (_os == OS.windows)
+        if (os == OS.windows)
             return Shell(["ssh", "-F", sshcfg, "default", "powershell", "-Command", "-"]);
         else
             return Shell(["ssh", "-F", sshcfg, "default", "bash", "-e"]);
@@ -121,7 +103,7 @@ struct Box
 
     void scp(string src, string tgt)
     {
-        if (_os == OS.windows)
+        if (os == OS.windows)
             run("scp -rq -F "~sshcfg~" "~src~" "~tgt);
         else
             run("rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt);
@@ -149,7 +131,7 @@ private:
                   vb.customize ["modifyvm", :id, "--usb", "off"]
                 end
             `;
-        if (_os == OS.windows)
+        if (os == OS.windows)
             res ~=
             `
                 config.ssh.shell = 'powershell -Command -'
@@ -162,13 +144,45 @@ private:
         return res.outdent();
     }
 
-    @property string platform() { return _model == Model._both ? osS : osS ~ "-" ~ modelS; }
-    @property string osS() { return to!string(_os); }
-    @property string modelS() { return _model == Model._both ? "" : to!string(cast(uint)_model); }
+    auto build(string ver, bool isBranch, bool skipDocs)
+    {
+        return runBuild(this, ver, isBranch, skipDocs);
+    }
+
+    ~this()
+    {
+        destroy();
+    }
+
+    void destroy()
+    {
+        try
+        {
+            if (_isUp) run("cd "~_tmpdir~"; vagrant destroy -f");
+            if (_tmpdir.length) rmdirRecurse(_tmpdir);
+        }
+        finally
+        {
+            _isUp = false;
+            _tmpdir = null;
+        }
+    }
+
+    void halt()
+    {
+        try
+            if (_isUp) run("cd "~_tmpdir~"; vagrant halt");
+        finally
+            _isUp = false;
+    }
+
+    @property string platform() { return model == Model._both ? osS : osS ~ "-" ~ modelS; }
+    @property string osS() { return to!string(os); }
+    @property string modelS() { return model == Model._both ? "" : to!string(cast(uint)model); }
     @property string sshcfg() { return buildPath(_tmpdir, "ssh.cfg"); }
 
-    OS _os;
-    Model _model;
+    Platform _platform;
+    alias _platform this;
     string _tmpdir;
     bool _isUp;
 }
@@ -230,12 +244,12 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
+void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
 {
     with (box.shell())
     {
         string rdmd;
-        final switch (box._os)
+        final switch (box.os)
         {
         case OS.freebsd:
             rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~
@@ -264,7 +278,7 @@ void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
         }
 
         auto build = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones";
-        if (box._model != Model._both)
+        if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
             build ~= " --skip-docs";
@@ -277,7 +291,7 @@ void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
     box.scp("default:dmd."~ver~"."~box.platform~".zip", "build/");
 
     // Build package installers
-    if (!isBranch && !skipDocs) final switch (box._os)
+    if (!isBranch && !skipDocs) final switch (box.os)
     {
     case OS.freebsd:
         break;
@@ -404,18 +418,17 @@ int main(string[] args)
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
 
-    foreach (box; boxes)
+    foreach (platform; platforms)
     {
-        box.up();
-        scope (success) box.destroy();
-        scope (failure) box.halt();
+        with (Box(platform))
+        {
+            auto toCopy = ["old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
+            scp(toCopy, "default:");
+            // copy create_dmd_release.d and dependencies
+            scp("create_dmd_release.d common.d", "default:");
 
-        auto toCopy = ["old-dmd", "clones", box.osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
-        box.scp(toCopy, "default:");
-        // copy create_dmd_release.d and dependencies
-        box.scp("create_dmd_release.d common.d", "default:");
-
-        runBuild(box, ver, isBranch, skipDocs);
+            build(ver, isBranch, skipDocs);
+        }
     }
     combineZips(ver);
     return 0;
