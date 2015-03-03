@@ -10,36 +10,36 @@ import common;
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 
-// Open Source OS boxes are from http://www.vagrantbox.es/
-// Note: The pull request to add the FreeBSD-8.4 boxes to vagrantbox.es is still pending, https://github.com/garethr/vagrantboxes-heroku/pull/246.
+/// Open Source OS boxes are from http://www.vagrantbox.es/
+/// For each box additional setup steps were performed, afterwards the boxes were repackaged.
 
 /// Name: create_dmd_release-freebsd-64
 /// VagrantBox.es: FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
-enum freebsd_32 = Box(OS.freebsd, Model._32, "http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box",
-                      "sudo pkg_add -r curl git gmake;");
+/// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box
+/// Setup: sudo pkg_add -r curl git gmake
+enum freebsd_32 = Box(OS.freebsd, Model._32);
 
-// Note: pull request for vagrantbox.es pending
 /// Name: create_dmd_release-freebsd-64
 /// VagrantBox.es: FreeBSD 8.4 amd64 (minimal, No Guest Additions, UFS)
-enum freebsd_64 = Box(OS.freebsd, Model._64, "http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box",
-                      "sudo pkg_add -r curl git gmake;");
+/// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box
+/// Setup: sudo pkg_add -r curl git gmake
+enum freebsd_64 = Box(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
 /// VagrantBox.es: Opscode debian-7.4
-enum linux_both = Box(OS.linux, Model._both, "http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-7.4_chef-provisionerless.box",
-                      "sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm unzip;");
+/// URL: http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-7.4_chef-provisionerless.box
+/// Setup: sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm unzip;
+enum linux_both = Box(OS.linux, Model._both);
 
 /// OSes that require licenses must be setup manually
 
 /// Name: create_dmd_release-osx
 /// Setup: Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
-enum osx_both = Box(OS.osx, Model._both, null,
-                  null);
+enum osx_both = Box(OS.osx, Model._both);
 
 /// Name: create_dmd_release-windows
 /// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
-enum windows_both = Box(OS.windows, Model._both, null,
-                  null);
+enum windows_both = Box(OS.windows, Model._both);
 
 enum boxes = [windows_both, osx_both, freebsd_32, freebsd_64, linux_both];
 
@@ -61,8 +61,6 @@ struct Box
 
         // save the ssh config file
         run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg");
-
-        provision();
     }
 
     void destroy()
@@ -119,7 +117,6 @@ private:
 
             Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 config.vm.box = "create_dmd_release-`~platform~`"
-                config.vm.box_url = "`~_url~`"
                 # disable shared folders, because the guest additions are missing
                 config.vm.synced_folder ".", "/vagrant", :disabled => true
 
@@ -146,15 +143,6 @@ private:
         return res.outdent();
     }
 
-    void provision()
-    {
-        auto sh = shell();
-        // install prerequisites
-        sh.exec(_setup);
-        // wait for completion
-        sh.close();
-    }
-
     @property string platform() { return _model == Model._both ? osS : osS ~ "-" ~ modelS; }
     @property string osS() { return to!string(_os); }
     @property string modelS() { return _model == Model._both ? "" : to!string(cast(uint)_model); }
@@ -162,8 +150,6 @@ private:
 
     OS _os;
     Model _model;
-    string _url; /// optional url of the image
-    string _setup; /// initial provisioning script
     string _tmpdir;
     bool _isUp;
 }
