@@ -9,6 +9,7 @@ import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.
 import common;
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
+static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzilla 8269.");
 
 /// Open Source OS boxes are from http://www.vagrantbox.es/
 /// For each box additional setup steps were performed, afterwards the boxes were repackaged.
@@ -46,6 +47,31 @@ enum boxes = [windows_both, osx_both, freebsd_32, freebsd_64, linux_both];
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
+
+struct Shell
+{
+    @disable this(this);
+
+    this(string[] args)
+    {
+        _pipes = pipeProcess(args, Redirect.stdin);
+    }
+
+    void cmd(string s)
+    {
+        writeln("\033[33m", s, "\033[0m");
+        _pipes.stdin.writeln(s);
+    }
+
+    ~this()
+    {
+        _pipes.stdin.close();
+        // TODO: capture stderr and attach it to enforce
+        enforce(wait(_pipes.pid) == 0);
+    }
+
+    ProcessPipes _pipes;
+}
 
 struct Box
 {
@@ -85,22 +111,12 @@ struct Box
             _isUp = false;
     }
 
-    ProcessPipes shell(Redirect redirect = Redirect.stdin)
-    in { assert(redirect & Redirect.stdin); }
-    body
+    Shell shell()
     {
-        ProcessPipes sh;
         if (_os == OS.windows)
-        {
-            sh = pipeProcess(["ssh", "-F", sshcfg, "default", "powershell", "-Command", "-"], redirect);
-        }
+            return Shell(["ssh", "-F", sshcfg, "default", "powershell", "-Command", "-"]);
         else
-        {
-            sh = pipeProcess(["ssh", "-F", sshcfg, "default", "bash"], redirect);
-            // enable verbose echo and stop on error
-            sh.exec("set -e -v");
-        }
-        return sh;
+            return Shell(["ssh", "-F", sshcfg, "default", "bash", "-e"]);
     }
 
     void scp(string src, string tgt)
@@ -171,19 +187,6 @@ void run(string cmd)
     enforce(wait(spawnShell(cmd)) == 0);
 }
 
-void exec(ProcessPipes pipes, string cmd)
-{
-    writeln("\033[33m", cmd, "\033[0m");
-    pipes.stdin.writeln(cmd);
-}
-
-void close(ProcessPipes pipes)
-{
-    pipes.stdin.close();
-    // TODO: capture stderr and attach it to enforce
-    enforce(wait(pipes.pid) == 0);
-}
-
 //------------------------------------------------------------------------------
 
 auto addPrefix(R)(R rng, string prefix)
@@ -228,46 +231,46 @@ void prepareExtraBins(string workDir)
 
 void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
 {
-    auto sh = box.shell();
-
-    string rdmd;
-    final switch (box._os)
+    with (box.shell())
     {
-    case OS.freebsd:
-        rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~
-            " --compiler=old-dmd/dmd2/freebsd/bin"~box.modelS~"/dmd";
-        break;
-    case OS.linux:
-        rdmd = "old-dmd/dmd2/linux/bin64/rdmd"~
-            " --compiler=old-dmd/dmd2/linux/bin64/dmd";
-        break;
-    case OS.windows:
-        // update DMC's snn.lib and link.exe
-        sh.exec(`copy old-dmd\dmd2\windows\bin\link.exe C:\dm\bin\link.exe`);
-        sh.exec(`copy old-dmd\dmd2\windows\lib\snn.lib C:\dm\lib\snn.lib`);
-        // copy libcurl needed for create_dmd_release and dlang.org
-        sh.exec(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
-        sh.exec(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
-        sh.exec(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
+        string rdmd;
+        final switch (box._os)
+        {
+        case OS.freebsd:
+            rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~
+                " --compiler=old-dmd/dmd2/freebsd/bin"~box.modelS~"/dmd";
+            break;
+        case OS.linux:
+            rdmd = "old-dmd/dmd2/linux/bin64/rdmd"~
+                " --compiler=old-dmd/dmd2/linux/bin64/dmd";
+            break;
+        case OS.windows:
+            // update DMC's snn.lib and link.exe
+            cmd(`copy old-dmd\dmd2\windows\bin\link.exe C:\dm\bin\link.exe`);
+            cmd(`copy old-dmd\dmd2\windows\lib\snn.lib C:\dm\lib\snn.lib`);
+            // copy libcurl needed for create_dmd_release and dlang.org
+            cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
+            cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
+            cmd(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
 
-        rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`~
-            ` --compiler=old-dmd\dmd2\windows\bin\dmd.exe`;
-        break;
-    case OS.osx:
-        rdmd = "old-dmd/dmd2/osx/bin/rdmd"
-            " --compiler=old-dmd/dmd2/osx/bin/dmd";
-        break;
+            rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`~
+                ` --compiler=old-dmd\dmd2\windows\bin\dmd.exe`;
+            break;
+        case OS.osx:
+            rdmd = "old-dmd/dmd2/osx/bin/rdmd"
+                " --compiler=old-dmd/dmd2/osx/bin/dmd";
+            break;
+        }
+
+        auto build = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones";
+        if (box._model != Model._both)
+            build ~= " --only-" ~ box.modelS;
+        if (skipDocs)
+            build ~= " --skip-docs";
+        build ~= " " ~ ver;
+
+        cmd(build);
     }
-
-    auto cmd = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones";
-    if (box._model != Model._both)
-        cmd ~= " --only-" ~ box.modelS;
-    if (skipDocs)
-        cmd ~= " --skip-docs";
-    cmd ~= " " ~ ver;
-
-    sh.exec(cmd);
-    sh.close();
 
     // copy out created zip files
     box.scp("default:dmd."~ver~"."~box.platform~".zip", "build/");
@@ -279,32 +282,35 @@ void runBuild(Box box, string ver, bool isBranch, bool skipDocs)
         break;
 
     case OS.linux:
-        sh = box.shell();
-        sh.stdin.writeln(`cp dmd.`~ver~`.linux.zip clones/installer/linux`);
-        sh.stdin.writeln(`cd clones/installer/linux`);
-        sh.stdin.writeln(`./build_all.sh -v`~ver);
-        sh.stdin.writeln(`ls *.deb`);
-        sh.close();
+        with (box.shell())
+        {
+            cmd(`cp dmd.`~ver~`.linux.zip clones/installer/linux`);
+            cmd(`cd clones/installer/linux`);
+            cmd(`./build_all.sh -v`~ver);
+            cmd(`ls *.deb`);
+        }
         box.scp("'default:clones/installer/linux/*.{rpm,deb}'", "build/");
         break;
 
     case OS.windows:
-        sh = box.shell();
-        sh.stdin.writeln(`cd clones\installer\windows`);
-        sh.stdin.writeln(`&'C:\Program Files (x86)\NSIS\makensis'`~
-                         ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~ver~`.windows\dmd2'`~
-                         ` '/DVersion2=`~ver~`' d2-installer.nsi`);
-        sh.stdin.writeln(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
-        sh.close();
+        with (box.shell())
+        {
+            cmd(`cd clones\installer\windows`);
+            cmd(`&'C:\Program Files (x86)\NSIS\makensis'`~
+                ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~ver~`.windows\dmd2'`~
+                ` '/DVersion2=`~ver~`' d2-installer.nsi`);
+            cmd(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
+        }
         box.scp("default:dmd-"~ver~".exe", "build/");
         break;
 
     case OS.osx:
-        sh = box.shell();
-        sh.stdin.writeln(`cp dmd.`~ver~`.osx.zip clones/installer/osx`);
-        sh.stdin.writeln(`cd clones/installer/osx`);
-        sh.stdin.writeln(`make dmd.`~ver~`.dmg VERSION=`~ver);
-        sh.close();
+        with (box.shell())
+        {
+            cmd(`cp dmd.`~ver~`.osx.zip clones/installer/osx`);
+            cmd(`cd clones/installer/osx`);
+            cmd(`make dmd.`~ver~`.dmg VERSION=`~ver);
+        }
         box.scp("'default:clones/installer/osx/*.dmg'", "build/");
         break;
     }
