@@ -34,7 +34,7 @@ of the files to the latest versions, or add any new files as desired.
 FreeBSD), genrate the platform-specific releases by running this (from
 whatever directory you want the resulting archives placed):
 
-$ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os] --archive
+$ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os]
 
 Optionally substitute "v2.064" with either "master" or the git tag name of the
 desired release (must be at least "v2.064"). For beta releases, you can use a
@@ -43,15 +43,7 @@ branch name like "2.064".
 If a working multilib system is any trouble, you can also build 32-bit and
 64-bit versions separately using the --only-32 and --only-64 flags.
 
-View all options with "create_dmd_release --help".
-
-3. Copy the resulting .zip files to a single directory on any
-non-Windows machine (Windows would mess up the symlinks and executable
-attributes), and generate the combined-OS release like this:
-
-$ [path-to]/create_dmd_release v2.064 --combine
-
-4. Distribute all the .zip and .7z files.
+3. Distribute all the .zip files.
 
 Extra notes:
 ------------
@@ -59,24 +51,7 @@ This tool keeps a deliberately strong separation between each of the main stages
 
 1. Clone   (from GitHub, into a temp dir)
 2. Build   (compile everything, including docs, within the temp dir)
-3. Package (generate an OS-specific release as a directory)
-4. Archive (zip the OS-specific packaged release directory)
-5. Combine (create the all-OS release archive from multiple OS-specific ones)
-
-Aside from helping to ensure correctness, this separation means the process
-can be resumed or restarted beginning at any of the above steps (see
-the --skip-* flags in the --help screen).
-
-The last two steps, archive and combine, are not performed by default. To
-perform the archive step, supply the --archive flag.
-You can create an archive without repeating the earlier clone/build/package
-steps by including the --skip-package flag.
-
-The final step, combine, is completely separate. You must first run this tool
-on each of the target OSes to create the OS-specific archives. Then copy all
-the archives to a single directory on any Posix system (not Windows because
-that would destroy the symlinks and executable attributes in the posix
-archives). Then, from that directory, run this tool with the --combine flag.
+3. Package (generate an OS-specific zip)
 +/
 
 import std.algorithm;
@@ -95,17 +70,8 @@ import common;
 version(Posix)
     import core.sys.posix.sys.stat;
 
-immutable osDirNameWindows = "windows";
-immutable osDirNameFreeBSD = "freebsd";
-immutable osDirNameLinux   = "linux";
-immutable osDirNameOSX     = "osx";
-
 immutable releaseBitSuffix32 = "-32"; // Ex: "dmd.v2.064.linux-32.zip"
 immutable releaseBitSuffix64 = "-64";
-
-immutable allOsDirNames = [
-    osDirNameFreeBSD, osDirNameOSX, osDirNameWindows, osDirNameLinux
-];
 
 version(Windows)
 {
@@ -114,12 +80,10 @@ version(Windows)
 
     immutable makefile      = "win32.mak";
     immutable makefile64    = "win64.mak";
-    immutable devNull       = "NUL";
     immutable exe           = ".exe";
     immutable lib           = ".lib";
     immutable obj           = ".obj";
     immutable dll           = ".dll";
-    immutable generatedDocs = "dlang.org";
     immutable libPhobos32   = "phobos";
     immutable libPhobos64   = "phobos64";
     immutable build64BitTools = false;
@@ -128,7 +92,7 @@ version(Windows)
     // official Win64 build/makefile of DMD. This is a hack to work around that.
     immutable lib64RequiresDmd32 = true;
 
-    immutable osDirName     = osDirNameWindows;
+    immutable osDirName     = "windows";
     immutable make          = "make";
     immutable suffix32      = "";   // bin/lib  TODO: adapt scripts to use 32
     immutable suffix64      = "64"; // bin64/lib64
@@ -138,22 +102,20 @@ else version(Posix)
     immutable defaultWorkDirName = ".create_dmd_release";
     immutable makefile      = "posix.mak";
     immutable makefile64    = "posix.mak";
-    immutable devNull       = "/dev/null";
     immutable exe           = "";
     immutable lib           = ".a";
     immutable obj           = ".o";
-    immutable generatedDocs = "dlang.org/web";
     immutable libPhobos32   = "libphobos2";
     immutable libPhobos64   = "libphobos2";
     immutable build64BitTools    = true;
     immutable lib64RequiresDmd32 = false;
 
     version(FreeBSD)
-        immutable osDirName = osDirNameFreeBSD;
+        immutable osDirName = "freebsd";
     else version(linux)
-        immutable osDirName = osDirNameLinux;
+        immutable osDirName = "linux";
     else version(OSX)
-        immutable osDirName = osDirNameOSX;
+        immutable osDirName = "osx";
     else
         static assert(false, "Unsupported system");
 
@@ -197,78 +159,7 @@ string toString(Bits bits)
     return bits == Bits.bits32? "32-bit" : "64-bit";
 }
 
-void showHelp()
-{
-    writeln((`
-        Create DMD Release - Build: ` ~ __TIMESTAMP__ ~ `
-        Usage:   create_dmd_release --extras=path [options] TAG_OR_BRANCH [options]
-        Example: create_dmd_release --extras=`~osDirName~`-extra --archive v2.064
-
-        Generates a platform-specific DMD release as a directory tree.
-        Optionally, it can also generate archived releases.
-
-        TAG_OR_BRANCH:     GitHub tag/branch of DMD to generate a release for.
-
-        Your temp dir is:
-        ` ~ defaultWorkDir ~ `
-
-        Options:
-        --help             Display this message and exit.
-        -q,--quiet         Quiet mode.
-        -v,--verbose       Verbose mode.
-
-        --extras=path      Include additional files from 'path'. The path should be a
-                           directory tree matching the DMD release structure (including
-                           the 'dmd2' dir). All files in 'path' will be included in
-                           the release. This is required, in order to include all
-                           the DM bins/libs that are not on GitHub.
-
-        --skip-clone       Instead of cloning DMD repos from GitHub, use
-                           already-existing clones. Useful if you've already run
-                           create_release and don't want to repeat the cloning process.
-                           The repositories will NOT be switched to TAG_OR_BRANCH,
-                           TAG_OR_BRANCH will ONLY be used for directory/archive names.
-                           Default path is the temp dir (see above).
-
-        --use-clone=path   Instead of cloning DMD repos from GitHub, use the existing
-                           clones in the given path. Implies --skip-clone.
-                           Use with caution! There's no guarantee the result will
-                           be consistent with GitHub!
-
-        --skip-build       Don't build DMD, assume all tools/libs are already built.
-                           Implies --skip-clone. Can be used with --use-clone=path.
-
-        --skip-package     Don't create release directory, assume it has already been
-                           created. Useful together with the --archive option.
-                           Implies --skip-build.
-
-        --archive          Create platform-specific zip archive.
-
-        --combine          (Posix-only) Combine all platform-specific archives in
-                           current directory into cross-platform zip archive.
-                           Cannot be used on Windows because the symlinks and
-                           executable attributes would be destroyed.
-                           Implies --skip-package.
-
-        --clean            Delete temporary dir (see above) and exit.
-
-        --only-32          Only build and package 32-bit.
-        --only-64          Only build and package 64-bit.
-
-        On OSX, --only-32 and --only-64 are not recommended because universal
-        binaries will NOT be created, even when using --combine.
-        `).outdent().strip()
-    );
-}
-
-bool quiet;
-bool verbose;
-bool skipClone;
-bool skipBuild;
-bool skipPackage;
 bool skipDocs;
-bool doArchive;
-bool doCombine;
 bool do32Bit;
 bool do64Bit;
 
@@ -300,76 +191,33 @@ int main(string[] args)
     bool help;
     bool clean;
 
-    try
-    {
-        getopt(
-            args,
-            std.getopt.config.caseSensitive,
-            "help",         &help,
-            "q|quiet",      &quiet,
-            "v|verbose",    &verbose,
-            "skip-clone",   &skipClone,
-            "use-clone",    &cloneDir,
-            "skip-build",   &skipBuild,
-            "skip-docs",    &skipDocs,
-            "skip-package", &skipPackage,
-            "clean",        &clean,
-            "extras",       &customExtrasDir,
-            "archive",      &doArchive,
-            "combine",      &doCombine,
-            "only-32",      &do32Bit,
-            "only-64",      &do64Bit,
-        );
-    }
-    catch(Exception e)
-    {
-        if(isUnrecognizedOptionException(e))
-        {
-            errorMsg(e.msg ~ "\nRun with --help to see options.");
-            return 1;
-        }
-
-        throw e;
-    }
+    getopt(
+        args,
+        std.getopt.config.caseSensitive,
+        "use-clone",    &cloneDir,
+        "skip-docs",    &skipDocs,
+        "clean",        &clean,
+        "extras",       &customExtrasDir,
+        "only-32",      &do32Bit,
+        "only-64",      &do64Bit,
+    );
 
     if(args.length < 2)
     {
-        errorMsg("Missing arguments.");
-        showHelp();
+        fatal("Missing arguments.");
         return 1;
     }
 
     // Handle command line args
-    if(help)
-    {
-        showHelp();
-        return 0;
-    }
-
     if(args.length != 2 && !clean)
     {
-        errorMsg("Missing TAG_OR_BRANCH.\nSee --help for more info.");
+        fatal("Missing TAG_OR_BRANCH.");
         return 1;
-    }
-
-    if(quiet && verbose)
-    {
-        errorMsg("Can't use both --quiet and --verbose");
-        return 1;
-    }
-
-    version(Windows)
-    {
-        if(doCombine)
-        {
-            errorMsg("--combine cannot be used on Windows because the symlinks and executable attributes would be destroyed.");
-            return 1;
-        }
     }
 
     if(do32Bit && do64Bit)
     {
-        errorMsg("--only-32 and --only-64 cannot be used together.");
+        fatal("--only-32 and --only-64 cannot be used together.");
         return 1;
     }
 
@@ -377,7 +225,7 @@ int main(string[] args)
     {
         if(do32Bit || do64Bit)
         {
-            infoMsg("WARNING: Using --only-32 and --only-64: Universal binaries will not be created, even when using --combine.");
+            info("WARNING: Using --only-32 and --only-64: Universal binaries will not be created.");
             return 1;
         }
     }
@@ -385,24 +233,9 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(doCombine)
-        skipPackage = true;
-
-    if(skipPackage)
-        skipBuild = true;
-
-    if(cloneDir != "" || skipBuild)
-        skipClone = true;
-
-    if(skipPackage && !doArchive && !doCombine)
+    if(customExtrasDir == "")
     {
-        errorMsg("Nothing to do! Specified --skip-package, but neither --archive nor --combine flag");
-        return 1;
-    }
-
-    if(customExtrasDir == "" && !doCombine)
-    {
-        errorMsg("--extras=path is required.\nSee --help for more info.");
+        fatal("--extras=path is required.");
         return 1;
     }
     else
@@ -417,52 +250,20 @@ int main(string[] args)
             return 0;
         }
 
-        if(customExtrasDir != "")
-            ensureDir(customExtrasDir);
-
         string branch = args[1];
         init(branch);
 
-        if(!skipClone)
-        {
-            ensureNotFile(cloneDir);
-            removeDir(cloneDir);
-            makeDir(cloneDir);
-        }
+        cleanAll(branch);
+        buildAll(branch);
+        createRelease(branch);
+        createZip(branch);
 
-        if(!skipClone)
-            cloneSources(branch);
-
-        // No need for the cloned repos if we're not generating
-        // the release directory.
-        if(!skipPackage)
-            ensureSources();
-
-        // No need to clean if we just cloned, or if we're not building.
-        if(skipClone && !skipBuild)
-            cleanAll(branch);
-
-        if(!skipBuild)
-            buildAll(branch);
-
-        if(!skipPackage)
-            createRelease(branch);
-
-        if(doArchive)
-            createZip(branch);
-
-        if(doCombine)
-            extractOsArchives(branch);
-
-        if(doCombine)
-            createCombinedZip(branch);
-
-        infoMsg("Done!");
+        info("Done!");
     }
     catch(Fail e)
     {
         // Just show the message, omit the stack trace.
-        errorMsg(e.msg);
+        fatal(e.msg);
         return 1;
     }
 
@@ -491,116 +292,28 @@ void init(string branch)
     allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
     osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
 
-    // Check for required external tools
-    if(!skipClone)
-        ensureTool("git");
-
-    // Check for DMC and MSVC toolchains
-    version(Windows)
+    // configure MSVC tools needed for 64-bit
+    version (Windows) if (do64Bit)
     {
-        // Small workaround because DMC/MAKE's help screens don't return exit code 0
-        enum dummyFile  = ".create_release_dummy";
-        std.file.write(dummyFile, "");
-        scope(exit) removeFile(dummyFile);
-
-        ensureTool("dmc", "-c "~dummyFile);
-        ensureTool(make, "-f "~dummyFile);
-
-        // Check DMC's OPTLINK (not just any OPTLINK on the PATH)
-        enum dummyCFile = ".create_release_dummy.c";
-        std.file.write(dummyCFile, "void main(){}");
-        scope(exit) removeFile(dummyCFile);
-
-        enum dummyOptlinkHelp = ".create_release_optlink_help";
-        run("dmc "~dummyCFile~" -L/? > "~dummyOptlinkHelp);
-        scope(exit) removeFile(dummyOptlinkHelp);
-
-        if(!checkTool("type", dummyOptlinkHelp, `OPTLINK \(R\) for Win32`))
-            fail("DMC appears to be missing OPTLINK");
-
-        // Check support files needed during build
-        auto extrasOptlink = customExtrasDir~"/dmd2/windows/bin/link.exe";
-        if(!checkTool(extrasOptlink, "/?", `OPTLINK \(R\) for Win32`))
-            fail("You must have a valid OPTLINK in: "~displayPath(extrasOptlink));
-
-        if(!checkTool(extrasOptlink, "/?", `OPTLINK \(R\) for Win32.*LA\[RGEADDRESSAWARE\]`))
+        if(environment.get("VCDIR", "") == "" || environment.get("SDKDIR", "") == "")
         {
-            fail("The OPTLINK in your --extras=... directory does not support "~
-                "/LARGEADDRESSAWARE. You must use a newer OPTLINK. "~
-                "See <http://wiki.dlang.org/Building_OPTLINK>");
-        }
-
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/user32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/kernel32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/snn.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/ws2_32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/wsock32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/shell32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/advapi32.lib");
-
-        // Check MSVC tools needed for 64-bit
-        if(do64Bit)
-        {
-            if(environment.get("VCDIR", "") == "" || environment.get("SDKDIR", "") == "")
-            {
-                fail(`
+            fail(`
                     Environment variables VCDIR and SDKDIR must both be set. For example:
                     set VCDIR=C:\Program Files (x86)\Microsoft Visual Studio 8\VC\
                     set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
                 `.outdent().strip());
-            }
-
-            win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
-            win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
-
-            verboseMsg("VCDIR:  " ~ displayPath(win64vcDir));
-            verboseMsg("SDKDIR: " ~ displayPath(win64sdkDir));
-
-            msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
-            if(!exists(msvcBinDir~"cl.exe"))
-                msvcBinDir = win64vcDir ~ "/bin/amd64";
-
-            ensureTool(quote(msvcBinDir~"/cl.exe"), "/HELP");
-            try
-            {
-                ensureDir(win64sdkDir);
-                ensureDir(win64sdkDir~"/Bin");
-                ensureDir(win64sdkDir~"/Include");
-                ensureDir(win64sdkDir~"/Lib");
-            }
-            catch(Fail e)
-                fail("SDKDIR doesn't appear to be a proper Windows SDK: " ~ environment["SDKDIR"]);
         }
+
+        win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
+        win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
+
+        trace("VCDIR:  " ~ displayPath(win64vcDir));
+        trace("SDKDIR: " ~ displayPath(win64sdkDir));
+
+        msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
+        if(!exists(msvcBinDir~"cl.exe"))
+            msvcBinDir = win64vcDir ~ "/bin/amd64";
     }
-    else
-        // Check for GNU make
-        ensureTool(make);
-}
-
-void cloneSources(string branch)
-{
-    auto saveDir = getcwd();
-    scope(exit) changeDir(saveDir);
-    changeDir(cloneDir);
-
-    auto prefix = "https://github.com/D-Programming-Language/";
-    gitClone(prefix~"dmd.git", "dmd", branch);
-    gitClone(prefix~"druntime.git",  "druntime",  branch);
-    gitClone(prefix~"phobos.git",    "phobos",    branch);
-    gitClone(prefix~"tools.git",     "tools",     branch);
-    gitClone(prefix~"dlang.org.git", "dlang.org", branch);
-    gitClone(prefix~"installer.git", "installer", branch);
-}
-
-void ensureSources()
-{
-    ensureDir(cloneDir);
-    ensureDir(cloneDir~"/dmd");
-    ensureDir(cloneDir~"/druntime");
-    ensureDir(cloneDir~"/phobos");
-    ensureDir(cloneDir~"/tools");
-    ensureDir(cloneDir~"/dlang.org");
-    ensureDir(cloneDir~"/installer");
 }
 
 void cleanAll(string branch)
@@ -622,7 +335,6 @@ void cleanAll(Bits bits, string branch)
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     auto latest = " LATEST="~branch;
-    auto hideStdout = verbose? "" : " > "~devNull;
 
     // common make arguments
     auto makecmd = make~makeModel~latest~" -f"~targetMakefile;
@@ -630,35 +342,26 @@ void cleanAll(Bits bits, string branch)
     // Windows is 32-bit only currently
     if (targetMakefile != "win64.mak")
     {
-        infoMsg("Cleaning DMD "~bitsDisplay);
+        info("Cleaning DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" clean"~hideStdout);
+        run(makecmd~" clean");
     }
 
-    infoMsg("Cleaning Druntime "~bitsDisplay);
+    info("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~" clean"~hideStdout);
+    run(makecmd~" clean");
 
-    infoMsg("Cleaning Phobos "~bitsDisplay);
+    info("Cleaning Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~" clean DOCSRC=../dlang.org DOC=doc"~hideStdout);
     version(Windows)
         removeDir(cloneDir~"/phobos/generated");
 
     // Windows is 32-bit only currently
     if (targetMakefile != "win64.mak")
     {
-        infoMsg("Cleaning Tools "~bitsDisplay);
+        info("Cleaning Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" clean"~hideStdout);
-    }
-
-    // Docs are bits-independent, so treat them as 32-bit only
-    if(bits == Bits.bits32)
-    {
-        infoMsg("Cleaning dlang.org");
-        changeDir(cloneDir~"/dlang.org");
-        run(makecmd~" clean"~hideStdout);
+        run(makecmd~" clean");
     }
 }
 
@@ -679,8 +382,6 @@ void buildAll(string branch)
 /// dmdOnly is part of the lib64RequiresDmd32 hack.
 void buildAll(Bits bits, string branch, bool dmdOnly=false)
 {
-    static alreadyBuiltDocs = false;
-
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
 
@@ -703,7 +404,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto bitsStr = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
-    auto hideStdout = verbose? "" : " > "~devNull;
     version (Windows)
     {
         auto jobs = "";
@@ -722,9 +422,9 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     if(build64BitTools || bits == Bits.bits32)
     {
-        infoMsg("Building DMD "~bitsDisplay);
+        info("Building DMD "~bitsDisplay);
         changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" dmd"~hideStdout);
+        run(makecmd~" dmd");
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
         removeFiles(cloneDir~"/dmd/src", "*{"~obj~","~lib~"}", SpanMode.depth);
     }
@@ -760,23 +460,23 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     if(dmdOnly)
         return;
 
-    infoMsg("Building Druntime "~bitsDisplay);
+    info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~msvcEnv~hideStdout);
+    run(makecmd~msvcEnv);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
-    infoMsg("Building Phobos "~bitsDisplay);
+    info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~msvcEnv~hideStdout);
+    run(makecmd~msvcEnv);
 
     version(OSX)
     {
         if(bits == Bits.bits64)
         {
-            infoMsg("Building Phobos Universal Binary");
+            info("Building Phobos Universal Binary");
             changeDir(cloneDir~"/phobos");
-            run(makecmd~" libphobos2.a"~hideStdout);
+            run(makecmd~" libphobos2.a");
         }
     }
 
@@ -791,59 +491,38 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     // Build docs
-    if(!alreadyBuiltDocs && !skipDocs)
+    if(!skipDocs)
     {
-        infoMsg("Building Druntime Docs");
-        changeDir(cloneDir~"/druntime");
-
-        run(makecmd~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
-
-        infoMsg("Building Phobos Docs");
-        changeDir(cloneDir~"/phobos");
-        run(makecmd~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease"~hideStdout);
-
-        infoMsg("Building dlang.org");
-        version(Posix)
+        version (linux)
         {
-            // Backwards compatability with older versions of the makefile
-            auto oldDirName = cloneDir~"/d-programming-language.org";
-            if(!exists(oldDirName))
-                symlink(cloneDir~"/dlang.org", oldDirName);
+            if (bits == Bits.bits32)
+            {
+                changeDir(cloneDir~"/dlang.org");
+                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs");
+                copyFile("d.tag", origDir~"/docs/d.tag");
+            }
         }
-        changeDir(cloneDir~"/dlang.org");
-        makeDir("doc");
-        version(Posix)
-            auto dlangOrgTarget = " html";
-        else version(Windows)
-            auto dlangOrgTarget = "";
-        else
-            static assert(false, "Unsupported platform");
-        // Use 32-bit version of the makefile because dlang.org lacks a win64.mak
-        run(makecmd~dlangOrgTarget~hideStdout);
-        version(Windows)
+        else version (Windows)
         {
-            copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
-
-            // The chm stuff is Win32-only
-            if(bits == Bits.bits32)
-                run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease"~hideStdout);
+            if (bits == Bits.bits32)
+            {
+                // copy linux-generated docs into dlang.org
+                copyDir(origDir~"/docs", cloneDir~"/dlang.org");
+                // and build the d.chm file
+                changeDir(cloneDir~"/dlang.org");
+                run(makecmd~" chm");
+            }
         }
-
-        // Copy phobos docs into dlang.org docs directory, because
-        // dman's posix makefile requires it.
-        copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/"~generatedDocs~"/phobos");
-
-        alreadyBuiltDocs = true;
     }
 
     if(build64BitTools || bits == Bits.bits32)
     {
-        infoMsg("Building Tools "~bitsDisplay);
+        info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" rdmd"~hideStdout);
-        run(makecmd~" ddemangle"~hideStdout);
-        run(makecmd~" dustmite"~hideStdout);
-        if (!skipDocs) run(makecmd~" dman"~hideStdout);
+        run(makecmd~" rdmd");
+        run(makecmd~" ddemangle");
+        run(makecmd~" dustmite");
+        if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
@@ -853,7 +532,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 /// differences between 'posix.mak' and 'win*.mak'.
 void createRelease(string branch)
 {
-    infoMsg("Generating release directory");
+    info("Generating release directory");
 
     removeDir(releaseDir);
 
@@ -883,11 +562,11 @@ void createRelease(string branch)
             !a.startsWith("images/original/") &&
             !a.startsWith("chm/") &&
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
-        copyDir(cloneDir~"/"~generatedDocs, releaseDir~"/dmd2/html/d", a => dlangFilter(a));
+        copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
         version(Windows)
         {
             if(do32Bit)
-                copyFile(cloneDir~"/"~generatedDocs~"/d.chm", releaseBin32Dir~"/d.chm");
+                copyFile(cloneDir~"/dlang.org/d.chm", releaseBin32Dir~"/d.chm");
         }
         copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
         copyDirVersioned(cloneDir~"/dmd/docs/man", releaseDir~"/dmd2/man");
@@ -945,105 +624,6 @@ void createRelease(string branch)
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
         }
     }
-
-    verifyExtras();
-}
-
-void verifyExtras()
-{
-    infoMsg("Ensuring non-versioned support files exist");
-
-    version(Windows)
-    {
-        auto files = [
-            releaseBin32Dir~"/lib.exe",
-            releaseBin32Dir~"/link.exe",
-            releaseBin32Dir~"/make.exe",
-            releaseBin32Dir~"/replace.exe",
-            releaseBin32Dir~"/shell.exe",
-            releaseBin32Dir~"/windbg.exe",
-            releaseBin32Dir~"/dm.dll",
-            releaseBin32Dir~"/eecxxx86.dll",
-            releaseBin32Dir~"/emx86.dll",
-            releaseBin32Dir~"/mspdb41.dll",
-            releaseBin32Dir~"/shcv.dll",
-            releaseBin32Dir~"/tlloc.dll",
-
-            releaseLib32Dir~"/advapi32.lib",
-            releaseLib32Dir~"/COMCTL32.lib",
-            releaseLib32Dir~"/comdlg32.lib",
-            releaseLib32Dir~"/CTL3D32.lib",
-            releaseLib32Dir~"/gdi32.lib",
-            releaseLib32Dir~"/kernel32.lib",
-            releaseLib32Dir~"/ODBC32.lib",
-            releaseLib32Dir~"/ole32.lib",
-            releaseLib32Dir~"/OLEAUT32.lib",
-            releaseLib32Dir~"/rpcrt4.lib",
-            releaseLib32Dir~"/shell32.lib",
-            releaseLib32Dir~"/snn.lib",
-            releaseLib32Dir~"/user32.lib",
-            releaseLib32Dir~"/uuid.lib",
-            releaseLib32Dir~"/winmm.lib",
-            releaseLib32Dir~"/winspool.lib",
-            releaseLib32Dir~"/WS2_32.lib",
-            releaseLib32Dir~"/wsock32.lib",
-        ];
-    }
-    else version(linux)
-    {
-        auto files = [
-            releaseBin32Dir~"/dumpobj",
-            releaseBin32Dir~"/obj2asm",
-
-            releaseBin64Dir~"/dumpobj",
-            releaseBin64Dir~"/obj2asm",
-        ];
-    }
-    else version(OSX)
-    {
-        auto files = [
-            releaseBin32Dir~"/dumpobj",
-            releaseBin32Dir~"/obj2asm",
-            releaseBin32Dir~"/shell",
-        ];
-    }
-    else version(FreeBSD)
-    {
-        auto files = [
-            releaseBin32Dir~"/dumpobj",
-            releaseBin32Dir~"/obj2asm",
-            releaseBin32Dir~"/shell",
-        ];
-    }
-    else
-        string[] files;
-
-
-    bool filesMissing = false;
-    foreach(file; files)
-    {
-        if(!exists(file) || !isFile(file))
-        {
-            if(!filesMissing)
-            {
-                errorMsg("The following files are missing:");
-                filesMissing = true;
-            }
-
-            stderr.writeln(displayPath(file));
-        }
-    }
-
-    if(filesMissing)
-    {
-        fail(
-            "The above files were missing from the appropriate dirs:\n"~
-            displayPath(customExtrasDir ~ releaseBin32Dir.chompPrefix(releaseDir))~"\n"~
-            displayPath(customExtrasDir ~ releaseLib32Dir.chompPrefix(releaseDir))~"\n"~
-            displayPath(customExtrasDir ~ releaseBin64Dir.chompPrefix(releaseDir))~"\n"~
-            displayPath(customExtrasDir ~ releaseLib64Dir.chompPrefix(releaseDir))
-        );
-    }
 }
 
 void createZip(string branch)
@@ -1052,76 +632,21 @@ void createZip(string branch)
     archiveZip(releaseDir~"/dmd2", archiveName);
 }
 
-void extractOsArchives(string branch)
-{
-    auto outputDir = "dmd."~branch;
-    removeDir(outputDir);
-    makeDir(outputDir);
-
-    foreach(osName; allOsDirNames)
-    {
-        auto archiveName = "dmd."~branch~"."~osName;
-
-        auto archiveZip = archiveName~".zip";
-
-        // Try combined 32/64-bit archives
-        if(exists(archiveZip))
-            extractZip(archiveZip, outputDir);
-        else
-        {
-            // Try 32-bit only and 64-bit-only
-            foreach(bitSuffix; TypeTuple!(releaseBitSuffix64, releaseBitSuffix32))
-            {
-                archiveZip = archiveName~bitSuffix~".zip";
-
-                if(exists(archiveZip))
-                    extractZip(archiveZip, outputDir);
-            }
-        }
-    }
-}
-
-void createCombinedZip(string branch)
-{
-    auto dirName = "dmd."~branch;
-    archiveZip(dirName~"/dmd2", dirName~".zip");
-}
-
 // Utils -----------------------
 
-void verboseMsg(lazy string msg)
+void trace(string msg)
 {
-    if(verbose)
-        infoMsg(msg);
+    writeln(msg);
 }
 
-void infoMsg(lazy string msg)
+void info(string msg)
 {
-    if(!quiet)
-        writeln(msg);
+    writeln(msg);
 }
 
-void errorMsg(string msg)
+void fatal(string msg)
 {
     stderr.writeln("create_dmd_release: Error: "~msg);
-}
-
-/// Ugly hack around the lack of an UnrecognizedOptionException
-bool isUnrecognizedOptionException(Exception e)
-{
-    return e && e.msg.startsWith("Unrecognized option");
-}
-
-// Test assumptions made by isUnrecognizedOptionException
-unittest
-{
-    bool bar;
-    auto args = ["someapp", "--foo"];
-    auto e = collectException!Exception(getopt(args, "bar", &bar));
-    assert(
-        isUnrecognizedOptionException(e),
-        "getopt's behavior upon unrecognized options is not as expected"
-    );
 }
 
 /// Cleanup a path for display to the user:
@@ -1157,24 +682,6 @@ string releaseBitSuffix(bool has32, bool has64)
 
 // Filesystem Utils -----------------------
 
-void ensureNotFile(string path)
-{
-    if(exists(path) && !isDir(path))
-        fail("'"~path~"' is a file, not a directory");
-}
-
-void ensureFile(string path)
-{
-    if(!exists(path) || !isFile(path))
-        fail("Missing file: "~path);
-}
-
-void ensureDir(string path)
-{
-    if(!exists(path) || !isDir(path))
-        fail("Directory not found: "~path);
-}
-
 /// Removes a file if it exists, otherwise do nothing
 void removeFile(string path)
 {
@@ -1195,7 +702,7 @@ void removeFiles(string path, string pattern, SpanMode mode,
         throw new Exception("removeFiles can only take SpanMode of 'depth' or 'shallow'");
 
     auto displaySuffix = mode==SpanMode.shallow? "" : "/*";
-    verboseMsg("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
+    trace("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
 
     // Needed to generate 'relativePath' correctly.
     path = path.replace("\\", "/");
@@ -1210,11 +717,11 @@ void removeFiles(string path, string pattern, SpanMode mode,
 
             if(!filter || filter(relativePath))
             {
-                verboseMsg("    " ~ displayPath(relativePath));
+                trace("    " ~ displayPath(relativePath));
                 entry.remove();
             }
             else if(filter)
-                verboseMsg("    Skipping: " ~ displayPath(relativePath));
+                trace("    Skipping: " ~ displayPath(relativePath));
         }
     }
 }
@@ -1224,7 +731,7 @@ void removeDir(string path)
 {
     if(exists(path))
     {
-        verboseMsg("Removing dir: "~displayPath(path));
+        trace("Removing dir: "~displayPath(path));
 
         void removeDirFailed()
         {
@@ -1255,14 +762,14 @@ void makeDir(string path)
 {
     if(!exists(path))
     {
-        verboseMsg("Creating dir: "~displayPath(path));
+        trace("Creating dir: "~displayPath(path));
         mkdirRecurse(path);
     }
 }
 
 void changeDir(string path)
 {
-    verboseMsg("Entering dir: "~displayPath(path));
+    trace("Entering dir: "~displayPath(path));
 
     try
         chdir(path);
@@ -1297,14 +804,13 @@ void copyDirVersioned(string src, string dest, bool delegate(string) filter = nu
 /// Takes optional delegate to filter out any files to not copy.
 void copyDir(string src, string dest, bool delegate(string) filter = null)
 {
-    verboseMsg("Copying from '"~displayPath(src)~"' to '"~displayPath(dest)~"'");
+    trace("Copying from '"~displayPath(src)~"' to '"~displayPath(dest)~"'");
 
     // Needed to generate 'relativePath' correctly.
     src = src.replace("\\", "/");
     if(!src.endsWith("/", "\\"))
         src ~= "/";
 
-    ensureDir(src);
     makeDir(dest);
     foreach(DirEntry entry; dirEntries(src[0..$-1], SpanMode.breadth, false))
     {
@@ -1313,11 +819,11 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
         if (relativePath.baseName.startsWith(".") ||
             filter !is null && !filter(relativePath))
         {
-            verboseMsg("    Skipping: " ~ displayPath(relativePath));
+            trace("    Skipping: " ~ displayPath(relativePath));
             continue;
         }
 
-        verboseMsg("    " ~ displayPath(relativePath));
+        trace("    " ~ displayPath(relativePath));
 
         auto destPath = buildPath(dest, relativePath);
         auto srcPath  = buildPath(src,  relativePath);
@@ -1344,35 +850,10 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
 
 // External Tools -----------------------
 
-/// Check if running "tool --help" succeeds. If not, returns false.
-bool checkTool(string cmd, string cmdArgs="--help", string regexMatch=null)
-{
-    auto cmdLine = cmd~" "~cmdArgs;
-    verboseMsg("Checking: "~cmdLine);
-
-    try
-    {
-        auto result = shell(cmdLine~" 2> "~devNull);
-        if(regexMatch != "" && !match(result, regex(regexMatch, "s")))
-            return false;
-    }
-    catch(Exception e)
-        return false;
-
-    return true;
-}
-
-/// Check if running "tool --help" succeeds. If not, throws Fail.
-void ensureTool(string cmd, string cmdArgs="--help", string regexMatch=null)
-{
-    if(!checkTool(cmd, cmdArgs, regexMatch))
-        fail("Problem running '"~cmd~"'. Please make sure it's correctly installed.");
-}
-
 /// Like system(), but throws useful Fail message upon failure.
 void run(string cmd)
 {
-    verboseMsg("Running: "~cmd);
+    trace("Running: "~cmd);
 
     stdout.flush();
     stderr.flush();
@@ -1385,7 +866,7 @@ void run(string cmd)
 /// Like run(), but captures the standard output and returns it.
 string runCapture(string cmd)
 {
-    verboseMsg("Running: "~cmd);
+    trace("Running: "~cmd);
 
     stdout.flush();
     stderr.flush();
@@ -1395,23 +876,6 @@ string runCapture(string cmd)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
 
     return result.output;
-}
-
-/// Clone a git repository to a specific path. Optionally to a
-/// specific branch (default is master).
-///
-/// Requires a command-line git client.
-void gitClone(string repo, string path, string branch=null)
-{
-    removeDir(path);
-    makeDir(path);
-
-    infoMsg("Cloning: "~repo);
-    auto quietSwitch = verbose? "" : "-q ";
-    if(branch != "")
-        run("git clone --depth 1 -b "~quote(branch)~" "~quietSwitch~quote(repo)~" "~path);
-    else
-        run("git clone --depth 1 "~quietSwitch~quote(repo)~" "~path);
 }
 
 string[] gitVersionedFiles(string path)
