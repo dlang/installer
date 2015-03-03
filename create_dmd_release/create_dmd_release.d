@@ -252,13 +252,9 @@ int main(string[] args)
             return 0;
         }
 
-        if(customExtrasDir != "")
-            ensureDir(customExtrasDir);
-
         string branch = args[1];
         init(branch);
 
-        ensureSources();
         cleanAll(branch);
         buildAll(branch);
         createRelease(branch);
@@ -298,97 +294,28 @@ void init(string branch)
     allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
     osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
 
-    // Check for DMC and MSVC toolchains
-    version(Windows)
+    // configure MSVC tools needed for 64-bit
+    version (Windows) if (do64Bit)
     {
-        // Small workaround because DMC/MAKE's help screens don't return exit code 0
-        enum dummyFile  = ".create_release_dummy";
-        std.file.write(dummyFile, "");
-        scope(exit) removeFile(dummyFile);
-
-        ensureTool("dmc", "-c "~dummyFile);
-        ensureTool(make, "-f "~dummyFile);
-
-        // Check DMC's OPTLINK (not just any OPTLINK on the PATH)
-        enum dummyCFile = ".create_release_dummy.c";
-        std.file.write(dummyCFile, "void main(){}");
-        scope(exit) removeFile(dummyCFile);
-
-        enum dummyOptlinkHelp = ".create_release_optlink_help";
-        run("dmc "~dummyCFile~" -L/? > "~dummyOptlinkHelp);
-        scope(exit) removeFile(dummyOptlinkHelp);
-
-        if(!checkTool("type", dummyOptlinkHelp, `OPTLINK \(R\) for Win32`))
-            fail("DMC appears to be missing OPTLINK");
-
-        // Check support files needed during build
-        auto extrasOptlink = customExtrasDir~"/dmd2/windows/bin/link.exe";
-        if(!checkTool(extrasOptlink, "/?", `OPTLINK \(R\) for Win32`))
-            fail("You must have a valid OPTLINK in: "~displayPath(extrasOptlink));
-
-        if(!checkTool(extrasOptlink, "/?", `OPTLINK \(R\) for Win32.*LA\[RGEADDRESSAWARE\]`))
+        if(environment.get("VCDIR", "") == "" || environment.get("SDKDIR", "") == "")
         {
-            fail("The OPTLINK in your --extras=... directory does not support "~
-                "/LARGEADDRESSAWARE. You must use a newer OPTLINK. "~
-                "See <http://wiki.dlang.org/Building_OPTLINK>");
-        }
-
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/user32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/kernel32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/snn.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/ws2_32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/wsock32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/shell32.lib");
-        ensureFile(customExtrasDir~"/dmd2/windows/lib/advapi32.lib");
-
-        // Check MSVC tools needed for 64-bit
-        if(do64Bit)
-        {
-            if(environment.get("VCDIR", "") == "" || environment.get("SDKDIR", "") == "")
-            {
-                fail(`
+            fail(`
                     Environment variables VCDIR and SDKDIR must both be set. For example:
                     set VCDIR=C:\Program Files (x86)\Microsoft Visual Studio 8\VC\
                     set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
                 `.outdent().strip());
-            }
-
-            win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
-            win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
-
-            trace("VCDIR:  " ~ displayPath(win64vcDir));
-            trace("SDKDIR: " ~ displayPath(win64sdkDir));
-
-            msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
-            if(!exists(msvcBinDir~"cl.exe"))
-                msvcBinDir = win64vcDir ~ "/bin/amd64";
-
-            ensureTool(quote(msvcBinDir~"/cl.exe"), "/HELP");
-            try
-            {
-                ensureDir(win64sdkDir);
-                ensureDir(win64sdkDir~"/Bin");
-                ensureDir(win64sdkDir~"/Include");
-                ensureDir(win64sdkDir~"/Lib");
-            }
-            catch(Fail e)
-                fail("SDKDIR doesn't appear to be a proper Windows SDK: " ~ environment["SDKDIR"]);
         }
-    }
-    else
-        // Check for GNU make
-        ensureTool(make);
-}
 
-void ensureSources()
-{
-    ensureDir(cloneDir);
-    ensureDir(cloneDir~"/dmd");
-    ensureDir(cloneDir~"/druntime");
-    ensureDir(cloneDir~"/phobos");
-    ensureDir(cloneDir~"/tools");
-    ensureDir(cloneDir~"/dlang.org");
-    ensureDir(cloneDir~"/installer");
+        win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
+        win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
+
+        trace("VCDIR:  " ~ displayPath(win64vcDir));
+        trace("SDKDIR: " ~ displayPath(win64sdkDir));
+
+        msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
+        if(!exists(msvcBinDir~"cl.exe"))
+            msvcBinDir = win64vcDir ~ "/bin/amd64";
+    }
 }
 
 void cleanAll(string branch)
@@ -888,24 +815,6 @@ string releaseBitSuffix(bool has32, bool has64)
 
 // Filesystem Utils -----------------------
 
-void ensureNotFile(string path)
-{
-    if(exists(path) && !isDir(path))
-        fail("'"~path~"' is a file, not a directory");
-}
-
-void ensureFile(string path)
-{
-    if(!exists(path) || !isFile(path))
-        fail("Missing file: "~path);
-}
-
-void ensureDir(string path)
-{
-    if(!exists(path) || !isDir(path))
-        fail("Directory not found: "~path);
-}
-
 /// Removes a file if it exists, otherwise do nothing
 void removeFile(string path)
 {
@@ -1035,7 +944,6 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
     if(!src.endsWith("/", "\\"))
         src ~= "/";
 
-    ensureDir(src);
     makeDir(dest);
     foreach(DirEntry entry; dirEntries(src[0..$-1], SpanMode.breadth, false))
     {
@@ -1074,31 +982,6 @@ void copyDir(string src, string dest, bool delegate(string) filter = null)
 }
 
 // External Tools -----------------------
-
-/// Check if running "tool --help" succeeds. If not, returns false.
-bool checkTool(string cmd, string cmdArgs="--help", string regexMatch=null)
-{
-    auto cmdLine = cmd~" "~cmdArgs;
-    trace("Checking: "~cmdLine);
-
-    try
-    {
-        auto result = shell(cmdLine~" 2> "~devNull);
-        if(regexMatch != "" && !match(result, regex(regexMatch, "s")))
-            return false;
-    }
-    catch(Exception e)
-        return false;
-
-    return true;
-}
-
-/// Check if running "tool --help" succeeds. If not, throws Fail.
-void ensureTool(string cmd, string cmdArgs="--help", string regexMatch=null)
-{
-    if(!checkTool(cmd, cmdArgs, regexMatch))
-        fail("Problem running '"~cmd~"'. Please make sure it's correctly installed.");
-}
 
 /// Like system(), but throws useful Fail message upon failure.
 void run(string cmd)
