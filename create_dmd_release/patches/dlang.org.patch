@@ -1,0 +1,115 @@
+diff --git a/doc.ddoc b/doc.ddoc
+index 3427a41..54eecf4 100644
+--- a/doc.ddoc
++++ b/doc.ddoc
+@@ -10,7 +10,6 @@ _=
+ NAVIGATION=
+ $(DIVID cssmenu, $(UL
+     $(MENU index.html, D $(LATEST))
+-    $(MENU download.html, $(B Download))
+     $(MENU getstarted.html, Getting Started)
+     $(MENU changelog.html, Change Log)
+     $(MENU_W_SUBMENU D Reference)
+diff --git a/posix.mak b/posix.mak
+index 7adddad..c0acaa6 100644
+--- a/posix.mak
++++ b/posix.mak
+@@ -113,7 +113,7 @@ STD_DDOC_PRE=$(addsuffix .ddoc, macros html dlang.org ${GENERATED}/${LATEST} std
+ 
+ IMAGES=favicon.ico $(addprefix images/, \
+ 	d002.ico icon_minus.svg icon_plus.svg dlogo.svg \
+-	$(addsuffix .png, apple_logo centos_logo d3 debian_logo dlogo download \
++	$(addsuffix .png, apple_logo centos_logo d3 debian_logo dlogo \
+ 		fedora_logo freebsd_logo opensuse_logo ubuntu_logo windows_logo \
+ 		pattern github-ribbon \
+ 		$(addprefix ddox/, alias class enum enummember function \
+@@ -201,7 +201,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
+ # Rulez
+ ################################################################################
+ 
+-all : docs html
++all : html druntime-release phobos-release d.tag
+ 
+ docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
+ 	apidocs-release apidocs-prerelease
+@@ -229,7 +229,7 @@ ${GENERATED}/${LATEST}.ddoc :
+ 
+ ${GENERATED}/modlist-${LATEST}.ddoc : modlist.d
+ 	mkdir -p $(dir $@)
+-	$(RDMD) modlist.d $(DRUNTIME_DIR)-$(LATEST) $(PHOBOS_DIR)-$(LATEST) $(MOD_EXCLUDES_RELEASE) >$@
++	$(DMD) -conf= $(DFLAGS) -run modlist.d $(DRUNTIME_DIR) $(PHOBOS_DIR) $(MOD_EXCLUDES_PRERELEASE) >$@
+ 
+ ${GENERATED}/modlist-prerelease.ddoc : modlist.d
+ 	mkdir -p $(dir $@)
+@@ -323,8 +323,8 @@ dlangspec.verbatim.txt : $(DMD) verbatim.ddoc dlangspec-consolidated.d
+ # dmd compiler, latest released build and current build
+ ################################################################################
+ 
+-$(DMD) : ${DMD_DIR}/.cloned
+-	${MAKE} --directory=${DMD_DIR}/src -f posix.mak -j 4
++#$(DMD) : ${DMD_DIR}/.cloned
++#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak -j 4
+ 
+ $(DMD_REL) : ${DMD_DIR}-${LATEST}/.cloned
+ 	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
+@@ -339,10 +339,10 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/object.html : $(DMD) $(STD_DDOC_PRE)
+ 		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
+ 		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
+ 
+-druntime-release : ${DRUNTIME_DIR}-${LATEST}/.cloned ${DOC_OUTPUT_DIR}/phobos/object.html
+-${DOC_OUTPUT_DIR}/phobos/object.html : $(DMD_REL) $(STD_DDOC)
+-	${MAKE} --directory=${DRUNTIME_DIR}-${LATEST} -f posix.mak target doc \
+-	  DMD=$(DMD_REL) \
++druntime-release : ${DRUNTIME_DIR} ${DOC_OUTPUT_DIR}/phobos/object.html
++${DOC_OUTPUT_DIR}/phobos/object.html : $(DMD) $(STD_DDOC)
++	${MAKE} --directory=${DRUNTIME_DIR} -f posix.mak doc \
++	  DMD=$(DMD) \
+ 	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
+ 		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
+ 
+@@ -369,17 +369,15 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/index.html : $(STD_DDOC_PRE) \
+ 	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
+ 	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
+ 
+-phobos-release : ${PHOBOS_DIR}-${LATEST}/.cloned ${DOC_OUTPUT_DIR}/phobos/index.html
+-${DOC_OUTPUT_DIR}/phobos/index.html : $(DMD_REL) $(STD_DDOC) \
++phobos-release : ${PHOBOS_DIR} ${DOC_OUTPUT_DIR}/phobos/index.html
++${DOC_OUTPUT_DIR}/phobos/index.html : $(DMD) $(STD_DDOC) \
+ 	    ${DOC_OUTPUT_DIR}/phobos/object.html
+-	${MAKE} --directory=${PHOBOS_DIR}-${LATEST} -f posix.mak -j 4 \
++	${MAKE} --directory=${PHOBOS_DIR} -f posix.mak -j 4 \
+ 	  html \
+-	  DMD=$(DMD_REL) \
+-	  DRUNTIME_PATH=${DRUNTIME_DIR}-${LATEST} \
++	  DMD=$(DMD) \
++	  DRUNTIME_PATH=${DRUNTIME_DIR} \
+ 	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos \
+ 	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC))"
+-# temporary hack for 2.066.1
+-	mv ${DOC_OUTPUT_DIR}/phobos/std_container_package.html ${DOC_OUTPUT_DIR}/phobos/std_container.html
+ 
+ phobos-prerelease-verbatim : ${PHOBOS_DIR}/.cloned ${DOC_OUTPUT_DIR}/phobos-prerelease/index.verbatim
+ ${DOC_OUTPUT_DIR}/phobos-prerelease/index.verbatim : verbatim.ddoc \
+@@ -458,8 +456,5 @@ ${DUB}: ${DUB_DIR}/.cloned ${STABLE_DMD}
+ # Dman tags
+ ################################################################################
+ 
+-chmgen : chmgen.d $(DMD)
+-	$(DMD) -I${PHOBOS_DIR} -g chmgen.d
+-
+-d.tag : chmgen $(ALL_FILES)
+-	./chmgen --root=$(DOC_OUTPUT_DIR) --only-tags
++d.tag : chmgen.d $(ALL_FILES)
++	$(DMD) -conf= $(DFLAGS) -run $< --root=$(DOC_OUTPUT_DIR) --only-tags
+diff --git a/std_navbar-release.ddoc b/std_navbar-release.ddoc
+index 896f264..8750058 100644
+--- a/std_navbar-release.ddoc
++++ b/std_navbar-release.ddoc
+@@ -1,7 +1,6 @@
+ NAVIGATION=
+ $(DIVID cssmenu, $(UL
+     $(MENU ../index.html, D Lib $(LATEST))
+-    $(MENU ../phobos-prerelease/index.html, Prerelease Version)
+     $(MODULE_MENU)
+     $(MENU http://code.dlang.org, 3rd Party Packages)
+ ))
