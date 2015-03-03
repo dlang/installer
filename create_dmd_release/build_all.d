@@ -42,7 +42,7 @@ enum osx_both = Platform(OS.osx, Model._both);
 /// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
 enum windows_both = Platform(OS.windows, Model._both);
 
-enum platforms = [windows_both, osx_both, freebsd_32, freebsd_64, linux_both];
+enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
 
 enum OS { freebsd, linux, osx, windows, }
@@ -337,9 +337,16 @@ void cloneSources(string gitTag, string tgtDir)
     auto fmt = "git clone --depth 1 -b "~gitTag~" "~prefix~"%1$s.git "~tgtDir~"/%1$s";
     foreach (proj; allProjects)
         run(fmt.format(proj));
+}
 
+void applyPatches(string gitTag, string tgtDir)
+{
     import std.file;
     write(tgtDir~"/dmd/VERSION", gitTag.chompPrefix("v"));
+
+    auto fmt = "git -C "~tgtDir~"/%1$s apply < patches/%1$s.patch";
+    foreach (proj; ["dlang.org", "tools"])
+        run(fmt.format(proj));
 }
 
 void combineZips(string gitTag)
@@ -413,6 +420,7 @@ int main(string[] args)
     extractZip(cacheDir~"/"~libCurl, workDir~"/old-dmd");
 
     cloneSources(gitTag, workDir~"/clones");
+    applyPatches(gitTag, workDir~"/clones");
     prepareExtraBins(workDir);
 
     immutable ver = gitTag.chompPrefix("v");
@@ -424,10 +432,12 @@ int main(string[] args)
         {
             auto toCopy = ["old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
             scp(toCopy, "default:");
+            if (os != OS.linux) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
             scp("create_dmd_release.d common.d", "default:");
 
             build(ver, isBranch, skipDocs);
+            if (os == OS.linux) scp("default:docs", workDir);
         }
     }
     combineZips(ver);

@@ -84,7 +84,6 @@ version(Windows)
     immutable lib           = ".lib";
     immutable obj           = ".obj";
     immutable dll           = ".dll";
-    immutable generatedDocs = "dlang.org";
     immutable libPhobos32   = "phobos";
     immutable libPhobos64   = "phobos64";
     immutable build64BitTools = false;
@@ -106,7 +105,6 @@ else version(Posix)
     immutable exe           = "";
     immutable lib           = ".a";
     immutable obj           = ".o";
-    immutable generatedDocs = "dlang.org/web";
     immutable libPhobos32   = "libphobos2";
     immutable libPhobos64   = "libphobos2";
     immutable build64BitTools    = true;
@@ -355,7 +353,6 @@ void cleanAll(Bits bits, string branch)
 
     info("Cleaning Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~" clean DOCSRC=../dlang.org DOC=doc");
     version(Windows)
         removeDir(cloneDir~"/phobos/generated");
 
@@ -364,14 +361,6 @@ void cleanAll(Bits bits, string branch)
     {
         info("Cleaning Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" clean");
-    }
-
-    // Docs are bits-independent, so treat them as 32-bit only
-    if(bits == Bits.bits32)
-    {
-        info("Cleaning dlang.org");
-        changeDir(cloneDir~"/dlang.org");
         run(makecmd~" clean");
     }
 }
@@ -393,8 +382,6 @@ void buildAll(string branch)
 /// dmdOnly is part of the lib64RequiresDmd32 hack.
 void buildAll(Bits bits, string branch, bool dmdOnly=false)
 {
-    static alreadyBuiltDocs = false;
-
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
 
@@ -504,49 +491,28 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     // Build docs
-    if(!alreadyBuiltDocs && !skipDocs)
+    if(!skipDocs)
     {
-        info("Building Druntime Docs");
-        changeDir(cloneDir~"/druntime");
-
-        run(makecmd~" doc DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease");
-
-        info("Building Phobos Docs");
-        changeDir(cloneDir~"/phobos");
-        run(makecmd~" html DOCSRC=../dlang.org DOC=../web/phobos-prerelease");
-
-        info("Building dlang.org");
-        version(Posix)
+        version (linux)
         {
-            // Backwards compatability with older versions of the makefile
-            auto oldDirName = cloneDir~"/d-programming-language.org";
-            if(!exists(oldDirName))
-                symlink(cloneDir~"/dlang.org", oldDirName);
+            if (bits == Bits.bits32)
+            {
+                changeDir(cloneDir~"/dlang.org");
+                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs");
+                copyFile("d.tag", origDir~"/docs/d.tag");
+            }
         }
-        changeDir(cloneDir~"/dlang.org");
-        makeDir("doc");
-        version(Posix)
-            auto dlangOrgTarget = " html";
-        else version(Windows)
-            auto dlangOrgTarget = "";
-        else
-            static assert(false, "Unsupported platform");
-        // Use 32-bit version of the makefile because dlang.org lacks a win64.mak
-        run(makecmd~dlangOrgTarget);
-        version(Windows)
+        else version (Windows)
         {
-            copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/dlang.org/phobos");
-
-            // The chm stuff is Win32-only
-            if(bits == Bits.bits32)
-                run(makecmd~" chm DOCSRC=../dlang.org DOCDIR=../web/phobos-prerelease");
+            if (bits == Bits.bits32)
+            {
+                // copy linux-generated docs into dlang.org
+                copyDir(origDir~"/docs", cloneDir~"/dlang.org");
+                // and build the d.chm file
+                changeDir(cloneDir~"/dlang.org");
+                run(makecmd~" chm");
+            }
         }
-
-        // Copy phobos docs into dlang.org docs directory, because
-        // dman's posix makefile requires it.
-        copyDir(cloneDir~"/web/phobos-prerelease", cloneDir~"/"~generatedDocs~"/phobos");
-
-        alreadyBuiltDocs = true;
     }
 
     if(build64BitTools || bits == Bits.bits32)
@@ -556,7 +522,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd");
         run(makecmd~" ddemangle");
         run(makecmd~" dustmite");
-        if (!skipDocs) run(makecmd~" dman");
+        if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
@@ -596,11 +562,11 @@ void createRelease(string branch)
             !a.startsWith("images/original/") &&
             !a.startsWith("chm/") &&
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
-        copyDir(cloneDir~"/"~generatedDocs, releaseDir~"/dmd2/html/d", a => dlangFilter(a));
+        copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
         version(Windows)
         {
             if(do32Bit)
-                copyFile(cloneDir~"/"~generatedDocs~"/d.chm", releaseBin32Dir~"/d.chm");
+                copyFile(cloneDir~"/dlang.org/d.chm", releaseBin32Dir~"/d.chm");
         }
         copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
         copyDirVersioned(cloneDir~"/dmd/docs/man", releaseDir~"/dmd2/man");
