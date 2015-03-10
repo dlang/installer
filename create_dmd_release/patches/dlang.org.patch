@@ -11,19 +11,10 @@ index 3427a41..54eecf4 100644
      $(MENU changelog.html, Change Log)
      $(MENU_W_SUBMENU D Reference)
 diff --git a/posix.mak b/posix.mak
-index 7adddad..c0acaa6 100644
+index cdd9c7d..1472b3d 100644
 --- a/posix.mak
 +++ b/posix.mak
-@@ -113,7 +113,7 @@ STD_DDOC_PRE=$(addsuffix .ddoc, macros html dlang.org ${GENERATED}/${LATEST} std
- 
- IMAGES=favicon.ico $(addprefix images/, \
- 	d002.ico icon_minus.svg icon_plus.svg dlogo.svg \
--	$(addsuffix .png, apple_logo centos_logo d3 debian_logo dlogo download \
-+	$(addsuffix .png, apple_logo centos_logo d3 debian_logo dlogo \
- 		fedora_logo freebsd_logo opensuse_logo ubuntu_logo windows_logo \
- 		pattern github-ribbon \
- 		$(addprefix ddox/, alias class enum enummember function \
-@@ -201,7 +201,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
+@@ -202,7 +202,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
  # Rulez
  ################################################################################
  
@@ -32,7 +23,7 @@ index 7adddad..c0acaa6 100644
  
  docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
  	apidocs-release apidocs-prerelease
-@@ -229,7 +229,7 @@ ${GENERATED}/${LATEST}.ddoc :
+@@ -230,7 +230,7 @@ ${GENERATED}/${LATEST}.ddoc :
  
  ${GENERATED}/modlist-${LATEST}.ddoc : modlist.d
  	mkdir -p $(dir $@)
@@ -41,7 +32,7 @@ index 7adddad..c0acaa6 100644
  
  ${GENERATED}/modlist-prerelease.ddoc : modlist.d
  	mkdir -p $(dir $@)
-@@ -323,8 +323,8 @@ dlangspec.verbatim.txt : $(DMD) verbatim.ddoc dlangspec-consolidated.d
+@@ -324,8 +324,8 @@ dlangspec.verbatim.txt : $(DMD) verbatim.ddoc dlangspec-consolidated.d
  # dmd compiler, latest released build and current build
  ################################################################################
  
@@ -52,7 +43,7 @@ index 7adddad..c0acaa6 100644
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}/.cloned
  	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
-@@ -339,10 +339,10 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/object.html : $(DMD) $(STD_DDOC_PRE)
+@@ -340,10 +340,10 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/object.html : $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -67,7 +58,7 @@ index 7adddad..c0acaa6 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -369,17 +369,15 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/index.html : $(STD_DDOC_PRE) \
+@@ -370,17 +370,15 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/index.html : $(STD_DDOC_PRE) \
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
  
@@ -90,7 +81,7 @@ index 7adddad..c0acaa6 100644
  
  phobos-prerelease-verbatim : ${PHOBOS_DIR}/.cloned ${DOC_OUTPUT_DIR}/phobos-prerelease/index.verbatim
  ${DOC_OUTPUT_DIR}/phobos-prerelease/index.verbatim : verbatim.ddoc \
-@@ -458,8 +456,5 @@ ${DUB}: ${DUB_DIR}/.cloned ${STABLE_DMD}
+@@ -459,8 +457,5 @@ ${DUB}: ${DUB_DIR}/.cloned ${STABLE_DMD}
  # Dman tags
  ################################################################################
  
