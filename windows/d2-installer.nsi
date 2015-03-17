@@ -453,8 +453,16 @@ Section "Uninstall"
   ; Remove shortcuts
   Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
   Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
-  RMDir /r "$SMPROGRAMS\D"
+  Delete "$SMPROGRAMS\D\D2 32-bit Command Prompt.lnk"
+  Delete "$SMPROGRAMS\D\D2 64-bit Command Prompt.lnk"
+  RMDir "$SMPROGRAMS\D"
 
+  MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
+  "The uninstaller will now recursively delete ALL files and directories under '$INSTDIR\dmd2'. Continue?" \
+  IDOK rmdir
+  Abort
+
+  rmdir:
   ; Remove used directories
   RMDir /r "$INSTDIR\dmd2"
   RMDir "$INSTDIR"
