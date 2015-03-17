@@ -266,8 +266,15 @@ Section "Uninstall"
 
   ; Remove shortcuts
   Delete "$SMPROGRAMS\D\D1 HTML Documentation.lnk"
-  RMDir /r /REBOOTOK "$SMPROGRAMS\D"
+  Delete "$SMPROGRAMS\D\D1 Command Prompt.lnk"
+  RMDir /REBOOTOK "$SMPROGRAMS\D"
 
+  MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
+  "The uninstaller will now recursively delete ALL files and directories under '$INSTDIR\dmd'. Continue?" \
+  IDOK rmdir
+  Abort
+
+  rmdir:
   ; Remove used directories
   RMDir /r /REBOOTOK "$INSTDIR\dmd"
   RMDir /REBOOTOK "$INSTDIR"
