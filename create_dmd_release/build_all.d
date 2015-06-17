@@ -248,16 +248,16 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
 {
     with (box.shell())
     {
-        string rdmd;
+        string dmd, rdmd;
         final switch (box.os)
         {
         case OS.freebsd:
-            rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~
-                " --compiler=old-dmd/dmd2/freebsd/bin"~box.modelS~"/dmd";
+            dmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/dmd";
+            rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~" --compiler="~dmd;
             break;
         case OS.linux:
-            rdmd = "old-dmd/dmd2/linux/bin64/rdmd"~
-                " --compiler=old-dmd/dmd2/linux/bin64/dmd";
+            dmd = "old-dmd/dmd2/linux/bin64/dmd";
+            rdmd = "old-dmd/dmd2/linux/bin64/rdmd --compiler="~dmd;
             break;
         case OS.windows:
             // update DMC's snn.lib and link.exe
@@ -268,16 +268,16 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
             cmd(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
 
-            rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`~
-                ` --compiler=old-dmd\dmd2\windows\bin\dmd.exe`;
+            dmd = `old-dmd\dmd2\windows\bin\dmd.exe`;
+            rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe --compiler=`~dmd;
             break;
         case OS.osx:
-            rdmd = "old-dmd/dmd2/osx/bin/rdmd"
-                " --compiler=old-dmd/dmd2/osx/bin/dmd";
+            dmd = "old-dmd/dmd2/osx/bin/dmd";
+            rdmd = "old-dmd/dmd2/osx/bin/rdmd --compiler="~dmd;
             break;
         }
 
-        auto build = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones";
+        auto build = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
