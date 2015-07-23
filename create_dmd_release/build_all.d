@@ -401,7 +401,7 @@ int main(string[] args)
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
-    enum libCurl = "libcurl-7.40.0-WinSSL-zlib-x86-x64.zip";
+    enum libCurl = "libcurl-7.43.0-WinSSL-zlib-x86-x64.zip";
 
     fetchFile("http://ftp.digitalmars.com/"~oldDMD, cacheDir~"/"~oldDMD);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
