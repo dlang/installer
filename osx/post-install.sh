@@ -6,15 +6,26 @@
 # License:: Public Domain
 #
 
-ln -sf /usr/share/dmd/bin/ddemangle /usr/bin/ddemangle
-ln -sf /usr/share/dmd/bin/dmd /usr/bin/dmd
-ln -sf /usr/share/dmd/bin/dmd.conf /usr/bin/dmd.conf
-ln -sf /usr/share/dmd/bin/dumpobj /usr/bin/dumpobj
-ln -sf /usr/share/dmd/bin/dustmite /usr/bin/dustmite
-ln -sf /usr/share/dmd/bin/obj2asm /usr/bin/obj2asm
-ln -sf /usr/share/dmd/bin/rdmd /usr/bin/rdmd
-ln -sf /usr/share/dmd/man/man1/dmd.1 /usr/share/man/man1/dmd.1
-ln -sf /usr/share/dmd/man/man1/dumpobj.1 /usr/share/man/man1/dumpobj.1
-ln -sf /usr/share/dmd/man/man1/obj2asm.1 /usr/share/man/man1/obj2asm.1
-ln -sf /usr/share/dmd/man/man1/rdmd.1 /usr/share/man/man1/rdmd.1
-ln -sf /usr/share/dmd/man/man5/dmd.conf.5 /usr/share/man/man5/dmd.conf.5
+install_path=/Library/D/dmd
+target_path=/usr/local
+bin_path=$target_path/bin
+man_path=$target_path/share/man
+man1_path=$man_path/man1
+man5_path=$man_path/man5
+
+mkdir -p $bin_path
+mkdir -p $man1_path
+mkdir -p $man5_path
+
+ln -sf $install_path/bin/ddemangle $bin_path/ddemangle
+ln -sf $install_path/bin/dmd $bin_path/dmd
+ln -sf $install_path/bin/dmd.conf $bin_path/bin/dmd.conf
+ln -sf $install_path/bin/dumpobj $bin_path/bin/dumpobj
+ln -sf $install_path/bin/dustmite $bin_path/bin/dustmite
+ln -sf $install_path/bin/obj2asm $bin_path/bin/obj2asm
+ln -sf $install_path/bin/rdmd $bin_path/bin/rdmd
+ln -sf $install_path/man/man1/dmd.1 $man1_path/dmd.1
+ln -sf $install_path/man/man1/dumpobj.1 $man1_path/dumpobj.1
+ln -sf $install_path/man/man1/obj2asm.1 $man1_path/obj2asm.1
+ln -sf $install_path/man/man1/rdmd.1 $man1_path/rdmd.1
+ln -sf $install_path/man/man5/dmd.conf.5 $man5_path/dmd.conf.5
