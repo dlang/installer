@@ -4,7 +4,6 @@
 
 ; Sections
 LangString DESC_Dmd2Files ${LANG_ENGLISH} "Digital Mars D version 2 compiler"
-LangString DESC_DetectMSVC ${LANG_ENGLISH} "Configure DMD to use the version of Visual C++ and Windows SDK that is installed"
 LangString DESC_AddD2ToPath ${LANG_ENGLISH} "Modify the PATH environment variable so DMD can be used from any command prompt"
 
 LangString DESC_VisualDDownload ${LANG_ENGLISH} "Visual Studio package providing both project management and language services. It works with Visual Studio 2005-2013 (and the free VS Shells)"
@@ -22,7 +21,6 @@ LangString SHORTCUT_Uninstall ${LANG_ENGLISH} "Uninstall"
 
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${Dmd2Files} $(DESC_Dmd2Files)
-    !insertmacro MUI_DESCRIPTION_TEXT ${DetectMSVC} $(DESC_DetectMSVC)
     !insertmacro MUI_DESCRIPTION_TEXT ${AddD2ToPath} $(DESC_AddD2ToPath)
     !insertmacro MUI_DESCRIPTION_TEXT ${VisualDDownload} $(DESC_VisualDDownload)
     !insertmacro MUI_DESCRIPTION_TEXT ${DmcDownload} $(DESC_DmcDownload)
