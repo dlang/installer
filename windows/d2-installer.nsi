@@ -421,7 +421,7 @@ Function .onInit
     StrCmp $K 0 +2
       Abort
     ; Remove in background the remaining uninstaller program itself
-    Exec '$R0 /IC False /S'
+    ExecWait '$R0 /IC False /S'
 
   done:
 FunctionEnd
@@ -457,9 +457,11 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\D\D2 64-bit Command Prompt.lnk"
   RMDir "$SMPROGRAMS\D"
 
+  ${GetOptions} $CMDLINE "/S" $R0
+  IfErrors 0 rmdir
   MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
   "The uninstaller will now recursively delete ALL files and directories under '$INSTDIR\dmd2'. Continue?" \
-  IDOK rmdir
+  /SD IDOK IDOK rmdir
   Abort
 
   rmdir:

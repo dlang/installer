@@ -1,5 +1,5 @@
 diff --git a/doc.ddoc b/doc.ddoc
-index 3427a41..54eecf4 100644
+index 4e47ad3..e1ed20c 100644
 --- a/doc.ddoc
 +++ b/doc.ddoc
 @@ -10,7 +10,6 @@ _=
@@ -11,10 +11,10 @@ index 3427a41..54eecf4 100644
      $(MENU changelog.html, Change Log)
      $(MENU_W_SUBMENU D Reference)
 diff --git a/posix.mak b/posix.mak
-index cdd9c7d..1472b3d 100644
+index b6cc187..32afe01 100644
 --- a/posix.mak
 +++ b/posix.mak
-@@ -202,7 +202,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
+@@ -207,7 +207,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
  # Rulez
  ################################################################################
  
@@ -23,16 +23,19 @@ index cdd9c7d..1472b3d 100644
  
  docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
  	apidocs-release apidocs-prerelease
-@@ -230,7 +230,7 @@ ${GENERATED}/${LATEST}.ddoc :
- 
- ${GENERATED}/modlist-${LATEST}.ddoc : modlist.d
+@@ -233,9 +233,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
--	$(RDMD) modlist.d $(DRUNTIME_DIR)-$(LATEST) $(PHOBOS_DIR)-$(LATEST) $(MOD_EXCLUDES_RELEASE) >$@
-+	$(DMD) -conf= $(DFLAGS) -run modlist.d $(DRUNTIME_DIR) $(PHOBOS_DIR) $(MOD_EXCLUDES_PRERELEASE) >$@
+ 	echo "LATEST=${LATEST}" >$@
  
- ${GENERATED}/modlist-prerelease.ddoc : modlist.d
+-${GENERATED}/modlist-${LATEST}.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR)-$(LATEST)/.cloned $(PHOBOS_DIR)-$(LATEST)/.cloned
++${GENERATED}/modlist-${LATEST}.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR) $(PHOBOS_DIR)
  	mkdir -p $(dir $@)
-@@ -324,8 +324,8 @@ dlangspec.verbatim.txt : $(DMD) verbatim.ddoc dlangspec-consolidated.d
+-	$(STABLE_RDMD) modlist.d $(DRUNTIME_DIR)-$(LATEST) $(PHOBOS_DIR)-$(LATEST) $(MOD_EXCLUDES_RELEASE) >$@
++	$(STABLE_RDMD) modlist.d $(DRUNTIME_DIR) $(PHOBOS_DIR) $(MOD_EXCLUDES_RELEASE) >$@
+ 
+ ${GENERATED}/modlist-prerelease.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR)/.cloned $(PHOBOS_DIR)/.cloned
+ 	mkdir -p $(dir $@)
+@@ -331,8 +331,8 @@ dlangspec.verbatim.txt : $(DMD) verbatim.ddoc dlangspec-consolidated.d
  # dmd compiler, latest released build and current build
  ################################################################################
  
@@ -43,30 +46,26 @@ index cdd9c7d..1472b3d 100644
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}/.cloned
  	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
-@@ -340,10 +340,10 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/object.html : $(DMD) $(STD_DDOC_PRE)
+@@ -346,9 +346,9 @@ druntime-prerelease : ${DRUNTIME_DIR}/.cloned $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
--druntime-release : ${DRUNTIME_DIR}-${LATEST}/.cloned ${DOC_OUTPUT_DIR}/phobos/object.html
--${DOC_OUTPUT_DIR}/phobos/object.html : $(DMD_REL) $(STD_DDOC)
+-druntime-release : ${DRUNTIME_DIR}-${LATEST}/.cloned $(DMD_REL) $(STD_DDOC)
 -	${MAKE} --directory=${DRUNTIME_DIR}-${LATEST} -f posix.mak target doc \
 -	  DMD=$(DMD_REL) \
-+druntime-release : ${DRUNTIME_DIR} ${DOC_OUTPUT_DIR}/phobos/object.html
-+${DOC_OUTPUT_DIR}/phobos/object.html : $(DMD) $(STD_DDOC)
-+	${MAKE} --directory=${DRUNTIME_DIR} -f posix.mak doc \
++druntime-release : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC)
++	${MAKE} --directory=${DRUNTIME_DIR} -f posix.mak target doc \
 +	  DMD=$(DMD) \
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -370,17 +370,15 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/index.html : $(STD_DDOC_PRE) \
+@@ -373,12 +373,12 @@ phobos-prerelease : ${PHOBOS_DIR}/.cloned $(STD_DDOC_PRE) druntime-prerelease
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
  
--phobos-release : ${PHOBOS_DIR}-${LATEST}/.cloned ${DOC_OUTPUT_DIR}/phobos/index.html
--${DOC_OUTPUT_DIR}/phobos/index.html : $(DMD_REL) $(STD_DDOC) \
-+phobos-release : ${PHOBOS_DIR} ${DOC_OUTPUT_DIR}/phobos/index.html
-+${DOC_OUTPUT_DIR}/phobos/index.html : $(DMD) $(STD_DDOC) \
- 	    ${DOC_OUTPUT_DIR}/phobos/object.html
+-phobos-release : ${PHOBOS_DIR}-${LATEST}/.cloned $(DMD_REL) $(STD_DDOC) \
++phobos-release : ${PHOBOS_DIR} $(DMD) $(STD_DDOC) \
+ 		druntime-release
 -	${MAKE} --directory=${PHOBOS_DIR}-${LATEST} -f posix.mak -j 4 \
 +	${MAKE} --directory=${PHOBOS_DIR} -f posix.mak -j 4 \
  	  html \
@@ -76,22 +75,7 @@ index cdd9c7d..1472b3d 100644
 +	  DRUNTIME_PATH=${DRUNTIME_DIR} \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos \
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC))"
--# temporary hack for 2.066.1
--	mv ${DOC_OUTPUT_DIR}/phobos/std_container_package.html ${DOC_OUTPUT_DIR}/phobos/std_container.html
  
- phobos-prerelease-verbatim : ${PHOBOS_DIR}/.cloned ${DOC_OUTPUT_DIR}/phobos-prerelease/index.verbatim
- ${DOC_OUTPUT_DIR}/phobos-prerelease/index.verbatim : verbatim.ddoc \
-@@ -459,8 +457,5 @@ ${DUB}: ${DUB_DIR}/.cloned ${STABLE_DMD}
- # Dman tags
- ################################################################################
- 
--chmgen : chmgen.d $(DMD)
--	$(DMD) -I${PHOBOS_DIR} -g chmgen.d
--
--d.tag : chmgen $(ALL_FILES)
--	./chmgen --root=$(DOC_OUTPUT_DIR) --only-tags
-+d.tag : chmgen.d $(ALL_FILES)
-+	$(DMD) -conf= $(DFLAGS) -run $< --root=$(DOC_OUTPUT_DIR) --only-tags
 diff --git a/std_navbar-release.ddoc b/std_navbar-release.ddoc
 index 896f264..8750058 100644
 --- a/std_navbar-release.ddoc

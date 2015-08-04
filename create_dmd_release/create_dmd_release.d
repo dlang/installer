@@ -181,6 +181,7 @@ string osDir;
 string allExtrasDir;
 string osExtrasDir;
 string customExtrasDir;
+string hostDMD;
 string win64vcDir;
 string win64sdkDir;
 
@@ -198,6 +199,7 @@ int main(string[] args)
         "skip-docs",    &skipDocs,
         "clean",        &clean,
         "extras",       &customExtrasDir,
+        "host-dmd",     &hostDMD,
         "only-32",      &do32Bit,
         "only-64",      &do64Bit,
     );
@@ -240,6 +242,14 @@ int main(string[] args)
     }
     else
         customExtrasDir = customExtrasDir.absolutePath().chomp("\\").chomp("/");
+
+    if(hostDMD == "")
+    {
+        fatal("--host-dmd=path is required.");
+        return 1;
+    }
+    else
+        hostDMD = hostDMD.absolutePath();
 
     // Do the work
     try
@@ -334,10 +344,11 @@ void cleanAll(Bits bits, string branch)
     auto bitsStr        = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
+    auto hostDMDEnv = " HOST_DC="~hostDMD;
     auto latest = " LATEST="~branch;
 
     // common make arguments
-    auto makecmd = make~makeModel~latest~" -f"~targetMakefile;
+    auto makecmd = make~makeModel~hostDMDEnv~latest~" -f"~targetMakefile;
 
     // Windows is 32-bit only currently
     if (targetMakefile != "win64.mak")
@@ -414,11 +425,12 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         auto jobs = " -j4";
         auto dmdEnv = " DMD=../dmd/src/dmd";
     }
+    auto hostDMDEnv = " HOST_DC="~hostDMD;
     auto isRelease = " RELEASE=1";
     auto latest = " LATEST="~branch;
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~isRelease~latest~" -f "~targetMakefile;
+    auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~latest~" -f "~targetMakefile;
 
     if(build64BitTools || bits == Bits.bits32)
     {
