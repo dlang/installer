@@ -55,6 +55,7 @@
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
 !define DmcFilename "dmc-${VersionDMC}.exe"
 !define Dmd1Filename "dmd-${Version1}.exe"
+!define VS2013Filename "vs_community.exe"
 
 ; URLs
 !define BaseURL "http://downloads.dlang.org"
@@ -68,6 +69,8 @@
 
 !define Dmd1Url "${BaseURL}/releases/${Version1ReleaseYear}/${Dmd1Filename}"
 !define Dmd1AltUrl "${BaseURLAlt}/${Dmd1Filename}"
+
+!define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
 
 ; Publishing Details
 !define DPublisher "Digital Mars"
@@ -101,6 +104,9 @@ Var I
 Var J
 Var K
 Var InstanceCheck
+Var VCVer
+Var VCPath
+Var WinSDKPath
 
 
 
@@ -262,65 +268,31 @@ SectionGroup /e "D2"
     WriteRegDWORD HKLM "${ARP}" "NoModify" 1
     WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
     WriteUninstaller "uninstall.exe"
-  SectionEnd
 
-
-  Section "Detect MSVC" DetectMSVC
-    ClearErrors
-
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\12.0\Setup\VC" "ProductDir"
-    StrCpy $1 ";VC2013 "
-    IfErrors 0 write_vc_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\11.0\Setup\VC" "ProductDir"
-    StrCpy $1 ";VC2012 "
-    IfErrors 0 write_vc_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\10.0\Setup\VC" "ProductDir"
-    StrCpy $1 ";VC2010 "
-    IfErrors 0 write_vc_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\9.0\Setup\VC" "ProductDir"
-    StrCpy $1 ";VC2008 "
-    IfErrors no_vc_detected write_vc_path
-
-    write_vc_path:
-    !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";VCINSTALLDIR=" "VCINSTALLDIR=$0"
-    !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" "$1" ""
-    goto finish_vc_path
+    StrCmp $VCVer "" no_vc_detected write_vc_path
 
     no_vc_detected:
-    MessageBox MB_OK "Could not detect Visual Studio (2008-2013 are supported). Using defaults."
+      MessageBox MB_OK "Could not detect Visual Studio (2008-2013 are supported). No 64-bit support."
+      goto finish_vc_path
 
+    write_vc_path:
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";VCINSTALLDIR=" "VCINSTALLDIR=$VCPath"
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";$VCVer " ""
 
     finish_vc_path:
-    ClearErrors
+      ClearErrors
 
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot81"
-    IfErrors 0 write_sdk_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot" ; 8.0
-    IfErrors 0 write_sdk_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.1A" "InstallationFolder"
-    IfErrors 0 write_sdk_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.0A" "InstallationFolder"
-    IfErrors 0 write_sdk_path
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v6.0A" "InstallationFolder"
-    IfErrors no_sdk_detected write_sdk_path
-
-    write_sdk_path:
-    !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";WindowsSdkDir=" "WindowsSdkDir=$0"
-    goto finish_sdk_path
+    StrCmp $WinSDKPath "" no_sdk_detected write_sdk_path
 
     no_sdk_detected:
-    MessageBox MB_OK "Could not detect Windows SDK (6.0A-8.1 are supported). Using defaults."
+      MessageBox MB_OK "Could not detect Windows SDK (6.0A-8.1 are supported). No 64-bit support."
+      goto finish_sdk_path
 
+    write_sdk_path:
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";WindowsSdkDir=" "WindowsSdkDir=$WinSDKPath"
 
     finish_sdk_path:
-    ClearErrors
+      ClearErrors
   SectionEnd
 
 
@@ -356,6 +328,54 @@ SectionGroup /e "Extras"
   SectionEnd
 SectionGroupEnd
 
+;--------------------------------------------------------
+; Helper functions
+;--------------------------------------------------------
+
+Function DetectVSAndSDK
+    ClearErrors
+
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\12.0\Setup\VC" "ProductDir"
+    StrCpy $1 "VC2013"
+    IfErrors 0 done_vs
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\11.0\Setup\VC" "ProductDir"
+    StrCpy $1 "VC2012"
+    IfErrors 0 done_vs
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\10.0\Setup\VC" "ProductDir"
+    StrCpy $1 "VC2010"
+    IfErrors 0 done_vs
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\9.0\Setup\VC" "ProductDir"
+    StrCpy $1 "VC2008"
+    IfErrors done done_vs
+
+    done_vs:
+    StrCpy $VCPath $0
+    StrCpy $VCVer $1
+
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot81"
+    IfErrors 0 done_sdk
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot" ; 8.0
+    IfErrors 0 done_sdk
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.1A" "InstallationFolder"
+    IfErrors 0 done_sdk
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.0A" "InstallationFolder"
+    IfErrors 0 done_sdk
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v6.0A" "InstallationFolder"
+    IfErrors done done_sdk
+
+    done_sdk:
+    StrCpy $WinSDKPath $0
+
+    done:
+    ClearErrors
+FunctionEnd
 
 ;--------------------------------------------------------
 ; Installer functions
@@ -368,14 +388,14 @@ Function .onInit
 
   ; Force install without uninstall (useful if uninstall is broken)
   ${GetParameters} $R0
-  StrCmp $R0 "/f" done
+  StrCmp $R0 "/f" done_checks
 
 
   ; Remove previous dmd installation if any
   ; this section is for previous dmd installer only
   ReadRegStr $R5 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\D" "UninstallString"
   ReadRegStr $R6 HKLM "SOFTWARE\D" "Install_Dir"
-  StrCmp $R5 "" done2
+  StrCmp $R5 "" done_uninst_prev
   MessageBox MB_OKCANCEL|MB_ICONQUESTION \
   "A previous DMD is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
   IDOK +2
@@ -393,13 +413,13 @@ Function .onInit
   Exec '$R5 /S'
   ; MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled"
 
-  done2:
+  done_uninst_prev:
   ; End of removing previous dmd installation section
 
 
   ; Remove if dmd is already installed
   ReadRegStr $R0 HKLM "${ARP}" "UninstallString"
-  StrCmp $R0 "" done
+  StrCmp $R0 "" done_uninst
 
   ReadRegStr $I HKLM "${ARP}" "DisplayName"
   ReadRegStr $J HKLM "${ARP}" "DisplayVersion"
@@ -423,7 +443,25 @@ Function .onInit
     ; Remove in background the remaining uninstaller program itself
     ExecWait '$R0 /IC False /S'
 
-  done:
+  done_uninst:
+
+  Call DetectVSAndSDK
+  StrCmp $VCVer "" ask_vs
+  StrCmp $WinSDKPath "" ask_vs
+  Goto done_vs
+
+  ask_vs:
+    MessageBox MB_YESNO|MB_ICONQUESTION \
+    "For 64-bit support MSVC and the Windows SDK are needed but no compatible versions were found. Do you want to install VS2013?" \
+    IDYES install_vs IDNO done_vs
+
+  install_vs:
+    !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
+    Call DetectVSAndSDK
+
+  done_vs:
+
+  done_checks:
 FunctionEnd
 
 
