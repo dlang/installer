@@ -601,17 +601,23 @@ void createRelease(string branch)
     }
     else
     {
+        import std.range : chain;
+
         if(do32Bit)
         {
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~lib, releaseLib32Dir~"/"~libPhobos32~lib);
-            copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~dll, releaseLib32Dir~"/"~libPhobos32~dll);
+            // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
+            copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/32/", releaseLib32Dir~"/",
+                    file => file.startsWith(chain(libPhobos32, dll)));
             version (Windows)
                 copyFile(cloneDir~"/druntime/lib/gcstub.obj", releaseLib32Dir~"/gcstub.obj");
         }
         if(do64Bit)
         {
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~lib, releaseLib64Dir~"/"~libPhobos64~lib);
-            copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~dll, releaseLib64Dir~"/"~libPhobos64~dll);
+            // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
+            copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/64/", releaseLib64Dir~"/",
+                    file => file.startsWith(chain(libPhobos64, dll)));
             version (Windows)
                 copyFile(cloneDir~"/druntime/lib/gcstub64.obj", releaseLib64Dir~"/gcstub64.obj");
         }
