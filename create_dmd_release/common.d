@@ -182,7 +182,12 @@ private ArchiveMember toArchiveMember(ref DirEntry de, string path)
     am.compressionMethod = CompressionMethod.deflate;
     am.time = de.timeLastModified;
     am.name = path;
+    am.fileAttributes = de.linkAttributes;
+    version (Posix) if (de.isSymlink)
+    {
+        am.expandedData = cast(ubyte[])readLink(de.name);
+        return am;
+    }
     am.expandedData = cast(ubyte[])std.file.read(de.name);
-    am.fileAttributes = de.attributes;
     return am;
 }
