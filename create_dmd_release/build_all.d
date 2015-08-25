@@ -368,6 +368,28 @@ void combineZips(string gitTag)
     archiveZip(workDir~"/dmd2", baseName~".zip");
 }
 
+void lzmaArchives(string gitTag)
+{
+    auto baseName = "build/dmd."~gitTag;
+
+    foreach (os; ["windows", "linux", "freebsd", "osx"])
+    {
+        auto nameOS = baseName ~ "." ~ os;
+        auto ext = os == "windows" ? ".7z" : ".tar.xz";
+        foreach (suf; ["", "-32", "-64"])
+        {
+            auto name = nameOS ~ suf;
+            if (!exists(name ~ ".zip"))
+                continue;
+            auto workDir = mkdtemp();
+            scope (success) if (workDir.exists) rmdirRecurse(workDir);
+            writeln("Building LZMA archive '", name ~ ext, "'.");
+            extractZip(name ~ ".zip", workDir);
+            archiveLZMA(workDir~"/dmd2", name ~ ext);
+        }
+    }
+}
+
 int error(Args...)(string fmt, Args args)
 {
     stderr.write("\033[031m");
@@ -441,5 +463,6 @@ int main(string[] args)
         }
     }
     combineZips(ver);
+    lzmaArchives(ver);
     return 0;
 }
