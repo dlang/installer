@@ -86,7 +86,7 @@ fcheck(){
 	fi
 }
 fcheck gzip
-fcheck unzip
+fcheck tar
 fcheck curl
 fcheck dpkg
 fcheck dpkg-shlibdeps
@@ -110,7 +110,7 @@ fi
 DESTDIR=`pwd`
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"
-DMDURL="http://ftp.digitalmars.com/dmd.$VERSION1.linux.zip"
+DMDURL="http://ftp.digitalmars.com/dmd.$VERSION1.linux.tar.xz"
 VERSION2=$(sed 's/-/~/' <<<$VERSION1) # replace dash by tilde
 if test "$2" = "-m64" ;then
 	ARCH="amd64"
@@ -133,7 +133,7 @@ else
 
 
 	# download zip file if not exist
-	if ! $(unzip -c $DESTDIR"/"$ZIPFILE &>/dev/null)
+	if ! $(tar --lzma -tf $DESTDIR"/"$ZIPFILE &>/dev/null)
 	then
 		rm -f $DESTDIR"/"$ZIPFILE
 		echo "Downloading $ZIPFILE..."
@@ -146,7 +146,7 @@ else
 
 
 	# unpacking sources
-	unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
+	tar --lzma -xf $DESTDIR"/"$ZIPFILE -C $TEMPDIR
 
 
 	# change unzipped folders and files permissions

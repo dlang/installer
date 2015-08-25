@@ -86,7 +86,7 @@ fcheck(){
 	fi
 }
 fcheck gzip
-fcheck unzip
+fcheck tar
 fcheck curl
 fcheck rpmbuild
 fcheck fakeroot
@@ -110,7 +110,7 @@ do
 	DESTDIR=`pwd`
 	TEMPDIR='/tmp/'`date +"%s%N"`
 	UNZIPDIR="dmd2"
-	DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.linux.zip"
+	DMDURL="http://ftp.digitalmars.com/dmd.$VERSION.linux.tar.xz"
 	VERSION=$(sed 's/-/~/' <<<$VERSION) # replace dash by tilde
 	if test "$2" = "-m64" ;then
 		ARCH="x86_64"
@@ -134,7 +134,7 @@ do
 
 
 		# download zip file if not exist
-		if ! $(unzip -c $DESTDIR"/"$ZIPFILE &>/dev/null)
+		if ! $(tar --lzma -tf $DESTDIR"/"$ZIPFILE &>/dev/null)
 		then
 			rm -f $DESTDIR"/"$ZIPFILE
 			echo "Downloading $ZIPFILE..."
@@ -147,7 +147,7 @@ do
 
 
 		# unpacking sources
-		unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
+		tar --lzma -xf $DESTDIR"/"$ZIPFILE -C $TEMPDIR
 
 
 		# add dmd-completion if present
