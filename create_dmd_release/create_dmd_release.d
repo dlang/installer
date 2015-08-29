@@ -96,6 +96,7 @@ version(Windows)
     immutable make          = "make";
     immutable suffix32      = "";   // bin/lib  TODO: adapt scripts to use 32
     immutable suffix64      = "64"; // bin64/lib64
+    immutable suffix32coff  = "32mscoff"; // lib32mscoff
 }
 else version(Posix)
 {
@@ -166,6 +167,7 @@ bool do64Bit;
 version(Windows)
 {
     string msvcBinDir;
+    string releaseLib32CoffDir;
 }
 
 // These are absolute and do NOT contain a trailing slash:
@@ -323,6 +325,8 @@ void init(string branch)
         msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
         if(!exists(msvcBinDir~"cl.exe"))
             msvcBinDir = win64vcDir ~ "/bin/amd64";
+
+        releaseLib32CoffDir = osDir ~ "/lib" ~ suffix32coff;
     }
 }
 
@@ -475,6 +479,10 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
     run(makecmd~msvcEnv);
+    version(Windows)
+        if(bits == Bits.bits64)
+            run(makecmd~msvcEnv ~ " druntime32mscoff");
+
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
@@ -499,6 +507,15 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             cloneDir~"/phobos/"~libPhobos~lib,
             cloneDir~"/phobos/generated/windows/release/"~bitsStr~"/"~libPhobos~lib
         );
+        if(bits == Bits.bits64)
+        {
+            run(makecmd~msvcEnv ~ " phobos32mscoff");
+            makeDir(cloneDir~"/phobos/generated/windows/release/"~suffix32coff);
+            copyFile(
+                cloneDir~"/phobos/phobos32mscoff.lib",
+                cloneDir~"/phobos/generated/windows/release/"~suffix32coff~"/phobos32mscoff.lib"
+            );
+        }
     }
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
@@ -613,7 +630,12 @@ void createRelease(string branch)
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~lib, releaseLib64Dir~"/"~libPhobos64~lib);
             copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~dll, releaseLib64Dir~"/"~libPhobos64~dll);
             version (Windows)
+            {
                 copyFile(cloneDir~"/druntime/lib/gcstub64.obj", releaseLib64Dir~"/gcstub64.obj");
+
+                copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32mscoff/phobos32mscoff.lib", releaseLib32CoffDir~"/phobos32mscoff.lib");
+                copyFile(cloneDir~"/druntime/lib/gcstub32mscoff.obj", releaseLib32CoffDir~"/gcstub32mscoff.obj");
+            }
         }
     }
 
