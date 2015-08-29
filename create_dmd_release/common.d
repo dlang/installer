@@ -138,21 +138,49 @@ void extractZip(string archive, string outputDir)
     import std.array : replace;
 
     scope zip = new ZipArchive(std.file.read(archive));
-    foreach(name, am; zip.directory)
-    {
-        if(!am.expandedSize) continue;
 
+    string outPath(string name)
+    {
         string path = buildPath(outputDir, name.replace("\\", "/"));
         auto dir = dirName(path);
         if (dir != "" && !dir.exists)
             mkdirRecurse(dir);
-        zip.expand(am);
-        std.file.write(path, am.expandedData);
+        return path;
+    }
+
+    void setTimeAttrs(string path, ArchiveMember am)
+    {
         import std.datetime : DosFileTimeToSysTime;
         auto mtime = DosFileTimeToSysTime(am.time);
         setTimes(path, mtime, mtime);
         if (auto attrs = am.fileAttributes)
             std.file.setAttributes(path, attrs);
+    }
+
+    foreach(name, am; zip.directory)
+    {
+        if(!am.expandedSize)
+            continue;
+        if (attrIsSymlink(am.fileAttributes))
+            continue; // symlinks need to be created after targets
+        zip.expand(am);
+
+        auto path = outPath(name);
+        std.file.write(path, am.expandedData);
+        setTimeAttrs(path, am);
+    }
+
+    // create symlinks
+    foreach(name, am; zip.directory)
+    {
+        if (!attrIsSymlink(am.fileAttributes))
+            continue;
+        zip.expand(am);
+
+        auto path = outPath(name);
+        version (Posix) symlink(cast(char[])am.expandedData, path);
+        else assert(0);
+        setTimeAttrs(path, am);
     }
 }
 
@@ -190,4 +218,21 @@ private ArchiveMember toArchiveMember(ref DirEntry de, string path)
     }
     am.expandedData = cast(ubyte[])std.file.read(de.name);
     return am;
+}
+
+void archiveLZMA(string inputDir, string archive)
+{
+    import std.exception : enforce;
+    import std.algorithm.searching : endsWith;
+    import std.process : execute;
+    archive = absolutePath(archive);
+
+    auto saveDir = getcwd();
+    scope(exit) chdir(saveDir);
+    chdir(dirName(inputDir));
+
+    auto cmd = archive.endsWith(".7z") ? ["7z", "a", archive, baseName(inputDir)] :
+            ["tar", "-Jcf", archive, baseName(inputDir)];
+    auto rc = execute(cmd);
+    enforce(!rc.status, rc.output);
 }
