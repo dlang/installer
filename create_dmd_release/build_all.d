@@ -454,12 +454,12 @@ int main(string[] args)
         {
             auto toCopy = ["old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
             scp(toCopy, "default:");
-            if (os != OS.linux) scp(workDir~"/docs", "default:");
+            if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
             scp("create_dmd_release.d common.d", "default:");
 
             build(ver, isBranch, skipDocs);
-            if (os == OS.linux) scp("default:docs", workDir);
+            if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
     combineZips(ver);
