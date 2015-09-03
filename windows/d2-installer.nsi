@@ -172,6 +172,14 @@ SetCompressor /SOLID lzma
   dandr_done:
 !macroend
 
+; Read SDK registry entry and check if kernel32.lib exists in the expected lib folder
+!macro _DetectSDK REG_KEY VALUE LIBFOLDER
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\${REG_KEY}" ${VALUE}
+    IfErrors +2 0
+    IfFileExists "$0${LIBFOLDER}\kernel32.lib" +2
+    SetErrors
+!macroend
 
 ;--------------------------------------------------------
 ; Interface settings
@@ -273,7 +281,7 @@ SectionGroup /e "D2"
     StrCmp $VCVer "" no_vc_detected write_vc_path
 
     no_vc_detected:
-      MessageBox MB_OK "Could not detect Visual Studio (2008-2013 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Visual Studio (2008-2015 are supported). No 64-bit support."
       goto finish_vc_path
 
     write_vc_path:
@@ -286,7 +294,7 @@ SectionGroup /e "D2"
     StrCmp $WinSDKPath "" no_sdk_detected write_sdk_path
 
     no_sdk_detected:
-      MessageBox MB_OK "Could not detect Windows SDK (6.0A-8.1 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Windows SDK (6.0A-10.0 are supported). No 64-bit support."
       goto finish_sdk_path
 
     write_sdk_path:
@@ -367,22 +375,27 @@ Function DetectVSAndSDK
     StrCpy $VCPath $0
     StrCpy $VCVer $1
 
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v10.0" "InstallationFolder"
+	!insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "lib\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v8.1" "InstallationFolder"
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v10.0" "InstallationFolder" "lib\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v8.0" "InstallationFolder"
+	!insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.1A" "InstallationFolder"
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1" "InstallationFolder" "Lib\winv6.3\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.0A" "InstallationFolder"
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1A" "InstallationFolder" "Lib\winv6.3\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v6.0A" "InstallationFolder"
+	!insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot" "Lib\win8\um\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0" "InstallationFolder" "Lib\win8\um\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0A" "InstallationFolder" "Lib\win8\um\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.1A" "InstallationFolder" "Lib\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.0A" "InstallationFolder" "Lib\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v6.0A" "InstallationFolder" "Lib\x64"
     IfErrors done done_sdk
 
     done_sdk:
