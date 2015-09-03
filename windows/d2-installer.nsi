@@ -107,7 +107,8 @@ Var InstanceCheck
 Var VCVer
 Var VCPath
 Var WinSDKPath
-
+Var UCRTPath
+Var UCRTVersion
 
 
 ;--------------------------------------------------------
@@ -293,6 +294,13 @@ SectionGroup /e "D2"
 
     finish_sdk_path:
       ClearErrors
+	  
+    StrCmp $UCRTVersion "" no_ucrt_detected
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UniversalCRTSdkDir=" "UniversalCRTSdkDir=$UCRTPath"
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UCRTVersion=" "UCRTVersion=$UCRTVersion"
+    no_ucrt_detected:
+      ClearErrors
+
   SectionEnd
 
 
@@ -335,6 +343,10 @@ SectionGroupEnd
 Function DetectVSAndSDK
     ClearErrors
 
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\14.0\Setup\VC" "ProductDir"
+    StrCpy $1 "VC2015"
+    IfErrors 0 done_vs
+    ClearErrors
     ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\12.0\Setup\VC" "ProductDir"
     StrCpy $1 "VC2013"
     IfErrors 0 done_vs
@@ -355,10 +367,13 @@ Function DetectVSAndSDK
     StrCpy $VCPath $0
     StrCpy $VCVer $1
 
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot81"
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v10.0" "InstallationFolder"
     IfErrors 0 done_sdk
     ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot" ; 8.0
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v8.1" "InstallationFolder"
+    IfErrors 0 done_sdk
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v8.0" "InstallationFolder"
     IfErrors 0 done_sdk
     ClearErrors
     ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.1A" "InstallationFolder"
@@ -372,6 +387,23 @@ Function DetectVSAndSDK
 
     done_sdk:
     StrCpy $WinSDKPath $0
+
+    ; detect ucrt
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot10"
+    IfErrors done done_ucrt
+	
+    done_ucrt:
+    StrCpy $UCRTPath $0
+
+      StrCpy $UCRTVersion ""
+      FindFirst $0 $1 $UCRTPath\Lib\*.*
+      loop_ff:
+        StrCmp $1 "" done_ff
+        StrCpy $UCRTVersion $1 ; hoping the directory is retrieved in ascending order (done by NTFS)
+        FindNext $0 $1
+        Goto loop_ff
+      done_ff:
+      FindClose $0
 
     done:
     ClearErrors
