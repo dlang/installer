@@ -429,6 +429,8 @@ Function .onInit
   Abort
 
   uninst:
+    ${GetParent} $R0 $INSTDIR
+	
     ClearErrors
     ; Run uninstaller from installed directory
     ExecWait '$R0 /IC False _?=$INSTDIR' $K
