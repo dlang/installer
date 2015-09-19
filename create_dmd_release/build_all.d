@@ -368,6 +368,28 @@ void combineZips(string gitTag)
     archiveZip(workDir~"/dmd2", baseName~".zip");
 }
 
+void lzmaArchives(string gitTag)
+{
+    auto baseName = "build/dmd."~gitTag;
+
+    foreach (os; ["windows", "linux", "freebsd", "osx"])
+    {
+        auto nameOS = baseName ~ "." ~ os;
+        auto ext = os == "windows" ? ".7z" : ".tar.xz";
+        foreach (suf; ["", "-32", "-64"])
+        {
+            auto name = nameOS ~ suf;
+            if (!exists(name ~ ".zip"))
+                continue;
+            auto workDir = mkdtemp();
+            scope (success) if (workDir.exists) rmdirRecurse(workDir);
+            writeln("Building LZMA archive '", name ~ ext, "'.");
+            extractZip(name ~ ".zip", workDir);
+            archiveLZMA(workDir~"/dmd2", name ~ ext);
+        }
+    }
+}
+
 int error(Args...)(string fmt, Args args)
 {
     stderr.write("\033[031m");
@@ -432,14 +454,15 @@ int main(string[] args)
         {
             auto toCopy = ["old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
             scp(toCopy, "default:");
-            if (os != OS.linux) scp(workDir~"/docs", "default:");
+            if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
             scp("create_dmd_release.d common.d", "default:");
 
             build(ver, isBranch, skipDocs);
-            if (os == OS.linux) scp("default:docs", workDir);
+            if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
     combineZips(ver);
+    lzmaArchives(ver);
     return 0;
 }
