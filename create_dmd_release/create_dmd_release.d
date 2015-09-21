@@ -419,11 +419,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     {
         auto jobs = "";
         auto dmdEnv = ` DMD=..\dmd\src\dmd`;
+        enum dmdConf = "sc.ini";
     }
     else
     {
         auto jobs = " -j4";
         auto dmdEnv = " DMD=../dmd/src/dmd";
+        enum dmdConf = "dmd.conf";
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD;
     auto isRelease = " RELEASE=1";
@@ -435,6 +437,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     if(build64BitTools || bits == Bits.bits32)
     {
         info("Building DMD "~bitsDisplay);
+        removeFile(cloneDir~"/dmd/src/"~dmdConf);
         changeDir(cloneDir~"/dmd/src");
         run(makecmd~" dmd");
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
@@ -452,15 +455,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     }
     else version(Posix)
     {
-        version(OSX)
-            enum flags="";
-        else
-            enum flags=" -L--export-dynamic";
-
-        std.file.write(cloneDir~"/dmd/src/dmd.conf", (`
-            [Environment]
-            DFLAGS=-I%@P%/../../phobos -I%@P%/../../druntime/src -L-L%@P%/../../phobos/generated/`~osDirName~`/release/`~bitsStr~` -L-L%@P%/../../druntime/lib`~flags~`
-        `).outdent().strip());
+        run(makecmd~" dmd.conf");
     }
     else
         static assert(false, "Unsupported platform");
