@@ -435,6 +435,8 @@ int main(string[] args)
     // Get latest optlink
     remove(workDir~"/old-dmd/dmd2/windows/bin/link.exe");
     extractZip(cacheDir~"/"~optlink, workDir~"/old-dmd/dmd2/windows/bin");
+    // rename to optlink.exe (but keep a copy as link.exe for a while)
+    copyFile(workDir~"/old-dmd/dmd2/windows/bin/link.exe", workDir~"/old-dmd/dmd2/windows/bin/optlink.exe");
     // Get latest libC (snn.lib)
     remove(workDir~"/old-dmd/dmd2/windows/lib/snn.lib");
     copyFile(cacheDir~"/"~libC, workDir~"/old-dmd/dmd2/windows/lib/"~libC);
