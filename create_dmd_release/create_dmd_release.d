@@ -419,11 +419,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     {
         auto jobs = "";
         auto dmdEnv = ` DMD=..\dmd\src\dmd`;
+        enum dmdConf = "sc.ini";
     }
     else
     {
         auto jobs = " -j4";
         auto dmdEnv = " DMD=../dmd/src/dmd";
+        enum dmdConf = "dmd.conf";
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD;
     auto isRelease = " RELEASE=1";
@@ -435,6 +437,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     if(build64BitTools || bits == Bits.bits32)
     {
         info("Building DMD "~bitsDisplay);
+        removeFile(cloneDir~"/dmd/src/"~dmdConf);
         changeDir(cloneDir~"/dmd/src");
         run(makecmd~" dmd");
         copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
@@ -452,15 +455,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     }
     else version(Posix)
     {
-        version(OSX)
-            enum flags="";
-        else
-            enum flags=" -L--export-dynamic";
-
-        std.file.write(cloneDir~"/dmd/src/dmd.conf", (`
-            [Environment]
-            DFLAGS=-I%@P%/../../phobos -I%@P%/../../druntime/src -L-L%@P%/../../phobos/generated/`~osDirName~`/release/`~bitsStr~` -L-L%@P%/../../druntime/lib`~flags~`
-        `).outdent().strip());
+        run(makecmd~" dmd.conf");
     }
     else
         static assert(false, "Unsupported platform");
@@ -482,25 +477,27 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     changeDir(cloneDir~"/phobos");
     run(makecmd~msvcEnv);
 
-    version(OSX)
+    version(OSX) if(bits == Bits.bits64)
     {
-        if(bits == Bits.bits64)
-        {
-            info("Building Phobos Universal Binary");
-            changeDir(cloneDir~"/phobos");
-            run(makecmd~" libphobos2.a");
-        }
-    }
-
-    version(Windows)
-    {
-        makeDir(cloneDir~"/phobos/generated/windows/release/"~bitsStr);
-        copyFile(
-            cloneDir~"/phobos/"~libPhobos~lib,
-            cloneDir~"/phobos/generated/windows/release/"~bitsStr~"/"~libPhobos~lib
-        );
+        info("Building Phobos Universal Binary");
+        changeDir(cloneDir~"/phobos");
+        run(makecmd~" libphobos2.a");
     }
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
+
+    version (Windows) if (bits == Bits.bits64)
+    {
+        info("Building Druntime 32mscoff");
+        changeDir(cloneDir~"/druntime");
+        run(makecmd~msvcEnv~" druntime32mscoff");
+        removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
+                    file => !file.baseName.startsWith("gcstub", "minit"));
+
+        info("Building Phobos 32mscoff");
+        changeDir(cloneDir~"/phobos");
+        run(makecmd~msvcEnv~" phobos32mscoff");
+        removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
+    }
 
     // Build docs
     if(!skipDocs)
@@ -599,21 +596,38 @@ void createRelease(string branch)
         else if(do64Bit)
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/libphobos2.a", releaseLib32Dir~"/libphobos2_64.a");
     }
-    else
+    else version (Windows)
     {
         if(do32Bit)
         {
+            copyFile(cloneDir~"/druntime/lib/gcstub.obj", osDir~"/lib/gcstub.obj");
+            copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
+        }
+        if(do64Bit)
+        {
+            copyFile(cloneDir~"/druntime/lib/gcstub64.obj", osDir~"/lib64/gcstub64.obj");
+            copyFile(cloneDir~"/phobos/phobos64.lib", osDir~"/lib64/phobos64.lib");
+            copyFile(cloneDir~"/druntime/lib/gcstub32mscoff.obj", osDir~"/lib32mscoff/gcstub32mscoff.obj");
+            copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
+        }
+    }
+    else
+    {
+        import std.range : chain;
+
+        if(do32Bit)
+        {
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~lib, releaseLib32Dir~"/"~libPhobos32~lib);
-            copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~dll, releaseLib32Dir~"/"~libPhobos32~dll);
-            version (Windows)
-                copyFile(cloneDir~"/druntime/lib/gcstub.obj", releaseLib32Dir~"/gcstub.obj");
+            // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
+            copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/32/", releaseLib32Dir~"/",
+                    file => file.startsWith(chain(libPhobos32, dll)));
         }
         if(do64Bit)
         {
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~lib, releaseLib64Dir~"/"~libPhobos64~lib);
-            copyFileIfExists(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~dll, releaseLib64Dir~"/"~libPhobos64~dll);
-            version (Windows)
-                copyFile(cloneDir~"/druntime/lib/gcstub64.obj", releaseLib64Dir~"/gcstub64.obj");
+            // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
+            copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/64/", releaseLib64Dir~"/",
+                    file => file.startsWith(chain(libPhobos64, dll)));
         }
     }
 
