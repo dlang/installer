@@ -33,11 +33,11 @@ dmd.${VERSION}.dmg: dmd.${VERSION}.osx.zip
 	unzip -q dmd.${VERSION}.osx.zip -d dmd/
 	mv $(addprefix dmd/dmd2/,html license.txt man README.TXT samples src osx/bin osx/lib) dmd/
 	rm -rf dmd/dmd2/
-	cp dmd2.conf dmd/bin/dmd.conf
+	cp dmd.conf dmd/bin/dmd.conf
 	rm -rf dmg/
 	mkdir -p dmg/DMD2
 	cp uninstall.command dmg/DMD2/
-	${MAKER} -d dmd2.pmdoc -o dmg/DMD2/DMD2.pkg --target 10.5
+	${MAKER} -d dmd.pmdoc -o dmg/DMD2/DMD2.pkg --target 10.5
 	hdiutil create -srcfolder dmg/DMD2 $@
 
 clean:
