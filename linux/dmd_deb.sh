@@ -407,7 +407,7 @@ else
 
 	# create deb package
 	cd ..
-	fakeroot dpkg-deb -b $DMDDIR
+	fakeroot dpkg-deb -b -Zxz -z9 $DMDDIR
 
 
 	# disable pushd
