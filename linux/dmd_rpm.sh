@@ -229,10 +229,6 @@ do
 		cat ../$UNZIPDIR/license.txt | sed 's/\r//' >> usr/share/doc/dmd/copyright
 
 
-		# link changelog
-		ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
-
-
 		# create /etc/dmd.conf file
 		mkdir -p etc/
 		echo -en ';
