@@ -340,7 +340,7 @@ do
 		echo "%define _rpmdir $RPMDIR" >> dmd.spec
 
 		# create rpm file
-		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH dmd.spec
+		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH --define '_binary_payload w9.xzdio' dmd.spec
 
 
 		# disable pushd
