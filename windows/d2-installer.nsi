@@ -394,7 +394,7 @@ Function DetectVSAndSDK
 
     done:
 
-    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "lib\${UCRTVersion}\um\x64"
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\${UCRTVersion}\um\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
     IfErrors 0 done_sdk
