@@ -375,17 +375,34 @@ Function DetectVSAndSDK
     StrCpy $VCPath $0
     StrCpy $VCVer $1
 
-	!insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "lib\um\x64"
+    ; detect ucrt
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot10"
+    IfErrors done done_ucrt
+
+    done_ucrt:
+    StrCpy $UCRTPath $0
+
+      StrCpy $UCRTVersion ""
+      FindFirst $0 $1 $UCRTPath\Lib\*.*
+      loop_ff:
+        StrCmp $1 "" done_ff
+        StrCpy $UCRTVersion $1 ; hoping the directory is retrieved in ascending order (done by NTFS)
+        FindNext $0 $1
+        Goto loop_ff
+      done_ff:
+      FindClose $0
+
+    done:
+
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "lib\${UCRTVersion}\um\x64"
     IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v10.0" "InstallationFolder" "lib\um\x64"
-    IfErrors 0 done_sdk
-	!insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1" "InstallationFolder" "Lib\winv6.3\um\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1A" "InstallationFolder" "Lib\winv6.3\um\x64"
     IfErrors 0 done_sdk
-	!insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot" "Lib\win8\um\x64"
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot" "Lib\win8\um\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0" "InstallationFolder" "Lib\win8\um\x64"
     IfErrors 0 done_sdk
@@ -401,25 +418,6 @@ Function DetectVSAndSDK
     done_sdk:
     StrCpy $WinSDKPath $0
 
-    ; detect ucrt
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot10"
-    IfErrors done done_ucrt
-	
-    done_ucrt:
-    StrCpy $UCRTPath $0
-
-      StrCpy $UCRTVersion ""
-      FindFirst $0 $1 $UCRTPath\Lib\*.*
-      loop_ff:
-        StrCmp $1 "" done_ff
-        StrCpy $UCRTVersion $1 ; hoping the directory is retrieved in ascending order (done by NTFS)
-        FindNext $0 $1
-        Goto loop_ff
-      done_ff:
-      FindClose $0
-
-    done:
-    ClearErrors
 FunctionEnd
 
 ;--------------------------------------------------------
