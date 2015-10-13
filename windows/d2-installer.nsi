@@ -107,7 +107,8 @@ Var InstanceCheck
 Var VCVer
 Var VCPath
 Var WinSDKPath
-
+Var UCRTPath
+Var UCRTVersion
 
 
 ;--------------------------------------------------------
@@ -171,6 +172,14 @@ SetCompressor /SOLID lzma
   dandr_done:
 !macroend
 
+; Read SDK registry entry and check if kernel32.lib exists in the expected lib folder
+!macro _DetectSDK REG_KEY VALUE LIBFOLDER
+    ClearErrors
+    ReadRegStr $0 HKLM "Software\Microsoft\${REG_KEY}" ${VALUE}
+    IfErrors +2 0
+    IfFileExists "$0${LIBFOLDER}\kernel32.lib" +2
+    SetErrors
+!macroend
 
 ;--------------------------------------------------------
 ; Interface settings
@@ -272,7 +281,7 @@ SectionGroup /e "D2"
     StrCmp $VCVer "" no_vc_detected write_vc_path
 
     no_vc_detected:
-      MessageBox MB_OK "Could not detect Visual Studio (2008-2013 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Visual Studio (2008-2015 are supported). No 64-bit support."
       goto finish_vc_path
 
     write_vc_path:
@@ -285,7 +294,7 @@ SectionGroup /e "D2"
     StrCmp $WinSDKPath "" no_sdk_detected write_sdk_path
 
     no_sdk_detected:
-      MessageBox MB_OK "Could not detect Windows SDK (6.0A-8.1 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Windows SDK (6.0A-10.0 are supported). No 64-bit support."
       goto finish_sdk_path
 
     write_sdk_path:
@@ -293,6 +302,13 @@ SectionGroup /e "D2"
 
     finish_sdk_path:
       ClearErrors
+	  
+    StrCmp $UCRTVersion "" no_ucrt_detected
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UniversalCRTSdkDir=" "UniversalCRTSdkDir=$UCRTPath"
+      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UCRTVersion=" "UCRTVersion=$UCRTVersion"
+    no_ucrt_detected:
+      ClearErrors
+
   SectionEnd
 
 
@@ -335,6 +351,10 @@ SectionGroupEnd
 Function DetectVSAndSDK
     ClearErrors
 
+    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\14.0\Setup\VC" "ProductDir"
+    StrCpy $1 "VC2015"
+    IfErrors 0 done_vs
+    ClearErrors
     ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\12.0\Setup\VC" "ProductDir"
     StrCpy $1 "VC2013"
     IfErrors 0 done_vs
@@ -355,26 +375,49 @@ Function DetectVSAndSDK
     StrCpy $VCPath $0
     StrCpy $VCVer $1
 
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot81"
+    ; detect ucrt
+    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot10"
+    IfErrors done done_ucrt
+
+    done_ucrt:
+    StrCpy $UCRTPath $0
+
+      StrCpy $UCRTVersion ""
+      FindFirst $0 $1 $UCRTPath\Lib\*.*
+      loop_ff:
+        StrCmp $1 "" done_ff
+        StrCpy $UCRTVersion $1 ; hoping the directory is retrieved in ascending order (done by NTFS)
+        FindNext $0 $1
+        Goto loop_ff
+      done_ff:
+      FindClose $0
+
+    done:
+
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\${UCRTVersion}\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot" ; 8.0
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.1A" "InstallationFolder"
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1" "InstallationFolder" "Lib\winv6.3\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v7.0A" "InstallationFolder"
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1A" "InstallationFolder" "Lib\winv6.3\um\x64"
     IfErrors 0 done_sdk
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\Microsoft SDKs\Windows\v6.0A" "InstallationFolder"
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot" "Lib\win8\um\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0" "InstallationFolder" "Lib\win8\um\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0A" "InstallationFolder" "Lib\win8\um\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.1A" "InstallationFolder" "Lib\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.0A" "InstallationFolder" "Lib\x64"
+    IfErrors 0 done_sdk
+    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v6.0A" "InstallationFolder" "Lib\x64"
     IfErrors done done_sdk
 
     done_sdk:
     StrCpy $WinSDKPath $0
 
-    done:
-    ClearErrors
 FunctionEnd
 
 ;--------------------------------------------------------
