@@ -55,7 +55,7 @@
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
 !define DmcFilename "dmc-${VersionDMC}.exe"
 !define Dmd1Filename "dmd-${Version1}.exe"
-!define VS2013Filename "vs_community.exe"
+!define VS2015Filename "vs_community.exe"
 
 ; URLs
 !define BaseURL "http://downloads.dlang.org"
@@ -70,7 +70,7 @@
 !define Dmd1Url "${BaseURL}/releases/${Version1ReleaseYear}/${Dmd1Filename}"
 !define Dmd1AltUrl "${BaseURLAlt}/${Dmd1Filename}"
 
-!define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
+!define VS2015Url "http://go.microsoft.com/fwlink/?LinkId=532606"
 
 ; Publishing Details
 !define DPublisher "Digital Mars"
@@ -497,11 +497,11 @@ Function .onInit
 
   ask_vs:
     MessageBox MB_YESNO|MB_ICONQUESTION \
-    "For 64-bit support MSVC and the Windows SDK are needed but no compatible versions were found. Do you want to install VS2013?" \
+    "For 64-bit support MSVC and the Windows SDK are needed but no compatible versions were found. Do you want to install VS2015?" \
     IDYES install_vs IDNO done_vs
 
   install_vs:
-    !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
+    !insertmacro DownloadAndRun ${VS2015Filename} ${VS2015Url} ""
     Call DetectVSAndSDK
 
   done_vs:
