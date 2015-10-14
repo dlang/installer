@@ -602,6 +602,8 @@ void createRelease(string branch)
         {
             copyFile(cloneDir~"/druntime/lib/gcstub.obj", osDir~"/lib/gcstub.obj");
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
+            foreach (de; dirEntries(cloneDir~"/druntime/lib/win32/", "*.lib", SpanMode.shallow))
+                copyFile(de, osDir ~ "/lib/" ~ de.baseName);
         }
         if(do64Bit)
         {
