@@ -394,7 +394,7 @@ Function DetectVSAndSDK
 
     done:
 
-    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\${UCRTVersion}\um\x64"
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\$UCRTVersion\um\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
     IfErrors 0 done_sdk
@@ -431,7 +431,7 @@ Function .onInit
 
   ; Force install without uninstall (useful if uninstall is broken)
   ${GetParameters} $R0
-  StrCmp $R0 "/f" done_checks
+  StrCmp $R0 "/f" done_uninst
 
 
   ; Remove previous dmd installation if any
@@ -506,7 +506,6 @@ Function .onInit
 
   done_vs:
 
-  done_checks:
 FunctionEnd
 
 
