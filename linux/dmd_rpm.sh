@@ -229,10 +229,6 @@ do
 		cat ../$UNZIPDIR/license.txt | sed 's/\r//' >> usr/share/doc/dmd/copyright
 
 
-		# link changelog
-		ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
-
-
 		# create /etc/dmd.conf file
 		mkdir -p etc/
 		echo -en ';
@@ -344,7 +340,7 @@ do
 		echo "%define _rpmdir $RPMDIR" >> dmd.spec
 
 		# create rpm file
-		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH dmd.spec
+		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH --define '_binary_payload w9.xzdio' dmd.spec
 
 
 		# disable pushd

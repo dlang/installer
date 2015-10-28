@@ -267,7 +267,7 @@ else
 
 	# create deb package
 	cd ..
-	fakeroot dpkg-deb -b $PHOBOSDIR
+	fakeroot dpkg-deb -b -Zxz -z9 $PHOBOSDIR
 
 
 	# disable pushd

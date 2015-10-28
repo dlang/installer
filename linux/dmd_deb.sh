@@ -306,10 +306,6 @@ else
 	cat ../$UNZIPDIR/src/druntime/LICENSE_tmp >> usr/share/doc/dmd/copyright
 
 
-	# link changelog
-	ln -s ../../dmd/html/d/changelog.html usr/share/doc/dmd/
-
-
 	# create shlibs file
 	mkdir -p DEBIAN
 	echo "libphobos2 "$MAJOR.$MINOR" libphobos2-"$MINOR > DEBIAN/shlibs
@@ -411,7 +407,7 @@ else
 
 	# create deb package
 	cd ..
-	fakeroot dpkg-deb -b $DMDDIR
+	fakeroot dpkg-deb -b -Zxz -z9 $DMDDIR
 
 
 	# disable pushd
