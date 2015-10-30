@@ -467,9 +467,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     if(dmdOnly)
         return;
 
+    string makeTargetDruntime;
+    version(Windows)
+        if (bits == Bits.bits32)
+            makeTargetDruntime = " target implibs";
+
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~msvcEnv);
+    run(makecmd~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
@@ -602,8 +607,7 @@ void createRelease(string branch)
         {
             copyFile(cloneDir~"/druntime/lib/gcstub.obj", osDir~"/lib/gcstub.obj");
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
-            foreach (de; dirEntries(cloneDir~"/druntime/lib/win32/", "*.lib", SpanMode.shallow))
-                copyFile(de, osDir ~ "/lib/" ~ de.baseName);
+            copyDir(cloneDir~"/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {
