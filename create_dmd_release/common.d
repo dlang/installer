@@ -69,10 +69,12 @@ template fetchFile()
 {
     pragma(lib, "curl");
 
-    void fetchFile(string url, string path)
+    void fetchFile(string url, string path, bool verify = false)
     {
         import std.array, std.datetime, std.exception, std.net.curl,
             std.path, std.stdio, std.string;
+        import std.process : execute;
+
         auto client = HTTP(url);
         size_t cnt;
         auto app = appender!(ubyte[])();
@@ -113,19 +115,31 @@ template fetchFile()
         catch (CurlException ce)
         {
             // stupid std.net.curl throws an exception when aborting, ignore it
-            if (abort) return;
-            throw ce;
+            if (!abort) throw ce;
         }
-        enforce(statusCode / 100 == 2,
-                format("Download of '%s' failed with HTTP status code '%s'.",
-                       url, statusCode));
-        mkdirRecurse(path.dirName);
-        std.file.write(path, app.data);
-        app.clear();
-        if (etag.length)
-            std.file.write(path~".etag", etag);
-        writeln(); // CR
-        stdout.flush();
+
+        if (!abort)
+        {
+            enforce(statusCode / 100 == 2,
+                    format("Download of '%s' failed with HTTP status code '%s'.",
+                           url, statusCode));
+            mkdirRecurse(path.dirName);
+            std.file.write(path, app.data);
+            app.clear();
+            if (etag.length)
+                std.file.write(path~".etag", etag);
+            writeln(); // CR
+            stdout.flush();
+        }
+
+        if (verify)
+        {
+            path ~= ".sig";
+            if (!path.exists)
+                download(url~".sig", path);
+            auto gpg = execute(["gpg", "--verify", path]);
+            enforce(!gpg.status, gpg.output);
+        }
     }
 }
 

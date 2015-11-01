@@ -427,10 +427,10 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.45.0-WinSSL-zlib-x86-x64.zip";
 
-    fetchFile("http://ftp.digitalmars.com/"~oldDMD, cacheDir~"/"~oldDMD);
+    fetchFile("http://ftp.digitalmars.com/"~oldDMD, cacheDir~"/"~oldDMD, true);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl);
+    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
 
     // Get previous dmd release
     extractZip(cacheDir~"/"~oldDMD, workDir~"/old-dmd");
