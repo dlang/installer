@@ -250,3 +250,26 @@ void archiveLZMA(string inputDir, string archive)
     auto rc = execute(cmd);
     enforce(!rc.status, rc.output);
 }
+
+// generic extract, might require tar, xz, 7z depending on archive format
+void extract(string archive, string outputDir)
+{
+    import std.exception : enforce;
+    import std.algorithm.searching : endsWith;
+    import std.process : execute;
+
+    string[] cmd;
+    if (archive.endsWith(".zip"))
+        return extractZip(archive, outputDir);
+    else if (archive.endsWith(".tar.xz"))
+        cmd = ["tar", "-C", outputDir, "-Jxf", archive];
+    else if (archive.endsWith(".7z"))
+        cmd = ["7z", "x", "-o"~outputDir, archive];
+    else
+        assert(0, "Unsupported archive format "~archive~".");
+
+    if (!outputDir.exists)
+        mkdirRecurse(outputDir);
+    auto rc = execute(cmd);
+    enforce(!rc.status, rc.output);
+}
