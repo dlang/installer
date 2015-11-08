@@ -473,7 +473,7 @@ Function .onInit
 
   uninst:
     ${GetParent} $R0 $INSTDIR
-	
+
     ClearErrors
     ; Run uninstaller from installed directory
     ExecWait '$R0 /IC False _?=$INSTDIR' $K
@@ -486,7 +486,7 @@ Function .onInit
     StrCmp $K 0 +2
       Abort
     ; Remove in background the remaining uninstaller program itself
-    ExecWait '$R0 /IC False /S'
+    Exec '$R0 /IC False /S'
 
   done_uninst:
 
