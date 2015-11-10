@@ -413,10 +413,12 @@ Function DetectVSAndSDK
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.0A" "InstallationFolder" "Lib\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v6.0A" "InstallationFolder" "Lib\x64"
-    IfErrors done done_sdk
+    IfErrors no_sdk done_sdk
 
     done_sdk:
     StrCpy $WinSDKPath $0
+
+    no_sdk:
 
 FunctionEnd
 
