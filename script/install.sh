@@ -4,6 +4,7 @@
 # License: Boost License 1.0 (www.boost.org/LICENSE_1_0.txt)
 # Authors: Martin Nowak
 
+_() {
 set -ueo pipefail
 
 # ------------------------------------------------------------------------------
@@ -512,3 +513,6 @@ install_dub() {
 parse_args "$@"
 resolve_latest $compiler
 run_command ${command:-install} $compiler
+}
+
+_ "$@"
