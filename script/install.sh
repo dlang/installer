@@ -105,6 +105,8 @@ command_help() {
 
   dmd|gdc|ldc           latest version of a compiler
   dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.069.0, ldc-0.16.1-beta2)
+  dmd-nightly           latest dmd nightly
+  dmd-2015-11-22        specific dmd nightly
 '
 
     case $1 in
@@ -281,6 +283,11 @@ resolve_latest() {
             logV "Determing latest dmd version ($url)."
             compiler="dmd-$(curl -sS $url)"
             ;;
+        dmd-nightly)
+            local url=https://builds.dawg.eu/LATEST_NIGHTLY
+            logV "Determing latest dmd-nightly version ($url)."
+            compiler="dmd-$(curl -sS $url)"
+            ;;
         ldc)
             local url=https://ldc-developers.github.io/LATEST
             logV "Determing latest ldc version ($url)."
@@ -319,6 +326,16 @@ install_compiler() {
         else
             local url="http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
         fi
+
+        download_and_unpack "$url" "$path/$1" "$url.sig"
+
+    # dmd-2015-11-20
+    elif [[ $1 =~ ^dmd-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+        local basename="dmd.master.$os"
+        if [ $os = freebsd ]; then
+            basename="$basename-$model"
+        fi
+        local url="https://builds.dawg.eu/$1/$basename.tar.xz"
 
         download_and_unpack "$url" "$path/$1" "$url.sig"
 
