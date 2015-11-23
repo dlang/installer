@@ -295,8 +295,6 @@ resolve_latest() {
 }
 
 install_compiler() {
-    local tmp=$(mkdtemp)
-
     # dmd-2.065, dmd-2.068.0, dmd-2.068.1-b1
     if [[ $1 =~ ^dmd-2\.([0-9]{3})(\.[0-9])?(-.*)?$ ]]; then
         local basename="dmd.2.${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
@@ -322,19 +320,7 @@ install_compiler() {
             local url="http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
         fi
 
-        if [[ $url =~ \.tar\.xz$ ]]; then
-            check_tools tar xz
-            log "Downloading and unpacking $url"
-            curl "$url" | tar -C "$tmp" -Jxf -
-        else
-            check_tools unzip
-            log "Downloading $url"
-            curl "$url" -o "$tmp/dmd.zip"
-            log "Unpacking"
-            unzip -q -d "$tmp" "$tmp/dmd.zip"
-            rm "$tmp/dmd.zip"
-        fi
-        mv "$tmp" "$path/$1"
+        download_and_unpack "$url" "$path/$1" "$url.sig"
 
     # ldc-0.12.1 or ldc-0.15.0-alpha1
     elif [[ $1 =~ ^ldc-([0-9]+\.[0-9]+\.[0-9]+(-.*)?)$ ]]; then
@@ -344,10 +330,7 @@ install_compiler() {
             fatal "no ldc binaries available for $os"
         fi
 
-        check_tools tar xz
-        log "Downloading and unpacking $url"
-        curl "$url" | tar --strip-components=1 -C "$tmp" -Jxf -
-        mv "$tmp" "$path/$1"
+        download_and_unpack "$url" "$path/$1"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
     elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
@@ -361,18 +344,67 @@ install_compiler() {
         esac
         local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
 
-        check_tools tar xz
-        log "Downloading and unpacking $url"
-        curl "$url" | tar --strip-components=1 -C "$tmp" -Jxf -
+        download_and_unpack "$url" "$path/$1"
+
         url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/master/dmd-script
-        log "Downloading '$url'."
-        curl "$url" -o "$tmp/bin/gdmd"
-        chmod +x "$tmp/bin/gdmd"
-        mv "$tmp" "$path/$1"
+        log "Downloading gdmd $url"
+        curl "$url" -o "$path/$1/bin/gdmd"
+        chmod +x "$path/$1/bin/gdmd"
 
     else
-        rmdir "$tmp"
         fatal "Unknown compiler '$1'"
+    fi
+}
+
+find_gpg() {
+    if command -v gpg2 &>/dev/null; then
+        echo gpg2
+    elif command -v gpg &>/dev/null; then
+        echo gpg
+    else
+        echo "Warning: No gpg tool found to verify downloads." >&2
+        echo x
+    fi
+}
+
+# url, path, [verify]
+download_and_unpack() {
+    local tmp=$(mkdtemp)
+    local name="$(basename $1)"
+
+    check_tools curl
+    if [[ $name =~ \.tar\.xz$ ]]; then
+        check_tools tar xz
+    else
+        check_tools unzip
+    fi
+
+    log "Downloading and unpacking $1"
+    curl "$1" -o "$tmp/$name"
+    if [ ! -z ${3:-} ]; then
+        verify "$3" "$tmp/$name"
+    fi
+    if [[ $name =~ \.tar\.xz$ ]]; then
+        tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
+    else
+        unzip -q -d "$tmp" "$tmp/$name"
+        mv "$tmp/dmd2"/* "$tmp/"
+        rmdir "$tmp/dmd2"
+    fi
+    rm "$tmp/$name"
+    mv "$tmp" "$2"
+}
+
+verify() {
+    : ${GPG:=$(find_gpg)}
+    if [ $GPG = x ]; then
+        return
+    fi
+    if [ ! -f "$path/d-keyring.gpg" ]; then
+        curl -sS http://dlang.org/d-keyring.gpg -o "$path/d-keyring.gpg"
+    fi
+    if ! $GPG -q --verify --keyring "$path/d-keyring.gpg" --no-default-keyring <(curl -sS "$1") "$2" 2>/dev/null; then
+        fatal "Invalid signature $1"
     fi
 }
 
@@ -380,8 +412,8 @@ write_env_vars() {
     case $1 in
         dmd*)
             [ $os = osx ] && local suffix= || local suffix=$model
-            local binpath=dmd2/$os/bin$suffix
-            local libpath=dmd2/$os/lib$suffix
+            local binpath=$os/bin$suffix
+            local libpath=$os/lib$suffix
             local dc=dmd
             local dmd=dmd
             ;;
