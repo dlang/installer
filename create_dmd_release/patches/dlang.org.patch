@@ -1,20 +1,20 @@
 diff --git a/doc.ddoc b/doc.ddoc
-index 875ed48..1756234 100644
+index 54fc338..34964cc 100644
 --- a/doc.ddoc
 +++ b/doc.ddoc
-@@ -10,7 +10,6 @@ _=
+@@ -8,7 +8,6 @@ _=
  NAVIGATION=
  $(DIVID cssmenu, $(UL
      $(MENU $(ROOT_DIR)index.html, D $(LATEST))
 -    $(MENU $(ROOT_DIR)download.html, $(B Download))
      $(MENU $(ROOT_DIR)getstarted.html, Getting Started)
-     $(MENU $(ROOT_DIR)changelog/$(LATEST).html, Change Log)
-     $(MENU_W_SUBMENU D Reference)
+     $(MENU http://ddili.org/ders/d.en/index.html, Official Tutorial)
+     $(MENU http://wiki.dlang.org, Wiki)
 diff --git a/posix.mak b/posix.mak
-index 68f9e93..4d5b7d0 100644
+index 493b789..dbb1334 100644
 --- a/posix.mak
 +++ b/posix.mak
-@@ -215,7 +215,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
+@@ -222,7 +222,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
  # Rulez
  ################################################################################
  
@@ -23,7 +23,7 @@ index 68f9e93..4d5b7d0 100644
  
  docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
  	apidocs-release apidocs-prerelease
-@@ -241,9 +241,9 @@ ${GENERATED}/${LATEST}.ddoc :
+@@ -248,9 +248,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
  	echo "LATEST=${LATEST}" >$@
  
@@ -35,7 +35,7 @@ index 68f9e93..4d5b7d0 100644
  
  ${GENERATED}/modlist-prerelease.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR) $(PHOBOS_DIR)
  	mkdir -p $(dir $@)
-@@ -336,8 +336,8 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} :
+@@ -343,8 +343,8 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} :
  # dmd compiler, latest released build and current build
  ################################################################################
  
@@ -46,7 +46,7 @@ index 68f9e93..4d5b7d0 100644
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}
  	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
-@@ -351,9 +351,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
+@@ -358,9 +358,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -59,7 +59,7 @@ index 68f9e93..4d5b7d0 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -378,12 +378,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
+@@ -385,12 +385,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
  
