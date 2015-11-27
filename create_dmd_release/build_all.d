@@ -92,7 +92,7 @@ struct Box
         // save the ssh config file
         run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
         if (os == OS.windows)
-            run("cd "~_tmpdir~"; echo '     HostKeyAlgorithms +ssh-dss' >> ssh.cfg;");
+            run("cd "~_tmpdir~"; echo '     HostKeyAlgorithms ssh-dss' >> ssh.cfg;");
     }
 
     Shell shell()
