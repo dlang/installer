@@ -356,25 +356,6 @@ void applyPatches(string gitTag, string tgtDir)
         run(fmt.format(proj));
 }
 
-void combineZips(string gitTag)
-{
-    auto workDir = mkdtemp();
-    scope (success) if (workDir.exists) rmdirRecurse(workDir);
-
-    auto baseName = "build/dmd."~gitTag;
-    writefln("Creating combined '%s.zip'.", baseName);
-    foreach (os; ["windows", "linux", "freebsd", "osx"])
-    {
-        auto name = baseName ~ "." ~ os;
-        foreach (suf; [".zip", "-32.zip", "-64.zip"])
-        {
-            if (exists(name ~ suf))
-                extractZip(name ~ suf, workDir);
-        }
-    }
-    archiveZip(workDir~"/dmd2", baseName~".zip");
-}
-
 auto lzmaExt = (OS os) => os == OS.windows ? ".7z" : ".tar.xz";
 
 void lzmaArchives(string gitTag)
@@ -474,7 +455,6 @@ int main(string[] args)
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
-    combineZips(ver);
     lzmaArchives(ver);
     return 0;
 }
