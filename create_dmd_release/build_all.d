@@ -92,7 +92,7 @@ struct Box
         // save the ssh config file
         run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
         if (os == OS.windows)
-            run("cd "~_tmpdir~"; echo '     HostKeyAlgorithms +ssh-dss' >> ssh.cfg;");
+            run("cd "~_tmpdir~"; echo '     HostKeyAlgorithms ssh-dss' >> ssh.cfg;");
     }
 
     Shell shell()
@@ -346,7 +346,7 @@ void applyPatches(string gitTag, string tgtDir)
     import std.file;
     write(tgtDir~"/dmd/VERSION", gitTag.chompPrefix("v"));
 
-    auto fmt = "git -C "~tgtDir~"/%1$s apply < patches/%1$s.patch";
+    auto fmt = "git -C "~tgtDir~"/%1$s apply -3 < patches/%1$s.patch";
     foreach (proj; ["dlang.org", "tools"])
         run(fmt.format(proj));
 }

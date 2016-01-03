@@ -231,7 +231,7 @@ void archiveLZMA(string inputDir, string archive)
     scope(exit) chdir(saveDir);
     chdir(dirName(inputDir));
 
-    auto cmd = archive.endsWith(".7z") ? ["7z", "a", archive, baseName(inputDir)] :
+    auto cmd = archive.endsWith(".7z") ? ["7za", "a", archive, baseName(inputDir)] :
             ["tar", "-Jcf", archive, baseName(inputDir)];
     auto rc = execute(cmd);
     enforce(!rc.status, rc.output);
