@@ -394,7 +394,7 @@ Function DetectVSAndSDK
 
     done:
 
-    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\${UCRTVersion}\um\x64"
+    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\$UCRTVersion\um\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
     IfErrors 0 done_sdk
@@ -413,10 +413,12 @@ Function DetectVSAndSDK
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.0A" "InstallationFolder" "Lib\x64"
     IfErrors 0 done_sdk
     !insertmacro _DetectSDK "Microsoft SDKs\Windows\v6.0A" "InstallationFolder" "Lib\x64"
-    IfErrors done done_sdk
+    IfErrors no_sdk done_sdk
 
     done_sdk:
     StrCpy $WinSDKPath $0
+
+    no_sdk:
 
 FunctionEnd
 
@@ -431,7 +433,7 @@ Function .onInit
 
   ; Force install without uninstall (useful if uninstall is broken)
   ${GetParameters} $R0
-  StrCmp $R0 "/f" done_checks
+  StrCmp $R0 "/f" done_uninst
 
 
   ; Remove previous dmd installation if any
@@ -473,7 +475,7 @@ Function .onInit
 
   uninst:
     ${GetParent} $R0 $INSTDIR
-	
+
     ClearErrors
     ; Run uninstaller from installed directory
     ExecWait '$R0 /IC False _?=$INSTDIR' $K
@@ -486,7 +488,7 @@ Function .onInit
     StrCmp $K 0 +2
       Abort
     ; Remove in background the remaining uninstaller program itself
-    ExecWait '$R0 /IC False /S'
+    Exec '$R0 /IC False /S'
 
   done_uninst:
 
@@ -506,7 +508,6 @@ Function .onInit
 
   done_vs:
 
-  done_checks:
 FunctionEnd
 
 
