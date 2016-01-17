@@ -5,7 +5,7 @@ A working dmd installation to compile this script (also requires libcurl).
 Install Vagrant (https://learnchef.opscode.com/screencasts/install-vagrant/)
 Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-box/)
 +/
-import std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
+import std.algorithm, std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
 import common;
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
@@ -47,7 +47,14 @@ enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
-struct Platform { OS os; Model model; }
+struct Platform
+{
+    @property string osS() { return to!string(os); }
+    @property string modelS() { return model == Model._both ? "" : to!string(cast(uint)model); }
+    string toString() { return model == Model._both ? osS : osS ~ "-" ~ modelS; }
+    OS os;
+    Model model;
+}
 
 struct Shell
 {
@@ -178,9 +185,7 @@ private:
             _isUp = false;
     }
 
-    @property string platform() { return model == Model._both ? osS : osS ~ "-" ~ modelS; }
-    @property string osS() { return to!string(os); }
-    @property string modelS() { return model == Model._both ? "" : to!string(cast(uint)model); }
+    @property string platform() { return _platform.toString; }
     @property string sshcfg() { return buildPath(_tmpdir, "ssh.cfg"); }
 
     Platform _platform;
@@ -232,15 +237,15 @@ void prepareExtraBins(string workDir)
     auto winFiles = chain(winBins, winBins64, winLibs, winLibs64).array();
 
     auto extraBins = [
-        "windows" : winFiles,
-        "linux" : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
-        "freebsd" : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
-        "osx" : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
+        windows_both : winFiles,
+        linux_both : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
+        freebsd_32 : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
+        osx_both : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
     ];
 
-    foreach (os, files; extraBins)
-        copyFiles(files.addPrefix("dmd2/"~os~"/").array(),
-                  workDir~"/old-dmd", workDir~"/"~os~"/extraBins");
+    foreach (platform, files; extraBins)
+        copyFiles(files.addPrefix("dmd2/"~platform.osS~"/").array(),
+                  workDir~"/"~platform.toString~"/old-dmd", workDir~"/"~platform.osS~"/extraBins");
 }
 
 //------------------------------------------------------------------------------
@@ -351,44 +356,21 @@ void applyPatches(string gitTag, string tgtDir)
         run(fmt.format(proj));
 }
 
-void combineZips(string gitTag)
-{
-    auto workDir = mkdtemp();
-    scope (success) if (workDir.exists) rmdirRecurse(workDir);
-
-    auto baseName = "build/dmd."~gitTag;
-    writefln("Creating combined '%s.zip'.", baseName);
-    foreach (os; ["windows", "linux", "freebsd", "osx"])
-    {
-        auto name = baseName ~ "." ~ os;
-        foreach (suf; [".zip", "-32.zip", "-64.zip"])
-        {
-            if (exists(name ~ suf))
-                extractZip(name ~ suf, workDir);
-        }
-    }
-    archiveZip(workDir~"/dmd2", baseName~".zip");
-}
+auto lzmaExt = (OS os) => os == OS.windows ? ".7z" : ".tar.xz";
 
 void lzmaArchives(string gitTag)
 {
-    auto baseName = "build/dmd."~gitTag;
+    auto baseName = "build/dmd."~gitTag~".";
 
-    foreach (os; ["windows", "linux", "freebsd", "osx"])
+    foreach (platform; platforms)
     {
-        auto nameOS = baseName ~ "." ~ os;
-        auto ext = os == "windows" ? ".7z" : ".tar.xz";
-        foreach (suf; ["", "-32", "-64"])
-        {
-            auto name = nameOS ~ suf;
-            if (!exists(name ~ ".zip"))
-                continue;
-            auto workDir = mkdtemp();
-            scope (success) if (workDir.exists) rmdirRecurse(workDir);
-            writeln("Building LZMA archive '", name ~ ext, "'.");
-            extractZip(name ~ ".zip", workDir);
-            archiveLZMA(workDir~"/dmd2", name ~ ext);
-        }
+        auto workDir = mkdtemp();
+        scope (success) if (workDir.exists) rmdirRecurse(workDir);
+
+        auto name = baseName ~ platform.toString;
+        writeln("Building LZMA archive '", name~lzmaExt(platform.os), "'.");
+        extractZip(name ~ ".zip", workDir);
+        archiveLZMA(workDir~"/dmd2", name~lzmaExt(platform.os));
     }
 }
 
@@ -415,10 +397,10 @@ int main(string[] args)
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
-    immutable oldVer = args[1];
+    auto oldVer = args[1];
     if (!oldVer.match(verRE))
         return error("Expected a version tag like 'v2.066.0' not '%s'", oldVer);
-    immutable oldDMD = "dmd." ~ oldVer.chompPrefix("v") ~ ".zip";
+    oldVer = oldVer.chompPrefix("v");
 
     immutable gitTag = args[2];
     immutable isBranch = !gitTag.match(verRE);
@@ -427,21 +409,30 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.45.0-WinSSL-zlib-x86-x64.zip";
 
-    fetchFile("http://ftp.digitalmars.com/"~oldDMD, cacheDir~"/"~oldDMD);
+    auto oldCompilers = platforms
+        .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
+
+    foreach (url; oldCompilers.map!(s => "http://downloads.dlang.org/releases/2.x/"~oldVer~"/"~s))
+        fetchFile(url, cacheDir~"/"~baseName(url), true);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl);
+    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
 
-    // Get previous dmd release
-    extractZip(cacheDir~"/"~oldDMD, workDir~"/old-dmd");
-    // Get latest optlink
-    remove(workDir~"/old-dmd/dmd2/windows/bin/link.exe");
-    extractZip(cacheDir~"/"~optlink, workDir~"/old-dmd/dmd2/windows/bin");
-    // Get latest libC (snn.lib)
-    remove(workDir~"/old-dmd/dmd2/windows/lib/snn.lib");
-    copyFile(cacheDir~"/"~libC, workDir~"/old-dmd/dmd2/windows/lib/"~libC);
-    // Get libcurl for windows
-    extractZip(cacheDir~"/"~libCurl, workDir~"/old-dmd");
+    // Unpack previous dmd release
+    foreach (platform, oldCompiler; platforms.zip(oldCompilers))
+        extract(cacheDir~"/"~oldCompiler, workDir~"/"~platform.toString~"/old-dmd");
+
+    if (platforms.canFind!(p => p.os == OS.windows))
+    {
+        // Use latest optlink
+        remove(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe");
+        extract(cacheDir~"/"~optlink, workDir~"/windows/old-dmd/dmd2/windows/bin/");
+        // Use latest libC (snn.lib)
+        remove(workDir~"/windows/old-dmd/dmd2/windows/lib/snn.lib");
+        copyFile(cacheDir~"/"~libC, workDir~"/windows/old-dmd/dmd2/windows/lib/"~libC);
+        // Get libcurl for windows
+        extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
+    }
 
     cloneSources(gitTag, workDir~"/clones");
     applyPatches(gitTag, workDir~"/clones");
@@ -450,11 +441,11 @@ int main(string[] args)
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
 
-    foreach (platform; platforms)
+    foreach (p; platforms)
     {
-        with (Box(platform))
+        with (Box(p))
         {
-            auto toCopy = ["old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
+            auto toCopy = [platform~"/old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
             scp(toCopy, "default:");
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
@@ -464,7 +455,6 @@ int main(string[] args)
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
-    combineZips(ver);
     lzmaArchives(ver);
     return 0;
 }
