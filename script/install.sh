@@ -267,8 +267,7 @@ Run \`deactivate\` later on to restore your environment."
 
 install_dlang_installer() {
     mkdir -p "$path"
-    #local url=http://dlang.org/install.sh
-    local url=https://raw.githubusercontent.com/MartinNowak/installer/install_script/script/install.sh
+    local url=https://dlang.org/install.sh
     logV "Downloading $url"
     curl -sS "$url" -o "$path/install.sh"
     chmod +x "$path/install.sh"
