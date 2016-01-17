@@ -66,13 +66,15 @@ check_tools() {
 
 # ------------------------------------------------------------------------------
 
+mkdir -p "$path"
+TMP_ROOT=$(mktemp -d "$path/.installer_tmp_XXXXXX")
+
 mkdtemp() {
-    mkdir -p "$path/.installer_tmp"
-    mktemp -d "$path/.installer_tmp/XXXXXX"
+    mktemp -d "$TMP_ROOT/XXXXXX"
 }
 
 cleanup() {
-    rm -rf "$path/.installer_tmp";
+    rm -rf "$TMP_ROOT";
 }
 trap cleanup EXIT
 
