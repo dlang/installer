@@ -420,7 +420,7 @@ verify() {
         return
     fi
     if [ ! -f "$path/d-keyring.gpg" ]; then
-        curl -sS http://dlang.org/d-keyring.gpg -o "$path/d-keyring.gpg"
+        curl -sS https://dlang.org/d-keyring.gpg -o "$path/d-keyring.gpg"
     fi
     if ! $GPG -q --verify --keyring "$path/d-keyring.gpg" --no-default-keyring <(curl -sS "$1") "$2" 2>/dev/null; then
         fatal "Invalid signature $1"
