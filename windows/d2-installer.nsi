@@ -309,6 +309,10 @@ SectionGroup /e "D2"
     no_ucrt_detected:
       ClearErrors
 
+    ; Make sc.ini read accessible by all users
+    AccessControl::GrantOnFile "$INSTDIR\dmd2\windows\bin\sc.ini" "(BU)" "GenericRead"
+    Pop $0 ; ignore error
+
   SectionEnd
 
 
