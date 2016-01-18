@@ -23,8 +23,10 @@ Function RIF
  
   IfFileExists $2 +1 RIF_error      ; knock-knock
   FileOpen $R0 $2 "r"               ; open the door
- 
-  GetTempFileName $R2               ; who's new?
+
+  Push "$2.tmp"                     ; temp file in same directory
+  Pop $R2
+;  GetTempFileName $R2               ; who's new?
   FileOpen $R1 $R2 "w"              ; the escape, please!
  
   RIF_loop:                         ; round'n'round we go
