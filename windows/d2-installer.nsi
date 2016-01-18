@@ -302,12 +302,21 @@ SectionGroup /e "D2"
 
     finish_sdk_path:
       ClearErrors
-	  
+
     StrCmp $UCRTVersion "" no_ucrt_detected
       !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UniversalCRTSdkDir=" "UniversalCRTSdkDir=$UCRTPath"
       !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UCRTVersion=" "UCRTVersion=$UCRTVersion"
     no_ucrt_detected:
       ClearErrors
+
+    ; Windows 10 users started having trouble with sc.ini file permissions.
+    ; ReplaceInFile uses the temp folder as a scratch pad then copies back
+    ; but with no permission inheritance. To fix this we'll just reset all
+    ; permissions for everything installed and let inheritance take care of it.
+    ; Windows XP doesn't have icacls but we don't officially support Windows XP
+    ; and this problem doesn't exist there anyway. It appears to silently fail
+    ; which is fine.
+    nsExec::ExecToLog '"$SYSDIR\icacls.exe" $INSTDIR /q /c /t /reset'
 
   SectionEnd
 
