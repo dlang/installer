@@ -264,7 +264,7 @@ void extract(string archive, string outputDir)
     else if (archive.endsWith(".tar.xz"))
         cmd = ["tar", "-C", outputDir, "-Jxf", archive];
     else if (archive.endsWith(".7z"))
-        cmd = ["7z", "x", "-o"~outputDir, archive];
+        cmd = ["7za", "x", "-o"~outputDir, archive];
     else
         assert(0, "Unsupported archive format "~archive~".");
 
