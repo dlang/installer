@@ -1,3 +1,5 @@
+; Source: http://nsis.sourceforge.net/ReplaceInFile
+  
 !macro _ReplaceInFile SOURCE_FILE SEARCH_TEXT REPLACEMENT
   Push "${SOURCE_FILE}"
   Push "${SEARCH_TEXT}"
@@ -24,9 +26,14 @@ Function RIF
   IfFileExists $2 +1 RIF_error      ; knock-knock
   FileOpen $R0 $2 "r"               ; open the door
 
+  ; This script originally used the temp folder while creating the new file.
+  ; When it copied the new file to the destination it would retain the permissions
+  ; of the administrator's temp folder (notably missing the Users group read
+  ; permission). It's been changed by the D maintainerss to create the new file in
+  ; the destination directory so the permissions are correct.
   Push "$2.tmp"                     ; temp file in same directory
   Pop $R2
-;  GetTempFileName $R2               ; who's new?
+  ; GetTempFileName $R2               ; who's new?
   FileOpen $R1 $R2 "w"              ; the escape, please!
  
   RIF_loop:                         ; round'n'round we go
