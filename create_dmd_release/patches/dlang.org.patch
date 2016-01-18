@@ -1,20 +1,20 @@
-diff --git a/doc.ddoc b/doc.ddoc
-index 54fc338..34964cc 100644
---- a/doc.ddoc
-+++ b/doc.ddoc
-@@ -8,7 +8,6 @@ _=
- NAVIGATION=
- $(DIVID cssmenu, $(UL
-     $(MENU $(ROOT_DIR)index.html, D $(LATEST))
--    $(MENU $(ROOT_DIR)download.html, $(B Download))
-     $(MENU $(ROOT_DIR)getstarted.html, Getting Started)
-     $(MENU http://ddili.org/ders/d.en/index.html, Official Tutorial)
-     $(MENU http://wiki.dlang.org, Wiki)
+diff --git a/dlang.org.ddoc b/dlang.org.ddoc
+index afe5aca..cfc46e4 100644
+--- a/dlang.org.ddoc
++++ b/dlang.org.ddoc
+@@ -212,7 +212,6 @@ $(DIVID cssmenu, $(UL
+     $(MENU $(ROOT_DIR)getstarted.html, Learn)
+     $(MENU_W_SUBMENU_LINK $(ROOT_DIR)documentation.html, Documentation)
+       $(NAVIGATION_DOCUMENTATION)
+-    $(MENU $(ROOT_DIR)download.html, Downloads)
+     $(MENU http://code.dlang.org, Packages)
+     $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
+       $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 493b789..dbb1334 100644
+index 759c74f..1a9cfee 100644
 --- a/posix.mak
 +++ b/posix.mak
-@@ -222,7 +222,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
+@@ -232,7 +232,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
  # Rulez
  ################################################################################
  
@@ -23,7 +23,7 @@ index 493b789..dbb1334 100644
  
  docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
  	apidocs-release apidocs-prerelease
-@@ -248,9 +248,9 @@ ${GENERATED}/${LATEST}.ddoc :
+@@ -258,9 +258,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
  	echo "LATEST=${LATEST}" >$@
  
@@ -35,7 +35,7 @@ index 493b789..dbb1334 100644
  
  ${GENERATED}/modlist-prerelease.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR) $(PHOBOS_DIR)
  	mkdir -p $(dir $@)
-@@ -343,8 +343,8 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} :
+@@ -353,8 +353,8 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} :
  # dmd compiler, latest released build and current build
  ################################################################################
  
@@ -46,7 +46,7 @@ index 493b789..dbb1334 100644
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}
  	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
-@@ -358,9 +358,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
+@@ -368,9 +368,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -59,7 +59,7 @@ index 493b789..dbb1334 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -385,12 +385,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
+@@ -395,12 +395,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
  
@@ -77,14 +77,16 @@ index 493b789..dbb1334 100644
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC))"
  
 diff --git a/std_navbar-release.ddoc b/std_navbar-release.ddoc
-index 4a5892c..c963082 100644
+index 8ca9f75..2f0ea44 100644
 --- a/std_navbar-release.ddoc
 +++ b/std_navbar-release.ddoc
-@@ -1,7 +1,6 @@
- NAVIGATION=
- $(DIVID cssmenu, $(UL
-     $(MENU index.html, D Lib $(LATEST))
--    $(MENU ../phobos-prerelease/index.html, Prerelease Version)
-     $(MODULE_MENU)
-     $(MENU http://code.dlang.org, 3rd Party Packages)
- ))
+@@ -2,9 +2,6 @@ SUBNAV=
+ $(SUBNAV_TEMPLATE
+     $(DIVC head,
+         $(H2 Library Reference)
+-        $(P $(SPANC smallprint, version $(LATEST) $(SPANC separator, $(BR))
+-            $(LINK2 ../phobos-prerelease/index.html, switch to pre-release
+-                version)))
+         $(P $(LINK2 index.html, overview))
+     )
+     $(UL $(MODULE_MENU))
