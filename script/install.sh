@@ -285,7 +285,7 @@ resolve_latest() {
             compiler="dmd-$(curl -sS $url)"
             ;;
         dmd-nightly)
-            local url=https://builds.dawg.eu/LATEST_NIGHTLY
+            local url=http://nightlies.dlang.org/LATEST_NIGHTLY
             logV "Determing latest dmd-nightly version ($url)."
             compiler="dmd-$(curl -sS $url)"
             ;;
@@ -336,7 +336,7 @@ install_compiler() {
         if [ $os = freebsd ]; then
             basename="$basename-$model"
         fi
-        local url="https://builds.dawg.eu/$1/$basename.tar.xz"
+        local url="http://nightlies.dlang.org/$1/$basename.tar.xz"
 
         download_and_unpack "$url" "$path/$1" "$url.sig"
 
