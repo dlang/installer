@@ -107,6 +107,7 @@ command_help() {
 
   dmd|gdc|ldc           latest version of a compiler
   dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.069.0, ldc-0.16.1-beta2)
+  dmd-beta              latest dmd beta
   dmd-nightly           latest dmd nightly
   dmd-2015-11-22        specific dmd nightly
 '
@@ -282,6 +283,11 @@ resolve_latest() {
         dmd)
             local url=http://ftp.digitalmars.com/LATEST
             logV "Determing latest dmd version ($url)."
+            compiler="dmd-$(curl -sS $url)"
+            ;;
+        dmd-beta)
+            local url=http://ftp.digitalmars.com/LATEST_BETA
+            logV "Determing latest dmd-beta version ($url)."
             compiler="dmd-$(curl -sS $url)"
             ;;
         dmd-nightly)
