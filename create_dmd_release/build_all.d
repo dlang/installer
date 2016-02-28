@@ -243,8 +243,8 @@ void prepareExtraBins(string workDir)
         osx_both : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
     ];
 
-    foreach (platform, files; extraBins)
-        copyFiles(files.addPrefix("dmd2/"~platform.osS~"/").array(),
+    foreach (platform; platforms)
+        copyFiles(extraBins[platform].addPrefix("dmd2/"~platform.osS~"/").array(),
                   workDir~"/"~platform.toString~"/old-dmd", workDir~"/"~platform.osS~"/extraBins");
 }
 
