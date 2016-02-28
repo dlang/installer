@@ -348,9 +348,6 @@ void cloneSources(string gitTag, string tgtDir)
 
 void applyPatches(string gitTag, string tgtDir)
 {
-    import std.file;
-    write(tgtDir~"/dmd/VERSION", gitTag.chompPrefix("v"));
-
     auto fmt = "git -C "~tgtDir~"/%1$s apply -3 < patches/%1$s.patch";
     foreach (proj; ["dlang.org", "tools"])
         run(fmt.format(proj));
@@ -435,6 +432,16 @@ int main(string[] args)
     }
 
     cloneSources(gitTag, workDir~"/clones");
+    immutable dmdVersion = workDir~"/clones/dmd/VERSION";
+    if (isBranch)
+    {
+        auto commit = runCapture("git -C "~workDir~"/clones/dmd rev-parse --short HEAD");
+        std.file.write(dmdVersion, readText(dmdVersion).strip~"-"~gitTag~"-"~commit);
+    }
+    else
+    {
+        std.file.write(dmdVersion, gitTag.chompPrefix("v"));
+    }
     applyPatches(gitTag, workDir~"/clones");
     prepareExtraBins(workDir);
 
