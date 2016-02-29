@@ -240,6 +240,7 @@ void prepareExtraBins(string workDir)
         windows_both : winFiles,
         linux_both : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
         freebsd_32 : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
+        freebsd_64 : [],
         osx_both : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
     ];
 
