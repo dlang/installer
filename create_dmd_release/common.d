@@ -69,10 +69,12 @@ template fetchFile()
 {
     pragma(lib, "curl");
 
-    void fetchFile(string url, string path)
+    void fetchFile(string url, string path, bool verify = false)
     {
         import std.array, std.datetime, std.exception, std.net.curl,
             std.path, std.stdio, std.string;
+        import std.process : execute;
+
         auto client = HTTP(url);
         size_t cnt;
         auto app = appender!(ubyte[])();
@@ -113,19 +115,31 @@ template fetchFile()
         catch (CurlException ce)
         {
             // stupid std.net.curl throws an exception when aborting, ignore it
-            if (abort) return;
-            throw ce;
+            if (!abort) throw ce;
         }
-        enforce(statusCode / 100 == 2,
-                format("Download of '%s' failed with HTTP status code '%s'.",
-                       url, statusCode));
-        mkdirRecurse(path.dirName);
-        std.file.write(path, app.data);
-        app.clear();
-        if (etag.length)
-            std.file.write(path~".etag", etag);
-        writeln(); // CR
-        stdout.flush();
+
+        if (!abort)
+        {
+            enforce(statusCode / 100 == 2,
+                    format("Download of '%s' failed with HTTP status code '%s'.",
+                           url, statusCode));
+            mkdirRecurse(path.dirName);
+            std.file.write(path, app.data);
+            app.clear();
+            if (etag.length)
+                std.file.write(path~".etag", etag);
+            writeln(); // CR
+            stdout.flush();
+        }
+
+        if (verify)
+        {
+            path ~= ".sig";
+            if (!path.exists)
+                download(url~".sig", path);
+            auto gpg = execute(["gpg", "--verify", path]);
+            enforce(!gpg.status, gpg.output);
+        }
     }
 }
 
@@ -233,6 +247,29 @@ void archiveLZMA(string inputDir, string archive)
 
     auto cmd = archive.endsWith(".7z") ? ["7za", "a", archive, baseName(inputDir)] :
             ["tar", "-Jcf", archive, baseName(inputDir)];
+    auto rc = execute(cmd);
+    enforce(!rc.status, rc.output);
+}
+
+// generic extract, might require tar, xz, 7z depending on archive format
+void extract(string archive, string outputDir)
+{
+    import std.exception : enforce;
+    import std.algorithm.searching : endsWith;
+    import std.process : execute;
+
+    string[] cmd;
+    if (archive.endsWith(".zip"))
+        return extractZip(archive, outputDir);
+    else if (archive.endsWith(".tar.xz"))
+        cmd = ["tar", "-C", outputDir, "-Jxf", archive];
+    else if (archive.endsWith(".7z"))
+        cmd = ["7za", "x", "-o"~outputDir, archive];
+    else
+        assert(0, "Unsupported archive format "~archive~".");
+
+    if (!outputDir.exists)
+        mkdirRecurse(outputDir);
     auto rc = execute(cmd);
     enforce(!rc.status, rc.output);
 }
