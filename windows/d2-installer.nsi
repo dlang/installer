@@ -60,7 +60,7 @@
 ; URLs
 !define BaseURL "http://downloads.dlang.org"
 !define BaseURLAlt "http://ftp.digitalmars.com"
-!define VisualDBaseURL "https://github.com/D-Programming-Language/visuald/releases/download"
+!define VisualDBaseURL "https://github.com/dlang/visuald/releases/download"
 
 !define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}"
 

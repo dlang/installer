@@ -285,7 +285,7 @@ else
 		sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
 	done
 	echo 'Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-	Source: https://github.com/D-Programming-Language
+	Source: https://github.com/dlang
 
 	Files: usr/bin/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
