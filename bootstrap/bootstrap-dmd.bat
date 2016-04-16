@@ -29,10 +29,10 @@ set DMD_BRANCH=%1
 set WORK_DIR=bootstrap-dmd-%DMD_BRANCH%
 set SCRAP_DIR=%WORK_DIR%\scrap
 set DMC_URL=http://ftp.digitalmars.com/Digital_Mars_C++/Patch/dm856c.zip
-set DMD_GITHUB=https://github.com/D-Programming-Language/dmd
-set DMD_DRUNTIME_GITHUB=https://github.com/D-Programming-Language/druntime
-set DMD_PHOBOS_GITHUB=https://github.com/D-Programming-Language/phobos
-set DMD_TOOLS_GITHUB=https://github.com/D-Programming-Language/tools
+set DMD_GITHUB=https://github.com/dlang/dmd
+set DMD_DRUNTIME_GITHUB=https://github.com/dlang/druntime
+set DMD_PHOBOS_GITHUB=https://github.com/dlang/phobos
+set DMD_TOOLS_GITHUB=https://github.com/dlang/tools
 set UNZIP_URL=http://semitwist.com/download/app/unz600xn.exe
 
 rem Internal configuration

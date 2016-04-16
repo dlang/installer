@@ -185,7 +185,7 @@ else
 	fi
 	sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
 	echo 'Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-	Source: https://github.com/D-Programming-Language
+	Source: https://github.com/dlang
 
 	Files: usr/lib/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
@@ -194,7 +194,7 @@ else
 
 
 	# create changelog
-	echo "See: https://github.com/D-Programming-Language/phobos/commits/master" > usr/share/doc/$PHOBOSPKG/changelog
+	echo "See: https://github.com/dlang/phobos/commits/master" > usr/share/doc/$PHOBOSPKG/changelog
 
 
 	# create shlibs file
