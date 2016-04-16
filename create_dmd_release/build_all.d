@@ -341,7 +341,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
 
 void cloneSources(string gitTag, string tgtDir)
 {
-    auto prefix = "https://github.com/D-Programming-Language/";
+    auto prefix = "https://github.com/dlang/";
     auto fmt = "git clone --depth 1 -b "~gitTag~" "~prefix~"%1$s.git "~tgtDir~"/%1$s";
     foreach (proj; allProjects)
         run(fmt.format(proj));
