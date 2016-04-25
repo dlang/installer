@@ -358,7 +358,7 @@ else
 	Depends: '$DEPENDS'
 	Recommends: '$RECOMMENDS'
 	Suggests: '$SUGGESTS'
-	Provides: '$UNZIPDIR-$MINOR'
+	Provides: '$UNZIPDIR-$MINOR', d-compiler
 	Section: devel
 	Priority: optional
 	Homepage: http://dlang.org/
