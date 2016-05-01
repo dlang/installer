@@ -10,11 +10,13 @@ set -ueo pipefail
 # ------------------------------------------------------------------------------
 
 log() {
-    echo "${@//$HOME/\~}"
+    if [ "$verbosity" -gt 0 ]; then
+        echo "${@//$HOME/\~}"
+    fi
 }
 
 logV() {
-    if [ ! -z "$verbose" ]; then
+    if [ "$verbosity" -gt 1 ]; then
         log "$@";
     fi
 }
@@ -37,7 +39,7 @@ curl() {
 
 command=
 compiler=
-verbose=
+verbosity=1
 path=~/dlang
 case $(uname -s) in
     Darwin) os=osx;;
@@ -122,6 +124,10 @@ Description
 
   Download and install a D compiler.
 
+Options
+
+  -a --activate     Only print the path to the activate script
+
 Examples
 
   install.sh install dmd
@@ -177,6 +183,7 @@ Description
 
 parse_args() {
     local _help=
+    local _activate=
 
     while [[ $# > 0 ]]; do
         case "$1" in
@@ -192,7 +199,11 @@ parse_args() {
                 ;;
 
             -v | --verbose)
-                verbose=1
+                verbosity=2
+                ;;
+
+            -a | --activate)
+                _activate=1
                 ;;
 
             use | install | uninstall | list | update)
@@ -213,6 +224,14 @@ parse_args() {
     if [ -n "$_help" ]; then
         [ -z "$command" ] && usage || command_help $command
         exit 0
+    fi
+    if [ -n "$_activate" ]; then
+       if [ "${command:-install}" == "install" ]; then
+           verbosity=0
+       else
+           [ -z "$command" ] && usage || command_help $command
+           exit 1
+       fi
     fi
 }
 
@@ -240,10 +259,14 @@ run_command() {
             if [ $(basename $SHELL) = fish ]; then
                 local suffix=.fish
             fi
-            log "
+            if [ "$verbosity" -eq 0 ]; then
+                echo "$path/$2/activate${suffix:-}"
+            else
+                log "
 Run \`source $path/$2/activate${suffix:-}\` in your shell to use $2.
 This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1 accordingly.
 Run \`deactivate\` later on to restore your environment."
+            fi
             ;;
 
         uninstall)
