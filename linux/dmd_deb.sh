@@ -345,8 +345,7 @@ else
 
 	# set deb package dependencies
 	DEPENDS="libc6, libc6-dev, gcc, libgcc1, libstdc++6, xdg-utils, libcurl3"
-	RECOMMENDS="gcc-multilib"
-	SUGGESTS="libcurl4-openssl-dev"
+	SUGGESTS="libcurl4-openssl-dev, gcc-multilib"
 
 
 	# create control file
@@ -356,7 +355,6 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPENDS'
-	Recommends: '$RECOMMENDS'
 	Suggests: '$SUGGESTS'
 	Provides: '$UNZIPDIR-$MINOR', d-compiler
 	Section: devel
