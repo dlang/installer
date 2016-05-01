@@ -31,11 +31,11 @@ fatal() {
 }
 
 curl() {
-    : ${curl_user_agent:="installer/install.sh $(command curl --version | head -n 1)"}
+    : ${CURL_USER_AGENT:="installer/install.sh $(command curl --version | head -n 1)"}
     if [ "$verbosity" -gt 0 ]; then
-        command curl -f#L --retry 3 -A "${curl_user_agent}" "$@"
+        command curl -f#L --retry 3 -A "$CURL_USER_AGENT" "$@"
     else
-        command curl -fsSL --retry 3 -A "${curl_user_agent}" "$@"
+        command curl -fsSL --retry 3 -A "$CURL_USER_AGENT" "$@"
     fi
 }
 
