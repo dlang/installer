@@ -9,20 +9,24 @@ set -ueo pipefail
 
 # ------------------------------------------------------------------------------
 
+log_() {
+    echo "${@//$HOME/\~}"
+}
+
 log() {
     if [ "$verbosity" -gt 0 ]; then
-        echo "${@//$HOME/\~}"
+        log_ "$@"
     fi
 }
 
 logV() {
     if [ "$verbosity" -gt 1 ]; then
-        log "$@";
+        log_ "$@"
     fi
 }
 
 logE() {
-    log "$@" >&2
+    log_ "$@" >&2
 }
 
 fatal() {
