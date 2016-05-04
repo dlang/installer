@@ -429,7 +429,8 @@ download_and_unpack() {
 
     check_tools curl
     if [[ $name =~ \.tar\.xz$ ]]; then
-        check_tools tar xz
+        # TODO: need to figure out how to detect xz support on osx
+        [ $os = osx ] && check_tools tar || check_tools tar xz
     else
         check_tools unzip
     fi
