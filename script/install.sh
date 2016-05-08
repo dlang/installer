@@ -67,7 +67,9 @@ esac
 
 check_tools() {
     while [[ $# > 0 ]]; do
-        if ! command -v $1 &>/dev/null; then
+        if ! command -v $1 &>/dev/null &&
+                # detect OSX' liblzma support in libarchive
+                ! { [ $os-$1 == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
             fatal "Required tool $1 not found, please install it."
         fi
         shift
@@ -429,8 +431,7 @@ download_and_unpack() {
 
     check_tools curl
     if [[ $name =~ \.tar\.xz$ ]]; then
-        # TODO: need to figure out how to detect xz support on osx
-        [ $os = osx ] && check_tools tar || check_tools tar xz
+        check_tools tar xz
     else
         check_tools unzip
     fi
