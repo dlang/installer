@@ -1,8 +1,8 @@
 diff --git a/dlang.org.ddoc b/dlang.org.ddoc
-index fb79307..da1cae5 100644
+index b8d73b2..cb99bf0 100644
 --- a/dlang.org.ddoc
 +++ b/dlang.org.ddoc
-@@ -213,7 +213,6 @@ $(DIVID cssmenu, $(UL
+@@ -212,7 +212,6 @@ $(DIVID cssmenu, $(UL
      $(MENU $(ROOT_DIR)getstarted.html, Learn)
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)documentation.html, Documentation)
        $(NAVIGATION_DOCUMENTATION)
@@ -11,7 +11,7 @@ index fb79307..da1cae5 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 2a5be97..8fff9e0 100644
+index 5f9061a..86243e6 100644
 --- a/posix.mak
 +++ b/posix.mak
 @@ -232,7 +232,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
@@ -21,8 +21,8 @@ index 2a5be97..8fff9e0 100644
 -all : docs html
 +all : html druntime-release phobos-release d.tag
  
- docs : dmd-prerelease phobos-prerelease druntime-prerelease druntime-release \
-   phobos-release apidocs-release apidocs-prerelease
+ docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
+ 	apidocs-release apidocs-prerelease
 @@ -258,9 +258,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
  	echo "LATEST=${LATEST}" >$@
@@ -46,7 +46,7 @@ index 2a5be97..8fff9e0 100644
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}
  	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
-@@ -373,9 +373,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
+@@ -368,9 +368,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -59,7 +59,7 @@ index 2a5be97..8fff9e0 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -400,12 +400,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
+@@ -395,12 +395,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
  
