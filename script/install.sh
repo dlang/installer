@@ -274,7 +274,7 @@ run_command() {
             else
                 log "
 Run \`source $path/$2/activate${suffix:-}\` in your shell to use $2.
-This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1 accordingly.
+This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1.
 Run \`deactivate\` later on to restore your environment."
             fi
             ;;
