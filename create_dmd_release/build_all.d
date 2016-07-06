@@ -339,12 +339,29 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
     }
 }
 
-void cloneSources(string gitTag, string tgtDir)
+import std.regex;
+enum versionRE = regex(`^v(\d+)\.(\d+)\.(\d+)(-.*)?$`);
+
+string getDubTag(bool preRelease)
+{
+    import std.net.curl : get;
+    import std.json : parseJSON;
+
+    // github already sorts tags in descending semantic versioning order
+    foreach (tag; get("https://api.github.com/repos/dlang/dub/tags").parseJSON.array)
+        if (auto m = tag["name"].str.match(versionRE))
+            if (preRelease || m.captures[4].empty)
+                return tag["name"].str;
+    throw new Exception("Failed to get dub tags");
+}
+
+void cloneSources(string gitTag, string dubTag, string tgtDir)
 {
     auto prefix = "https://github.com/dlang/";
     auto fmt = "git clone --depth 1 -b "~gitTag~" "~prefix~"%1$s.git "~tgtDir~"/%1$s";
     foreach (proj; allProjects)
         run(fmt.format(proj));
+    run("git clone --depth 1 -b "~dubTag~" "~prefix~"dub.git "~tgtDir~"/dub");
 }
 
 void applyPatches(string gitTag, string tgtDir)
@@ -387,21 +404,21 @@ int main(string[] args)
         return error("Expected <old-dmd-version> <git-branch-or-tag> [--skip-docs] as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
     immutable skipDocs = args[$-1] == "--skip-docs";
 
-    import std.regex;
-    enum verRE = regex(`^v(\d+)\.(\d+)\.(\d+)(-.*)?$`);
-
     auto workDir = mkdtemp();
     scope (success) if (workDir.exists) rmdirRecurse(workDir);
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
     auto oldVer = args[1];
-    if (!oldVer.match(verRE))
+    if (!oldVer.match(versionRE))
         return error("Expected a version tag like 'v2.066.0' not '%s'", oldVer);
     oldVer = oldVer.chompPrefix("v");
 
     immutable gitTag = args[2];
-    immutable isBranch = !gitTag.match(verRE);
+    auto verMatch = gitTag.match(versionRE);
+    immutable isBranch = !verMatch;
+    immutable isPreRelease = !verMatch.captures[4].empty;
+    immutable dubTag = getDubTag(isPreRelease);
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
@@ -432,7 +449,7 @@ int main(string[] args)
         extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
     }
 
-    cloneSources(gitTag, workDir~"/clones");
+    cloneSources(gitTag, dubTag, workDir~"/clones");
     immutable dmdVersion = workDir~"/clones/dmd/VERSION";
     if (isBranch)
     {
