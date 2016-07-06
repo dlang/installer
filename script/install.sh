@@ -70,7 +70,11 @@ check_tools() {
         if ! command -v $1 &>/dev/null &&
                 # detect OSX' liblzma support in libarchive
                 ! { [ $os-$1 == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
-            fatal "Required tool $1 not found, please install it."
+            local msg="Required tool $1 not found, please install it."
+            case $os-$1 in
+                osx-xz) msg="$msg http://macpkg.sourceforge.net";;
+            esac
+            fatal "$msg"
         fi
         shift
     done
