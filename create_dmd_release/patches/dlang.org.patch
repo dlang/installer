@@ -1,9 +1,9 @@
 diff --git a/dlang.org.ddoc b/dlang.org.ddoc
-index 8bd9368..777081f 100644
+index 5cef982..5dfcb7d 100644
 --- a/dlang.org.ddoc
 +++ b/dlang.org.ddoc
 @@ -214,7 +214,6 @@ $(DIVID cssmenu, $(UL
-     $(MENU http://tour.dlang.org, Learn)
+     $(MENU https://tour.dlang.org, Learn)
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)documentation.html, Documentation)
        $(NAVIGATION_DOCUMENTATION)
 -    $(MENU $(ROOT_DIR)download.html, Downloads)
@@ -11,7 +11,7 @@ index 8bd9368..777081f 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index b9b0786..03b94c4 100644
+index 2c380a8..56fbd5a 100644
 --- a/posix.mak
 +++ b/posix.mak
 @@ -232,7 +232,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
