@@ -549,17 +549,17 @@ deactivate() {
     unset -f deactivate
 }
 
-_OLD_D_PATH="\$PATH"
-_OLD_D_LIBRARY_PATH="\$LIBRARY_PATH"
-_OLD_D_LD_LIBRARY_PATH="\$LD_LIBRARY_PATH"
-_OLD_D_PS1="\$PS1"
+_OLD_D_PATH="\${PATH:-}"
+_OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
+_OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
+_OLD_D_PS1="\${PS1:-}"
 
-export PATH="$path/dub:$path/$1/$binpath:\$PATH"
-export LIBRARY_PATH="$path/$1/$libpath:\$LIBRARY_PATH"
-export LD_LIBRARY_PATH="$path/$1/$libpath:\$LD_LIBRARY_PATH"
+export PATH="$path/dub:$path/$1/$binpath:\${PATH:-}"
+export LIBRARY_PATH="$path/$1/$libpath:\${LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$path/$1/$libpath:\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
 export DC=$dc
-export PS1="($1)\$PS1"
+export PS1="($1)\${PS1:-}"
 EOF
 
     logV "Writing environment variables to $path/$1/activate.fish"
