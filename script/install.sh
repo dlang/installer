@@ -337,6 +337,11 @@ resolve_latest() {
             logV "Determing latest ldc version ($url)."
             compiler="ldc-$(curl -sS $url)"
             ;;
+        ldc-beta)
+            local url=https://ldc-developers.github.io/LATEST_BETA
+            logV "Determining latest ldc-beta version ($url)."
+            compiler="ldc-$(curl -sS $url)"
+            ;;
         gdc)
             local url=http://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
