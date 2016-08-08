@@ -78,7 +78,7 @@ fetch() {
 # ------------------------------------------------------------------------------
 
 command=
-compiler=
+compiler=dmd
 verbosity=1
 path=~/dlang
 case $(uname -s) in
@@ -147,6 +147,7 @@ Options
   -v --verbose  Verbose output
 
 Run "install.sh <command> --help to get help for a specific command.
+If no argument are provided, the latest DMD compiler will be installed.
 '
 }
 
@@ -154,10 +155,10 @@ command_help() {
     local _compiler='Compiler
 
   dmd|gdc|ldc           latest version of a compiler
-  dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.069.0, ldc-0.16.1-beta2)
+  dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.071.1, ldc-1.1.0-beta2)
   dmd-beta              latest dmd beta
   dmd-nightly           latest dmd nightly
-  dmd-2015-11-22        specific dmd nightly
+  dmd-2016-08-08        specific dmd nightly
 '
 
     case $1 in
@@ -169,6 +170,7 @@ command_help() {
 Description
 
   Download and install a D compiler.
+  By default the latest release of the DMD compiler is selected.
 
 Options
 
@@ -176,10 +178,11 @@ Options
 
 Examples
 
-  install.sh install dmd
+  install.sh
   install.sh dmd
-  install.sh install dmd-2.069.0
-  install.sh install ldc-0.16.1
+  install.sh install dmd
+  install.sh install dmd-2.071.1
+  install.sh install ldc-1.1.0-beta2
 '
             log "$_compiler"
             ;;
@@ -196,8 +199,8 @@ Description
 Examples
 
   install.sh uninstall dmd
-  install.sh uninstall dmd-2.069.0
-  install.sh uninstall ldc-0.16.1
+  install.sh uninstall dmd-2.071.1
+  install.sh uninstall ldc-1.1.0-beta2
 '
             log "$_compiler"
             ;;
@@ -641,7 +644,6 @@ install_dub() {
 
 # ------------------------------------------------------------------------------
 
-[ $# -eq 0 ] && usage && exit 1
 parse_args "$@"
 resolve_latest $compiler
 run_command ${command:-install} $compiler
