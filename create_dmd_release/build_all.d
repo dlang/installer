@@ -405,7 +405,7 @@ int main(string[] args)
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
-    enum libCurl = "libcurl-7.47.1-WinSSL-zlib-x86-x64.zip";
+    enum libCurl = "libcurl-7.50.1-WinSSL-zlib-x86-x64.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
