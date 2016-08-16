@@ -213,7 +213,6 @@ else
 	Architecture: '$ARCH'
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
-	Pre-Depends: multiarch-support
 	Depends: '$DEPENDS'
 	Conflicts: '$UNZIPDIR-$MINOR'
 	Replaces: '$UNZIPDIR-$MINOR'
