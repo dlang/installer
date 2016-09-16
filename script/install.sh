@@ -156,7 +156,7 @@ command_help() {
 
   dmd|gdc|ldc           latest version of a compiler
   dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.071.1, ldc-1.1.0-beta2)
-  dmd-beta              latest dmd beta
+  dmd|ldc-beta          latest beta version of a compiler
   dmd-nightly           latest dmd nightly
   dmd-2016-08-08        specific dmd nightly
 '
