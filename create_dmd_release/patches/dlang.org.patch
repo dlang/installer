@@ -1,5 +1,5 @@
 diff --git a/dlang.org.ddoc b/dlang.org.ddoc
-index 5cef982..5dfcb7d 100644
+index 6be8fee..5e9b7ce 100644
 --- a/dlang.org.ddoc
 +++ b/dlang.org.ddoc
 @@ -214,7 +214,6 @@ $(DIVID cssmenu, $(UL
@@ -11,7 +11,7 @@ index 5cef982..5dfcb7d 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 2c380a8..56fbd5a 100644
+index 83a0ea3..9f16ab8 100644
 --- a/posix.mak
 +++ b/posix.mak
 @@ -232,7 +232,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
@@ -40,12 +40,12 @@ index 2c380a8..56fbd5a 100644
  ################################################################################
  
 -$(DMD) : ${DMD_DIR}
--	${MAKE} --directory=${DMD_DIR}/src -f posix.mak -j 4
+-	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
 +#$(DMD) : ${DMD_DIR}
-+#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak -j 4
++#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}
- 	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
+ 	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
 @@ -373,9 +373,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
