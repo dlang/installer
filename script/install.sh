@@ -49,13 +49,9 @@ curl() {
     fi
 }
 
-# url path
-download() {
-    local url=$1
-    local path=$2
-
+retry() {
     for i in {0..4}; do
-        if curl "$url" -o "$path"; then
+        if "$@"; then
             break
         elif [ $i -lt 4 ]; then
             sleep $((1 << $i))
@@ -65,12 +61,20 @@ download() {
     done
 }
 
+# url path
+download() {
+    local url=$1
+    local path=$2
+
+    retry curl "$url" -o "$path"
+}
+
 # url
 fetch() {
     local url=$1
     local path=$(mktemp "$TMP_ROOT/XXXXXX")
 
-    curl2 -sS "$url" -o "$path"
+    retry curl2 -sS "$url" -o "$path"
     cat "$path"
     rm "$path"
 }
