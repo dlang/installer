@@ -353,12 +353,12 @@ Run \`$path/install.sh --help\` for usage information.
 resolve_latest() {
     case $compiler in
         dmd)
-            local url=http://ftp.digitalmars.com/LATEST
+            local url=http://downloads.dlang.org/releases/LATEST
             logV "Determing latest dmd version ($url)."
             compiler="dmd-$(fetch $url)"
             ;;
         dmd-beta)
-            local url=http://ftp.digitalmars.com/LATEST_BETA
+            local url=http://downloads.dlang.org/pre-releases/LATEST
             logV "Determing latest dmd-beta version ($url)."
             compiler="dmd-$(fetch $url)"
             ;;
