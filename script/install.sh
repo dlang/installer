@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright: Copyright 2015 Martin Nowak.
+# Copyright: Copyright Martin Nowak 2015 -.
 # License: Boost License 1.0 (www.boost.org/LICENSE_1_0.txt)
 # Authors: Martin Nowak
 
@@ -10,7 +10,8 @@ set -ueo pipefail
 # ------------------------------------------------------------------------------
 
 log_() {
-    echo "${@//$HOME/\~}"
+    local tilde='~'
+    echo "${@//$HOME/$tilde}"
 }
 
 log() {
@@ -34,19 +35,55 @@ fatal() {
     exit 1
 }
 
-curl() {
+# ------------------------------------------------------------------------------
+curl2() {
     : ${CURL_USER_AGENT:="installer/install.sh $(command curl --version | head -n 1)"}
+    TIMEOUT_ARGS="--connect-timeout 5 --speed-time 30 --speed-limit 1024"
+    command curl $TIMEOUT_ARGS -fL -A "$CURL_USER_AGENT" "$@"
+}
+
+curl() {
     if [ "$verbosity" -gt 0 ]; then
-        command curl -f#L --retry 3 -A "$CURL_USER_AGENT" "$@"
+        curl2 -# "$@"
     else
-        command curl -fsSL --retry 3 -A "$CURL_USER_AGENT" "$@"
+        curl2 -sS "$@"
     fi
+}
+
+retry() {
+    for i in {0..4}; do
+        if "$@"; then
+            break
+        elif [ $i -lt 4 ]; then
+            sleep $((1 << $i))
+        else
+            fatal "Failed to download '$url'"
+        fi
+    done
+}
+
+# url path
+download() {
+    local url=$1
+    local path=$2
+
+    retry curl "$url" -o "$path"
+}
+
+# url
+fetch() {
+    local url=$1
+    local path=$(mktemp "$TMP_ROOT/XXXXXX")
+
+    retry curl2 -sS "$url" -o "$path"
+    cat "$path"
+    rm "$path"
 }
 
 # ------------------------------------------------------------------------------
 
 command=
-compiler=
+compiler=dmd
 verbosity=1
 path=~/dlang
 case $(uname -s) in
@@ -70,7 +107,11 @@ check_tools() {
         if ! command -v $1 &>/dev/null &&
                 # detect OSX' liblzma support in libarchive
                 ! { [ $os-$1 == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
-            fatal "Required tool $1 not found, please install it."
+            local msg="Required tool $1 not found, please install it."
+            case $os-$1 in
+                osx-xz) msg="$msg http://macpkg.sourceforge.net";;
+            esac
+            fatal "$msg"
         fi
         shift
     done
@@ -111,6 +152,7 @@ Options
   -v --verbose  Verbose output
 
 Run "install.sh <command> --help to get help for a specific command.
+If no argument are provided, the latest DMD compiler will be installed.
 '
 }
 
@@ -118,10 +160,10 @@ command_help() {
     local _compiler='Compiler
 
   dmd|gdc|ldc           latest version of a compiler
-  dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.069.0, ldc-0.16.1-beta2)
-  dmd-beta              latest dmd beta
+  dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.071.1, ldc-1.1.0-beta2)
+  dmd|ldc-beta          latest beta version of a compiler
   dmd-nightly           latest dmd nightly
-  dmd-2015-11-22        specific dmd nightly
+  dmd-2016-08-08        specific dmd nightly
 '
 
     case $1 in
@@ -133,6 +175,7 @@ command_help() {
 Description
 
   Download and install a D compiler.
+  By default the latest release of the DMD compiler is selected.
 
 Options
 
@@ -140,10 +183,11 @@ Options
 
 Examples
 
-  install.sh install dmd
+  install.sh
   install.sh dmd
-  install.sh install dmd-2.069.0
-  install.sh install ldc-0.16.1
+  install.sh install dmd
+  install.sh install dmd-2.071.1
+  install.sh install ldc-1.1.0-beta2
 '
             log "$_compiler"
             ;;
@@ -160,8 +204,8 @@ Description
 Examples
 
   install.sh uninstall dmd
-  install.sh uninstall dmd-2.069.0
-  install.sh uninstall ldc-0.16.1
+  install.sh uninstall dmd-2.071.1
+  install.sh uninstall ldc-1.1.0-beta2
 '
             log "$_compiler"
             ;;
@@ -274,7 +318,7 @@ run_command() {
             else
                 log "
 Run \`source $path/$2/activate${suffix:-}\` in your shell to use $2.
-This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1 accordingly.
+This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1.
 Run \`deactivate\` later on to restore your environment."
             fi
             ;;
@@ -303,7 +347,7 @@ install_dlang_installer() {
     mkdir -p "$path"
     local url=https://dlang.org/install.sh
     logV "Downloading $url"
-    curl -sS "$url" -o "$path/install.sh"
+    download "$url" "$path/install.sh"
     chmod +x "$path/install.sh"
     log "The latest version of this script was installed as $path/install.sh.
 It can be used it to install further D compilers.
@@ -314,29 +358,34 @@ Run \`$path/install.sh --help\` for usage information.
 resolve_latest() {
     case $compiler in
         dmd)
-            local url=http://ftp.digitalmars.com/LATEST
+            local url=http://downloads.dlang.org/releases/LATEST
             logV "Determing latest dmd version ($url)."
-            compiler="dmd-$(curl -sS $url)"
+            compiler="dmd-$(fetch $url)"
             ;;
         dmd-beta)
-            local url=http://ftp.digitalmars.com/LATEST_BETA
+            local url=http://downloads.dlang.org/pre-releases/LATEST
             logV "Determing latest dmd-beta version ($url)."
-            compiler="dmd-$(curl -sS $url)"
+            compiler="dmd-$(fetch $url)"
             ;;
         dmd-nightly)
             local url=http://nightlies.dlang.org/LATEST_NIGHTLY
             logV "Determing latest dmd-nightly version ($url)."
-            compiler="dmd-$(curl -sS $url)"
+            compiler="dmd-$(fetch $url)"
             ;;
         ldc)
             local url=https://ldc-developers.github.io/LATEST
             logV "Determing latest ldc version ($url)."
-            compiler="ldc-$(curl -sS $url)"
+            compiler="ldc-$(fetch $url)"
+            ;;
+        ldc-beta)
+            local url=https://ldc-developers.github.io/LATEST_BETA
+            logV "Determining latest ldc-beta version ($url)."
+            compiler="ldc-$(fetch $url)"
             ;;
         gdc)
             local url=http://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
-            compiler="gdc-$(curl -sS $url)"
+            compiler="gdc-$(fetch $url)"
             ;;
     esac
 }
@@ -405,7 +454,7 @@ install_compiler() {
 
         url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/master/dmd-script
         log "Downloading gdmd $url"
-        curl "$url" -o "$path/$1/bin/gdmd"
+        download "$url" "$path/$1/bin/gdmd"
         chmod +x "$path/$1/bin/gdmd"
 
     else
@@ -437,7 +486,7 @@ download_and_unpack() {
     fi
 
     log "Downloading and unpacking $1"
-    curl "$1" -o "$tmp/$name"
+    download "$1" "$tmp/$name"
     if [ ! -z ${3:-} ]; then
         verify "$3" "$tmp/$name"
     fi
@@ -458,9 +507,10 @@ verify() {
         return
     fi
     if [ ! -f "$path/d-keyring.gpg" ]; then
-        curl -sS https://dlang.org/d-keyring.gpg -o "$path/d-keyring.gpg"
+        log "Downloading https://dlang.org/d-keyring.gpg"
+        download https://dlang.org/d-keyring.gpg "$path/d-keyring.gpg"
     fi
-    if ! $GPG -q --verify --keyring "$path/d-keyring.gpg" --no-default-keyring <(curl -sS "$1") "$2" 2>/dev/null; then
+    if ! $GPG -q --verify --keyring "$path/d-keyring.gpg" --no-default-keyring <(fetch "$1") "$2" 2>/dev/null; then
         fatal "Invalid signature $1"
     fi
 }
@@ -507,17 +557,17 @@ deactivate() {
     unset -f deactivate
 }
 
-_OLD_D_PATH="\$PATH"
-_OLD_D_LIBRARY_PATH="\$LIBRARY_PATH"
-_OLD_D_LD_LIBRARY_PATH="\$LD_LIBRARY_PATH"
-_OLD_D_PS1="\$PS1"
+_OLD_D_PATH="\${PATH:-}"
+_OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
+_OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
+_OLD_D_PS1="\${PS1:-}"
 
-export PATH="$path/dub:$path/$1/$binpath:\$PATH"
-export LIBRARY_PATH="$path/$1/$libpath:\$LIBRARY_PATH"
-export LD_LIBRARY_PATH="$path/$1/$libpath:\$LD_LIBRARY_PATH"
+export PATH="$path/dub:$path/$1/$binpath:\${PATH:-}"
+export LIBRARY_PATH="$path/$1/$libpath:\${LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$path/$1/$libpath:\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
 export DC=$dc
-export PS1="($1)\$PS1"
+export PS1="($1)\${PS1:-}"
 EOF
 
     logV "Writing environment variables to $path/$1/activate.fish"
@@ -579,7 +629,7 @@ install_dub() {
     fi
     local url=http://code.dlang.org/download/LATEST
     logV "Determing latest dub version ($url)."
-    dub="dub-$(curl -sS $url)"
+    dub="dub-$(fetch $url)"
     if [ -d "$path/$dub" ]; then
         log "$dub already installed"
         return
@@ -588,7 +638,8 @@ install_dub() {
     local url="http://code.dlang.org/files/$dub-$os-$arch.tar.gz"
 
     log "Downloading and unpacking $url"
-    curl "$url" | tar -C "$tmp" -zxf -
+    download "$url" "$tmp/dub.tar.gz"
+    tar -C "$tmp" -zxf "$tmp/dub.tar.gz"
     logV "Removing old dub versions"
     rm -rf "$path/dub" "$path/dub-*"
     mv "$tmp" "$path/$dub"
@@ -598,7 +649,6 @@ install_dub() {
 
 # ------------------------------------------------------------------------------
 
-[ $# -eq 0 ] && usage && exit 1
 parse_args "$@"
 resolve_latest $compiler
 run_command ${command:-install} $compiler

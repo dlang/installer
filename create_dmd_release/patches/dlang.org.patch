@@ -1,9 +1,9 @@
 diff --git a/dlang.org.ddoc b/dlang.org.ddoc
-index b8d73b2..cb99bf0 100644
+index 6be8fee..5e9b7ce 100644
 --- a/dlang.org.ddoc
 +++ b/dlang.org.ddoc
-@@ -212,7 +212,6 @@ $(DIVID cssmenu, $(UL
-     $(MENU $(ROOT_DIR)getstarted.html, Learn)
+@@ -214,7 +214,6 @@ $(DIVID cssmenu, $(UL
+     $(MENU https://tour.dlang.org, Learn)
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)documentation.html, Documentation)
        $(NAVIGATION_DOCUMENTATION)
 -    $(MENU $(ROOT_DIR)download.html, Downloads)
@@ -11,7 +11,7 @@ index b8d73b2..cb99bf0 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 5f9061a..86243e6 100644
+index 83a0ea3..9f16ab8 100644
 --- a/posix.mak
 +++ b/posix.mak
 @@ -232,7 +232,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
@@ -21,8 +21,8 @@ index 5f9061a..86243e6 100644
 -all : docs html
 +all : html druntime-release phobos-release d.tag
  
- docs : phobos-prerelease druntime-prerelease druntime-release phobos-release	\
- 	apidocs-release apidocs-prerelease
+ docs : dmd-prerelease phobos-prerelease druntime-prerelease druntime-release \
+   phobos-release apidocs-release apidocs-prerelease
 @@ -258,9 +258,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
  	echo "LATEST=${LATEST}" >$@
@@ -40,13 +40,13 @@ index 5f9061a..86243e6 100644
  ################################################################################
  
 -$(DMD) : ${DMD_DIR}
--	${MAKE} --directory=${DMD_DIR}/src -f posix.mak -j 4
+-	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
 +#$(DMD) : ${DMD_DIR}
-+#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak -j 4
++#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
  
  $(DMD_REL) : ${DMD_DIR}-${LATEST}
- 	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak -j 4
-@@ -368,9 +368,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
+ 	${MAKE} --directory=${DMD_DIR}-${LATEST}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
+@@ -373,9 +373,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -59,7 +59,7 @@ index 5f9061a..86243e6 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -395,12 +395,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
+@@ -400,12 +400,12 @@ phobos-prerelease : ${PHOBOS_DIR} $(STD_DDOC_PRE) druntime-prerelease
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC_PRE))" \
  	  DOC_OUTPUT_DIR=${DOC_OUTPUT_DIR}/phobos-prerelease html -j 4
  
@@ -77,16 +77,14 @@ index 5f9061a..86243e6 100644
  	  STDDOC="$(addprefix `pwd`/, $(STD_DDOC))"
  
 diff --git a/std_navbar-release.ddoc b/std_navbar-release.ddoc
-index 8ca9f75..2f0ea44 100644
+index 7899a22..42af129 100644
 --- a/std_navbar-release.ddoc
 +++ b/std_navbar-release.ddoc
-@@ -2,9 +2,6 @@ SUBNAV=
- $(SUBNAV_TEMPLATE
-     $(DIVC head,
+@@ -4,7 +4,6 @@ $(SUBNAV_TEMPLATE
          $(H2 Library Reference)
--        $(P $(SPANC smallprint, version $(LATEST) $(SPANC separator, $(BR))
--            $(LINK2 ../phobos-prerelease/index.html, switch to pre-release
--                version)))
-         $(P $(LINK2 index.html, overview))
-     )
-     $(UL $(MODULE_MENU))
+         $(P $(SPANC smallprint, version $(LATEST) $(SPANC separator, $(BR))
+             switch to
+-            $(LINK2 ../phobos-prerelease/index.html, pre-release). $(BR)
+             $(LINK2 ../library/index.html, preview) beta library reference.
+             )
+         )

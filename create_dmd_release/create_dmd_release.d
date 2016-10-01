@@ -539,6 +539,16 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
+
+        // build dub with stable (host) compiler, b/c it breaks
+        // too easily with the latest compiler, e.g. for nightlies
+        info("Building Dub "~bitsDisplay);
+        changeDir(cloneDir~"/dub");
+        version (Windows)
+            run("SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+        else
+            run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
+        rename(cloneDir~"/dub/bin/dub"~exe, cloneDir~"/dub/bin/dub"~bitsStr~exe);
     }
 }
 
@@ -644,6 +654,7 @@ void createRelease(string branch)
         {
             copyFile(cloneDir~"/dmd/src/dmd32"~exe, releaseBin32Dir~"/dmd"~exe);
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/32", releaseBin32Dir, file => !file.endsWith(obj));
+            copyFile(cloneDir~"/dub/bin/dub32"~exe, releaseBin32Dir~"/dub"~exe);
         }
     }
 
@@ -654,6 +665,7 @@ void createRelease(string branch)
         {
             copyFile(cloneDir~"/dmd/src/dmd64"~exe, releaseBin64Dir~"/dmd"~exe);
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
+            copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         }
     }
 }

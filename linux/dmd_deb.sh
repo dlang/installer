@@ -344,8 +344,8 @@ else
 
 
 	# set deb package dependencies
-	DEPENDS="libc6, libc6-dev, gcc, libgcc1, libstdc++6, xdg-utils, libcurl3"
-	SUGGESTS="libcurl4-openssl-dev, gcc-multilib"
+	DEPENDS="libc6, libc6-dev, gcc, libgcc1, libstdc++6, libcurl3"
+	SUGGESTS="libcurl4-openssl-dev, gcc-multilib, xdg-utils"
 
 
 	# create control file
