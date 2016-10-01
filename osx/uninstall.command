@@ -43,6 +43,7 @@ function remove_symlinks {
     $bin_path/dmd.conf \
     $bin_path/dumpobj \
     $bin_path/dustmite \
+    $bin_path/dub \
     $bin_path/obj2asm \
     $bin_path/rdmd \
     $man1_path/dmd.1 \
