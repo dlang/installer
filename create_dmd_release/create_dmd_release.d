@@ -476,7 +476,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     changeDir(cloneDir~"/druntime");
     run(makecmd~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
-        file => !file.baseName.startsWith("gcstub", "minit"));
+        file => !file.baseName.startsWith("gcstub", "minit", "stdio_msvc"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
