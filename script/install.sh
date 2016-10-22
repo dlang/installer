@@ -368,8 +368,12 @@ resolve_latest() {
             compiler="dmd-$(fetch $url)"
             ;;
         dmd-*) # nightly master or feature branch
-            # dmd-nightly, dmd-master, dmd-branch (but not dmd-2016-10-19 or dmd-branch-2016-10-20)
-            if [[ ! $compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            # dmd-nightly, dmd-master, dmd-branch
+            # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
+            #          dmd-2.068.0 or dmd-2.068.2-5
+            if [[ ! $compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
+               [[ ! $compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]
+            then
                 local url=http://nightlies.dlang.org/$compiler/LATEST
                 logV "Determing latest $compiler version ($url)."
                 compiler="dmd-$(fetch $url)"
