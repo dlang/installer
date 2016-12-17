@@ -32,6 +32,7 @@ sudo_ln $install_path/bin/dmd $bin_path/dmd
 sudo_ln $install_path/bin/dmd.conf $bin_path/dmd.conf
 sudo_ln $install_path/bin/dumpobj $bin_path/dumpobj
 sudo_ln $install_path/bin/dustmite $bin_path/dustmite
+sudo_ln $install_path/bin/dub $bin_path/dub
 sudo_ln $install_path/bin/obj2asm $bin_path/obj2asm
 sudo_ln $install_path/bin/rdmd $bin_path/rdmd
 sudo_ln $install_path/man/man1/dmd.1 $man1_path/dmd.1
