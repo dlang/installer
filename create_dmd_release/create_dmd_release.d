@@ -430,6 +430,11 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto hostDMDEnv = " HOST_DC="~hostDMD;
     auto isRelease = " RELEASE=1";
     auto latest = " LATEST="~branch;
+    // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
+    version (linux)
+        auto pic = bits == Bits.bits64 ? " PIC=1" : "";
+    else
+        auto pic = "";
 
     // common make arguments
     auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~latest~" -f "~targetMakefile;
@@ -474,13 +479,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~msvcEnv~makeTargetDruntime);
+    run(makecmd~pic~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("gcstub", "minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~msvcEnv);
+    run(makecmd~pic~msvcEnv);
 
     version(OSX) if(bits == Bits.bits64)
     {
