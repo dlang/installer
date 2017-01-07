@@ -252,7 +252,7 @@ do
 		then
 			echo -en '
 			[Environment64]
-			DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib64 -L--export-dynamic
+			DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib64 -L--export-dynamic -fPIC
 			' | sed 's/^\t\t\t//' >> etc/dmd.conf
 		fi
 
