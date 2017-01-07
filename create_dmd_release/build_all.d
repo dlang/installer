@@ -202,10 +202,15 @@ string runCapture(string cmd)
     return result.output.strip;
 }
 
-void run(string cmd)
+int runStatus(string cmd)
 {
     writeln("\033[36m", cmd, "\033[0m");
-    enforce(wait(spawnShell(cmd)) == 0);
+    return wait(spawnShell(cmd));
+}
+
+void run(string cmd)
+{
+    enforce(runStatus(cmd) == 0);
 }
 
 //------------------------------------------------------------------------------
@@ -355,13 +360,34 @@ string getDubTag(bool preRelease)
     throw new Exception("Failed to get dub tags");
 }
 
-void cloneSources(string gitTag, string dubTag, string tgtDir)
+void cloneSources(string gitTag, string dubTag, bool isBranch, string tgtDir)
 {
     auto prefix = "https://github.com/dlang/";
-    auto fmt = "git clone --depth 1 -b "~gitTag~" "~prefix~"%1$s.git "~tgtDir~"/%1$s";
+    auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
+    size_t nfallback;
     foreach (proj; allProjects)
-        run(fmt.format(proj));
-    run("git clone --depth 1 -b "~dubTag~" "~prefix~"dub.git "~tgtDir~"/dub");
+    {
+        // use master as fallback for feature branches
+        if (isBranch && !branchExists(prefix ~ proj, gitTag))
+        {
+            ++nfallback;
+            run(fmt.format("master", proj));
+        }
+        else
+            run(fmt.format(gitTag, proj));
+    }
+    enforce(nfallback < allProjects.length, "Branch " ~ gitTag ~ " not found in any dlang repo.");
+    run(fmt.format(dubTag, "dub"));
+}
+
+bool branchExists(string gitRepo, string branch)
+{
+    switch (runStatus("git ls-remote --heads --exit-code " ~ gitRepo ~ " " ~ branch))
+    {
+    case 0: return true;
+    case 2: return false;
+    default: throw new Exception("Failed to ls-remote " ~ gitRepo ~ " " ~ branch);
+    }
 }
 
 void applyPatches(string gitTag, string tgtDir)
@@ -449,7 +475,7 @@ int main(string[] args)
         extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
     }
 
-    cloneSources(gitTag, dubTag, workDir~"/clones");
+    cloneSources(gitTag, dubTag, isBranch, workDir~"/clones");
     immutable dmdVersion = workDir~"/clones/dmd/VERSION";
     if (isBranch)
     {

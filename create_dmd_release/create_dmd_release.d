@@ -794,9 +794,9 @@ void removeDir(string path)
         try
         {
             version(Windows)
-                system("rmdir /S /Q "~quote(path));
+                run("rmdir /S /Q "~quote(path));
             else
-                system("rm -rf "~quote(path));
+                run("rm -rf "~quote(path));
         }
         catch(Exception e)
             removeDirFailed();
@@ -907,8 +907,8 @@ void run(string cmd)
     stdout.flush();
     stderr.flush();
 
-    auto errlevel = system(cmd);
-    if(errlevel != 0)
+    auto pid = spawnShell(cmd);
+    if(wait(pid) != 0)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
 }
 

@@ -367,10 +367,17 @@ resolve_latest() {
             logV "Determing latest dmd-beta version ($url)."
             compiler="dmd-$(fetch $url)"
             ;;
-        dmd-nightly)
-            local url=http://nightlies.dlang.org/LATEST_NIGHTLY
-            logV "Determing latest dmd-nightly version ($url)."
-            compiler="dmd-$(fetch $url)"
+        dmd-*) # nightly master or feature branch
+            # dmd-nightly, dmd-master, dmd-branch
+            # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
+            #          dmd-2.068.0 or dmd-2.068.2-5
+            if [[ ! $compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
+               [[ ! $compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]
+            then
+                local url=http://nightlies.dlang.org/$compiler/LATEST
+                logV "Determing latest $compiler version ($url)."
+                compiler="dmd-$(fetch $url)"
+            fi
             ;;
         ldc)
             local url=https://ldc-developers.github.io/LATEST
@@ -418,9 +425,10 @@ install_compiler() {
 
         download_and_unpack "$url" "$path/$1" "$url.sig"
 
-    # dmd-2015-11-20
-    elif [[ $1 =~ ^dmd-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
-        local basename="dmd.master.$os"
+    # dmd-2015-11-20, dmd-feature_branch-2016-10-20
+    elif [[ $1 =~ ^dmd(-(.*))?-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+        local branch=${BASH_REMATCH[2]:-master}
+        local basename="dmd.$branch.$os"
         if [ $os = freebsd ]; then
             basename="$basename-$model"
         fi
