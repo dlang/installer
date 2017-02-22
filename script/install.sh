@@ -609,8 +609,7 @@ set -gx DMD $dmd
 set -gx DC $dc
 functions -c fish_prompt _old_d_fish_prompt
 function fish_prompt
-    printf '($1)'
-    _old_d_fish_prompt
+    printf '($1)%s' (_old_d_fish_prompt)
 end
 EOF
 }
