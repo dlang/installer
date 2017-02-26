@@ -295,6 +295,7 @@ parse_args() {
 run_command() {
     case $1 in
         install)
+            local has_dub_included=0
             check_tools curl
             if [ ! -f "$path/install.sh" ]; then
                 install_dlang_installer
@@ -306,8 +307,11 @@ run_command() {
                 log "$2 already installed";
             else
                 install_compiler $2
+                has_dub_included=$?
             fi
-            install_dub
+            if [ "$has_dub_included" -eq 0 ] ; then
+                install_dub
+            fi
             write_env_vars $2
 
             if [ $(basename $SHELL) = fish ]; then
@@ -398,6 +402,8 @@ resolve_latest() {
 }
 
 install_compiler() {
+    local has_dub_included=0
+
     # dmd-2.065, dmd-2.068.0, dmd-2.068.1-b1
     if [[ $1 =~ ^dmd-2\.([0-9]{3})(\.[0-9])?(-.*)?$ ]]; then
         local basename="dmd.2.${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
@@ -415,6 +421,10 @@ install_compiler() {
             local arch="tar.xz"
         else
             local arch="zip"
+        fi
+
+        if [[ $ver > "2.072.0z" ]]; then
+            has_dub_included=1
         fi
 
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
@@ -443,6 +453,9 @@ install_compiler() {
         if [ $os != linux ] && [ $os != osx ]; then
             fatal "no ldc binaries available for $os"
         fi
+        if [[ $ver > "1.1.0z" ]]; then
+            has_dub_included=1
+        fi
 
         download_and_unpack "$url" "$path/$1"
 
@@ -468,6 +481,8 @@ install_compiler() {
     else
         fatal "Unknown compiler '$1'"
     fi
+
+    return "$has_dub_included"
 }
 
 find_gpg() {
