@@ -423,7 +423,7 @@ install_compiler() {
             local arch="zip"
         fi
 
-        if [[ $ver > "2.072.0z" ]]; then
+        if [[ $ver > "2.071z" ]]; then
             has_dub_included=1
         fi
 
@@ -453,7 +453,7 @@ install_compiler() {
         if [ $os != linux ] && [ $os != osx ]; then
             fatal "no ldc binaries available for $os"
         fi
-        if [[ $ver > "1.1.0z" ]]; then
+        if [[ $ver > "1.0z" ]]; then
             has_dub_included=1
         fi
 
