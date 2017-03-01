@@ -29,7 +29,7 @@ index b473026..0f0cde0 100644
  ################################################################################
  
 -all : docs html
-+all : html druntime-release phobos-release d.tag
++all : html dmd-release druntime-release phobos-release d.tag
  
  docs : dmd-release dmd-prerelease phobos-prerelease druntime-prerelease \
  	   druntime-release phobos-release apidocs-release apidocs-prerelease
