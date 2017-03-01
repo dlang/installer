@@ -91,6 +91,7 @@ COMMAND=
 COMPILER=dmd
 VERBOSITY=1
 ROOT=~/dlang
+DUB_BIN_PATH=
 case $(uname -s) in
     Darwin) OS=osx;;
     Linux) OS=linux;;
@@ -323,7 +324,16 @@ run_command() {
             else
                 install_compiler "$2"
             fi
-            install_dub
+
+            local -r dub_bin_path=$(find_dub "$2")
+            if [ -f "${dub_bin_path}/dub" ] ; then
+                local -r dub_version=$("${dub_bin_path}/dub" --version | cut -f3 -d' ' | tr -d ,)
+                log "dub ${dub_version} already installed";
+            else
+                DUB_BIN_PATH="${ROOT}/dub"
+                install_dub
+            fi
+
             write_env_vars "$2"
 
             if [ "$(basename "$SHELL")" = fish ]; then
@@ -488,6 +498,26 @@ install_compiler() {
     fi
 }
 
+# Checks whether a DUB executable is already included in the release
+find_dub() {
+    case $1 in
+        dmd*)
+            local suffix=
+            if [ "${OS:-}" != "osx" ] ; then
+                local suffix=$MODEL
+            fi
+            local bin_path="${OS}/bin${suffix}"
+            ;;
+        ldc*)
+            local bin_path=bin
+            ;;
+        *)
+            local bin_path=
+            ;;
+    esac
+    echo "$ROOT/$1/$bin_path"
+}
+
 find_gpg() {
     if command -v gpg2 &>/dev/null; then
         echo gpg2
@@ -592,7 +622,7 @@ _OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
 _OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
 _OLD_D_PS1="\${PS1:-}"
 
-export PATH="$ROOT/dub:$ROOT/$1/$binpath:\${PATH:-}"
+export PATH="${DUB_BIN_PATH}:$ROOT/$1/$binpath:\${PATH:-}"
 export LIBRARY_PATH="$ROOT/$1/$libpath:\${LIBRARY_PATH:-}"
 export LD_LIBRARY_PATH="$ROOT/$1/$libpath:\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
@@ -624,7 +654,7 @@ set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
 set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
 set -g _OLD_D_PS1 \$PS1
 
-set -gx PATH "$ROOT/dub" "$ROOT/$1/$binpath" \$PATH
+set -gx PATH "${DUB_BIN_PATH}" "$ROOT/$1/$binpath" \$PATH
 set -gx LIBRARY_PATH "$ROOT/$1/$libpath" \$LIBRARY_PATH
 set -gx LD_LIBRARY_PATH "$ROOT/$1/$libpath" \$LD_LIBRARY_PATH
 set -gx DMD $dmd

@@ -5,6 +5,7 @@ set -uexo pipefail
 compilers=(
     dmd-2.069.2
     dmd-2.071.2
+    dmd-2.077.1
     dmd-2016-10-19
     dmd-master-2016-10-24
     ldc-1.4.0
@@ -13,6 +14,7 @@ compilers=(
 versions=(
     'DMD64 D Compiler v2.069.2'
     'DMD64 D Compiler v2.071.2'
+    'DMD64 D Compiler v2.077.1'
     'DMD64 D Compiler v2.073.0-master-878b882'
     'DMD64 D Compiler v2.073.0-master-ab9d712'
     'LDC - the LLVM D compiler (1.4.0):'
@@ -45,7 +47,9 @@ do
 
     source $(./script/install.sh $compiler --activate)
     deactivate
+
     source $(./script/install.sh $compiler -a)
+    command -v dub >/dev/null 2>&1 || { echo >&2 "DUB hasn't been installed."; exit 1; }
     deactivate
 
     ./script/install.sh uninstall $compiler
