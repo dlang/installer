@@ -360,13 +360,15 @@ string getDubTag(bool preRelease)
     throw new Exception("Failed to get dub tags");
 }
 
-void cloneSources(string gitTag, string dubTag, bool isBranch, string tgtDir)
+void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, string tgtDir)
 {
     auto prefix = "https://github.com/dlang/";
     auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
     size_t nfallback;
     foreach (proj; allProjects)
     {
+        if (skipDocs && proj == "dlang.org")
+            continue;
         // use master as fallback for feature branches
         if (isBranch && !branchExists(prefix ~ proj, gitTag))
         {
@@ -390,11 +392,16 @@ bool branchExists(string gitRepo, string branch)
     }
 }
 
-void applyPatches(string gitTag, string tgtDir)
+void applyPatches(string gitTag, bool skipDocs, string tgtDir)
 {
     auto fmt = "git -C "~tgtDir~"/%1$s apply -3 < patches/%1$s.patch";
-    foreach (proj; ["dlang.org", "tools"])
+    foreach (de; dirEntries("patches", "*.patch", SpanMode.shallow))
+    {
+        auto proj = de.baseName.stripExtension;
+        if (skipDocs && proj == "dlang.org")
+            continue;
         run(fmt.format(proj));
+    }
 }
 
 auto lzmaExt = (OS os) => os == OS.windows ? ".7z" : ".tar.xz";
@@ -475,7 +482,7 @@ int main(string[] args)
         extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
     }
 
-    cloneSources(gitTag, dubTag, isBranch, workDir~"/clones");
+    cloneSources(gitTag, dubTag, isBranch, skipDocs, workDir~"/clones");
     immutable dmdVersion = workDir~"/clones/dmd/VERSION";
     if (isBranch)
     {
@@ -486,7 +493,7 @@ int main(string[] args)
     {
         std.file.write(dmdVersion, gitTag.chompPrefix("v"));
     }
-    applyPatches(gitTag, workDir~"/clones");
+    applyPatches(gitTag, skipDocs, workDir~"/clones");
     prepareExtraBins(workDir);
 
     immutable ver = gitTag.chompPrefix("v");
