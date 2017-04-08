@@ -39,7 +39,7 @@
 ; Routinely Update
 ; ----------------
 ; Visual D
-!define VersionVisualD "0.3.43"
+!define VersionVisualD "0.44.2"
 
 ; DMC
 !define VersionDMC "857"
