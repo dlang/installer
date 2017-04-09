@@ -11,10 +11,10 @@ index 5667b38..ca003b6 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 3982bee..efd6d30 100644
+index 1414c1c..af5a2e1 100644
 --- a/posix.mak
 +++ b/posix.mak
-@@ -161,8 +161,7 @@ SPEC_ROOT=$(addprefix spec/, \
+@@ -159,8 +159,7 @@ SPEC_ROOT=$(addprefix spec/, \
  	abi simd)
  SPEC_DD=$(addsuffix .dd,$(SPEC_ROOT))
  
@@ -24,7 +24,7 @@ index 3982bee..efd6d30 100644
  
  # Website root filenames. They have extension .dd in the source
  # and .html in the generated HTML. Save for the expansion of
-@@ -240,7 +239,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
+@@ -241,7 +240,7 @@ $(DOC_OUTPUT_DIR)/dmd-%.verbatim : %.ddoc dcompiler.dd verbatim.ddoc $(DMD)
  # Rulez
  ################################################################################
  
@@ -33,7 +33,7 @@ index 3982bee..efd6d30 100644
  
  docs : dmd-release dmd-prerelease phobos-prerelease druntime-prerelease \
  	   druntime-release phobos-release apidocs-release apidocs-prerelease
-@@ -266,9 +265,9 @@ ${GENERATED}/${LATEST}.ddoc :
+@@ -267,9 +266,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
  	echo "LATEST=${LATEST}" >$@
  
@@ -45,18 +45,18 @@ index 3982bee..efd6d30 100644
  		$(addprefix --dump , object std etc core) >$@
  
  ${GENERATED}/modlist-prerelease.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR) $(PHOBOS_DIR)
-@@ -363,8 +362,8 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} ${TOOLS_DIR} ${INSTALLER_DIR}:
+@@ -364,8 +363,8 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} ${TOOLS_DIR} ${INSTALLER_DIR}:
  # dmd compiler, latest released build and current build
  ################################################################################
  
 -$(DMD) : ${DMD_DIR}
--	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
+-	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1
 +#$(DMD) : ${DMD_DIR}
-+#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
++#	${MAKE} --directory=${DMD_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1
  
  $(DMD_REL) : ${DMD_STABLE_DIR}
- 	${MAKE} --directory=${DMD_STABLE_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1 -j 4
-@@ -402,9 +401,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
+ 	${MAKE} --directory=${DMD_STABLE_DIR}/src -f posix.mak AUTO_BOOTSTRAP=1
+@@ -403,9 +402,9 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -69,9 +69,9 @@ index 3982bee..efd6d30 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -434,11 +433,11 @@ phobos-prerelease : ${PHOBOS_FILES_GENERATED} $(STD_DDOC_PRE) druntime-prereleas
+@@ -435,11 +434,11 @@ phobos-prerelease : ${PHOBOS_FILES_GENERATED} $(STD_DDOC_PRE) druntime-prereleas
  	  VERSION="$(realpath ${DMD_DIR}/VERSION)" \
- 	  html -j4
+ 	  html
  
 -phobos-release : ${PHOBOS_STABLE_FILES_GENERATED} $(DMD_REL) $(STD_DDOC) \
 +phobos-release : ${PHOBOS_FILES_GENERATED} $(DMD) $(STD_DDOC) \
