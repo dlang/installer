@@ -94,6 +94,7 @@
 !include "EnvVarUpdate.nsh"
 !include "ReplaceInFile.nsh"
 !include "FileFunc.nsh"
+!include "TextFunc.nsh"
 
 
 ;------------------------------------------------------------
@@ -351,6 +352,15 @@ SectionGroupEnd
 Function DetectVSAndSDK
     ClearErrors
 
+    ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\SxS\VS7" "15.0"
+    StrCpy $1 "VC2017"
+    IfErrors not_vc2017
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2017
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2017:
+    ClearErrors
     ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\14.0\Setup\VC" "ProductDir"
     StrCpy $1 "VC2015"
     IfErrors 0 done_vs
