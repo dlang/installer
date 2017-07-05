@@ -11,7 +11,7 @@ index c918c16..fbef295 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 9d86800..5a65667 100644
+index b18204f..745fc99 100644
 --- a/posix.mak
 +++ b/posix.mak
 @@ -57,10 +57,6 @@ PHOBOS_STABLE_DIR_GENERATED=$(GENERATED)/phobos-release
@@ -27,19 +27,19 @@ index 9d86800..5a65667 100644
  # stable dub and dmd versions used to build dpl-docs
 @@ -118,6 +114,14 @@ DDOC_VARS_STABLE=\
  	  DOCSRC="$(PWD)" \
- 	  VERSION="${DMD_DIR}/VERSION"
+ 	  VERSION="$(abspath ${DMD_DIR}/VERSION)"
  
 +DDOC_VARS_RELEASE=\
 +	  DOC_OUTPUT_DIR="${DOC_OUTPUT_DIR}/phobos" \
 +	  STDDOC="$(addprefix $(PWD)/, $(STD_DDOC))" \
-+	  DMD="$(realpath $(DMD))" \
-+	  DRUNTIME_PATH="$(realpath ${DRUNTIME_DIR})" \
++	  DMD="$(abspath $(DMD))" \
++	  DRUNTIME_PATH="$(abspath ${DRUNTIME_DIR})" \
 +	  DOCSRC="$(PWD)" \
-+	  VERSION="$(realpath ${DMD_DIR}/VERSION)"
++	  VERSION="$(abspath ${DMD_DIR}/VERSION)"
 +
  DDOC_VARS=\
- 	DMD="${DMD}" \
- 	DRUNTIME_PATH="${DRUNTIME_DIR}" \
+ 	DMD="$(abspath ${DMD})" \
+ 	DRUNTIME_PATH="$(abspath ${DRUNTIME_DIR})" \
 @@ -189,8 +193,7 @@ SPEC_ROOT=$(addprefix spec/, \
  	abi simd)
  SPEC_DD=$(addsuffix .dd,$(SPEC_ROOT))
