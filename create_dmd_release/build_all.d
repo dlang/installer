@@ -491,7 +491,7 @@ int main(string[] args)
     }
     else
     {
-        std.file.write(dmdVersion, gitTag.chompPrefix("v"));
+        std.file.write(dmdVersion, gitTag);
     }
     applyPatches(gitTag, skipDocs, workDir~"/clones");
     prepareExtraBins(workDir);
