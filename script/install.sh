@@ -103,7 +103,7 @@ case $(uname -m) in
 esac
 
 check_tools() {
-    while [[ $# > 0 ]]; do
+    while [[ $# -gt 0 ]]; do
         if ! command -v $1 &>/dev/null &&
                 # detect OSX' liblzma support in libarchive
                 ! { [ $os-$1 == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
@@ -239,7 +239,7 @@ parse_args() {
     local _help=
     local _activate=
 
-    while [[ $# > 0 ]]; do
+    while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 _help=1
