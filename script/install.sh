@@ -158,6 +158,11 @@ If no argument are provided, the latest DMD compiler will be installed.
 }
 
 command_help() {
+    if [ -z "$1" ]; then
+        usage
+        return
+    fi
+
     local _compiler='Compiler
 
   dmd|gdc|ldc           latest version of a compiler
@@ -277,14 +282,14 @@ parse_args() {
     done
 
     if [ -n "$_help" ]; then
-        [ -z "$command" ] && usage || command_help $command
+        command_help $command
         exit 0
     fi
     if [ -n "$_activate" ]; then
        if [ "${command:-install}" == "install" ]; then
            verbosity=0
        else
-           [ -z "$command" ] && usage || command_help $command
+           command_help $command
            exit 1
        fi
     fi
@@ -528,7 +533,8 @@ verify() {
 write_env_vars() {
     case $1 in
         dmd*)
-            [ $os = osx ] && local suffix= || local suffix=$model
+            local suffix
+            [ $os = osx ] || suffix=$model
             local binpath=$os/bin$suffix
             local libpath=$os/lib$suffix
             local dc=dmd
