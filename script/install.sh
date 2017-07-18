@@ -619,7 +619,7 @@ uninstall_compiler() {
         fatal "$1 is not installed in $path"
     fi
     log "Removing $path/$1"
-    rm -rf "$path/$1"
+    rm -rf "${path:?}/$1"
 }
 
 list_compilers() {
