@@ -55,7 +55,7 @@ retry() {
         if "$@"; then
             break
         elif [ $i -lt 4 ]; then
-            sleep $((1 << $i))
+            sleep $((1 << i))
         else
             fatal "Failed to download '$url'"
         fi
