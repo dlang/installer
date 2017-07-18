@@ -625,9 +625,17 @@ uninstall_compiler() {
 }
 
 list_compilers() {
-    check_tools egrep
+    check_tools find
     if [ -d "$path" ]; then
-        ls "$path" | egrep -v '^dub|^install\.sh|^d-keyring\.gpg'
+        find "$path" \
+             -mindepth 1 \
+             -maxdepth 1 \
+             -not -name 'dub*' \
+             -not -name install.sh \
+             -not -name d-keyring.gpg \
+             -not -name '.*' \
+             -printf "%f\n" | \
+            grep . # fail if none found
     fi
 }
 
