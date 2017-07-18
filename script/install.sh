@@ -72,8 +72,9 @@ download() {
 
 # url
 fetch() {
-    local url=$1
-    local path=$(mktemp "$TMP_ROOT/XXXXXX")
+    local url path
+    url=$1
+    path=$(mktemp "$TMP_ROOT/XXXXXX")
 
     retry curl2 -sS "$url" -o "$path"
     cat "$path"
@@ -483,8 +484,9 @@ find_gpg() {
 
 # url, path, [verify]
 download_and_unpack() {
-    local tmp=$(mkdtemp)
-    local name="$(basename $1)"
+    local tmp name
+    tmp=$(mkdtemp)
+    name="$(basename $1)"
 
     check_tools curl
     if [[ $name =~ \.tar\.xz$ ]]; then
@@ -641,8 +643,9 @@ install_dub() {
         log "$dub already installed"
         return
     fi
-    local tmp=$(mkdtemp)
-    local url="http://code.dlang.org/files/$dub-$os-$arch.tar.gz"
+    local tmp url
+    tmp=$(mkdtemp)
+    url="http://code.dlang.org/files/$dub-$os-$arch.tar.gz"
 
     log "Downloading and unpacking $url"
     download "$url" "$tmp/dub.tar.gz"
