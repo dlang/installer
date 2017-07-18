@@ -310,7 +310,7 @@ run_command() {
             install_dub
             write_env_vars $2
 
-            if [ $(basename $SHELL) = fish ]; then
+            if [ "$(basename $SHELL)" = fish ]; then
                 local suffix=.fish
             fi
             if [ "$verbosity" -eq 0 ]; then
