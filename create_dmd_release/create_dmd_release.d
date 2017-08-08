@@ -541,7 +541,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd");
         run(makecmd~" ddemangle");
         run(makecmd~" dustmite");
-        if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
+        // disabled dman due to https://issues.dlang.org/show_bug.cgi?id=17731
+        // if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
 
