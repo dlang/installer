@@ -181,9 +181,9 @@ else
 	# install binaries
 	mkdir -p usr/bin
 	if test "$ARCH" = "amd64" ;then
-		cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite,dub} usr/bin
+		cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} usr/bin
 	elif test "$ARCH" = "i386" ;then
-		cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite,dub} usr/bin
+		cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} usr/bin
 	fi
 
 
@@ -345,7 +345,7 @@ else
 
 	# set deb package dependencies
 	DEPENDS="libc6, libc6-dev, gcc, libgcc1, libstdc++6, libcurl3"
-	SUGGESTS="libcurl4-openssl-dev, gcc-multilib, xdg-utils"
+	SUGGESTS="libcurl4-openssl-dev, gcc-multilib"
 
 
 	# create control file
@@ -400,7 +400,7 @@ else
 	# change folders and files permissions
 	chmod -R 0755 *
 	chmod 0644 $(find -L . ! -type d)
-	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite,dub} DEBIAN/{postinst,postrm}
+	chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} DEBIAN/{postinst,postrm}
 
 
 	# create deb package
