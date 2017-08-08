@@ -169,9 +169,9 @@ do
 		# install binaries
 		mkdir -p usr/bin
 		if test "$ARCH" = "x86_64" ;then
-			cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite,dub} usr/bin
+			cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} usr/bin
 		else
-			cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite,dub} usr/bin
+			cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} usr/bin
 		fi
 
 
@@ -260,14 +260,14 @@ do
 		# change folders and files permissions
 		chmod -R 0755 *
 		chmod 0644 $(find . ! -type d)
-		chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dman,dustmite,dub}
+		chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub}
 
 
 		# find deb package dependencies
 		if test "$DNAME" = "fedora" ;then
-			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl($FARCH), xdg-utils"
+			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl($FARCH)"
 		elif test "$DNAME" = "openSUSE" ;then
-			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl4($FARCH), xdg-utils"
+			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl4($FARCH)"
 		fi
 		if test "$ARCH" = "x86_64" ; then
 			if test "$DNAME" = "fedora" ;then
