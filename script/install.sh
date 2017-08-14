@@ -337,9 +337,6 @@ Run \`deactivate\` later on to restore your environment."
             ;;
 
         list)
-            if [ -n "${2:-}" ]; then
-                log "Ignoring compiler argument '$2' for list command.";
-            fi
             list_compilers
             ;;
 
