@@ -37,9 +37,9 @@ fatal() {
 
 # ------------------------------------------------------------------------------
 curl2() {
-    : ${CURL_USER_AGENT:="installer/install.sh $(command curl --version | head -n 1)"}
-    TIMEOUT_ARGS="--connect-timeout 5 --speed-time 30 --speed-limit 1024"
-    command curl $TIMEOUT_ARGS -fL -A "$CURL_USER_AGENT" "$@"
+    : "${CURL_USER_AGENT:="installer/install.sh $(command curl --version | head -n 1)"}"
+    TIMEOUT_ARGS=(--connect-timeout 5 --speed-time 30 --speed-limit 1024)
+    command curl "${TIMEOUT_ARGS[@]}" -fL -A "$CURL_USER_AGENT" "$@"
 }
 
 curl() {
@@ -55,7 +55,7 @@ retry() {
         if "$@"; then
             break
         elif [ $i -lt 4 ]; then
-            sleep $((1 << $i))
+            sleep $((1 << i))
         else
             fatal "Failed to download '$url'"
         fi
@@ -72,8 +72,9 @@ download() {
 
 # url
 fetch() {
-    local url=$1
-    local path=$(mktemp "$TMP_ROOT/XXXXXX")
+    local url path
+    url=$1
+    path=$(mktemp "$TMP_ROOT/XXXXXX")
 
     retry curl2 -sS "$url" -o "$path"
     cat "$path"
@@ -103,10 +104,10 @@ case $(uname -m) in
 esac
 
 check_tools() {
-    while [[ $# > 0 ]]; do
-        if ! command -v $1 &>/dev/null &&
+    while [[ $# -gt 0 ]]; do
+        if ! command -v "$1" &>/dev/null &&
                 # detect OSX' liblzma support in libarchive
-                ! { [ $os-$1 == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
+                ! { [ "$os-$1" == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
             local msg="Required tool $1 not found, please install it."
             case $os-$1 in
                 osx-xz) msg="$msg http://macpkg.sourceforge.net";;
@@ -157,6 +158,11 @@ If no argument are provided, the latest DMD compiler will be installed.
 }
 
 command_help() {
+    if [ -z "$1" ]; then
+        usage
+        return
+    fi
+
     local _compiler='Compiler
 
   dmd|gdc|ldc           latest version of a compiler
@@ -239,7 +245,7 @@ parse_args() {
     local _help=
     local _activate=
 
-    while [[ $# > 0 ]]; do
+    while [[ $# -gt 0 ]]; do
         case "$1" in
             -h | --help)
                 _help=1
@@ -276,14 +282,14 @@ parse_args() {
     done
 
     if [ -n "$_help" ]; then
-        [ -z "$command" ] && usage || command_help $command
+        command_help $command
         exit 0
     fi
     if [ -n "$_activate" ]; then
        if [ "${command:-install}" == "install" ]; then
            verbosity=0
        else
-           [ -z "$command" ] && usage || command_help $command
+           command_help $command
            exit 1
        fi
     fi
@@ -305,12 +311,12 @@ run_command() {
             if [ -d "$path/$2" ]; then
                 log "$2 already installed";
             else
-                install_compiler $2
+                install_compiler "$2"
             fi
             install_dub
-            write_env_vars $2
+            write_env_vars "$2"
 
-            if [ $(basename $SHELL) = fish ]; then
+            if [ "$(basename "$SHELL")" = fish ]; then
                 local suffix=.fish
             fi
             if [ "$verbosity" -eq 0 ]; then
@@ -327,13 +333,10 @@ Run \`deactivate\` later on to restore your environment."
             if [ -z "${2:-}" ]; then
                 fatal "Missing compiler argument for $1 command.";
             fi
-            uninstall_compiler $2
+            uninstall_compiler "$2"
             ;;
 
         list)
-            if [ -n "${2:-}" ]; then
-                log "Ignoring compiler argument '$2' for list command.";
-            fi
             list_compilers
             ;;
 
@@ -376,7 +379,7 @@ resolve_latest() {
             then
                 local url=http://nightlies.dlang.org/$compiler/LATEST
                 logV "Determing latest $compiler version ($url)."
-                compiler="dmd-$(fetch $url)"
+                compiler="dmd-$(fetch "$url")"
             fi
             ;;
         ldc)
@@ -460,7 +463,7 @@ install_compiler() {
 
         download_and_unpack "$url" "$path/$1"
 
-        url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/master/dmd-script
+        url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/38a3fb210666850201371070b88a1e617cf38931/dmd-script
         log "Downloading gdmd $url"
         download "$url" "$path/$1/bin/gdmd"
         chmod +x "$path/$1/bin/gdmd"
@@ -483,8 +486,9 @@ find_gpg() {
 
 # url, path, [verify]
 download_and_unpack() {
-    local tmp=$(mkdtemp)
-    local name="$(basename $1)"
+    local tmp name
+    tmp=$(mkdtemp)
+    name="$(basename "$1")"
 
     check_tools curl
     if [[ $name =~ \.tar\.xz$ ]]; then
@@ -495,7 +499,7 @@ download_and_unpack() {
 
     log "Downloading and unpacking $1"
     download "$1" "$tmp/$name"
-    if [ ! -z ${3:-} ]; then
+    if [ ! -z "${3:-}" ]; then
         verify "$3" "$tmp/$name"
     fi
     if [[ $name =~ \.tar\.xz$ ]]; then
@@ -510,8 +514,8 @@ download_and_unpack() {
 }
 
 verify() {
-    : ${GPG:=$(find_gpg)}
-    if [ $GPG = x ]; then
+    : "${GPG:=$(find_gpg)}"
+    if [ "$GPG" = x ]; then
         return
     fi
     if [ ! -f "$path/d-keyring.gpg" ]; then
@@ -526,7 +530,8 @@ verify() {
 write_env_vars() {
     case $1 in
         dmd*)
-            [ $os = osx ] && local suffix= || local suffix=$model
+            local suffix
+            [ $os = osx ] || suffix=$model
             local binpath=$os/bin$suffix
             local libpath=$os/lib$suffix
             local dc=dmd
@@ -619,13 +624,21 @@ uninstall_compiler() {
         fatal "$1 is not installed in $path"
     fi
     log "Removing $path/$1"
-    rm -rf "$path/$1"
+    rm -rf "${path:?}/$1"
 }
 
 list_compilers() {
-    check_tools egrep
+    check_tools find
     if [ -d "$path" ]; then
-        ls "$path" | egrep -v '^dub|^install\.sh|^d-keyring\.gpg'
+        find "$path" \
+             -mindepth 1 \
+             -maxdepth 1 \
+             -not -name 'dub*' \
+             -not -name install.sh \
+             -not -name d-keyring.gpg \
+             -not -name '.*' \
+             -printf "%f\n" | \
+            grep . # fail if none found
     fi
 }
 
@@ -641,8 +654,9 @@ install_dub() {
         log "$dub already installed"
         return
     fi
-    local tmp=$(mkdtemp)
-    local url="http://code.dlang.org/files/$dub-$os-$arch.tar.gz"
+    local tmp url
+    tmp=$(mkdtemp)
+    url="http://code.dlang.org/files/$dub-$os-$arch.tar.gz"
 
     log "Downloading and unpacking $url"
     download "$url" "$tmp/dub.tar.gz"
@@ -651,14 +665,14 @@ install_dub() {
     rm -rf "$path/dub" "$path/dub-*"
     mv "$tmp" "$path/$dub"
     logV "Linking $path/dub -> $path/$dub"
-    ln -s $dub "$path/dub"
+    ln -s "$dub" "$path/dub"
 }
 
 # ------------------------------------------------------------------------------
 
 parse_args "$@"
-resolve_latest $compiler
-run_command ${command:-install} $compiler
+resolve_latest "$compiler"
+run_command ${command:-install} "$compiler"
 }
 
 _ "$@"

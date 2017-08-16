@@ -44,3 +44,5 @@ then
     echo "Uninstall of the compilers failed."
     exit 1
 fi
+
+shellcheck script/install.sh
