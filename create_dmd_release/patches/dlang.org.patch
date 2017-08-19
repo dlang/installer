@@ -11,7 +11,7 @@ index 67a01b6c..310c8237 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index afe5f957..25358007 100644
+index 580376e2..7e341b31 100644
 --- a/posix.mak
 +++ b/posix.mak
 @@ -58,10 +58,6 @@ PHOBOS_STABLE_DIR_GENERATED=$(GENERATED)/phobos-release
@@ -42,7 +42,7 @@ index afe5f957..25358007 100644
  	DMD="$(abspath ${DMD})" \
  	DMD_DIR="$(abspath ${DMD_DIR})" \
 @@ -199,8 +204,7 @@ SPEC_ROOT=$(addprefix spec/, \
- 	abi simd)
+ 	abi simd betterc)
  SPEC_DD=$(addsuffix .dd,$(SPEC_ROOT))
  
 -CHANGELOG_FILES=changelog/${NEXT_VERSION}_pre \
