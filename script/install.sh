@@ -460,7 +460,11 @@ install_compiler() {
             x86_64) local triplet=x86_64-linux-gnu;;
             x86) local triplet=i686-linux-gnu;;
         esac
-        local url="http://gdcproject.org/downloads/binaries/$ver/$triplet/$name.tar.xz"
+        if [[ $ver > "4.8.2" ]]; then
+            local url="http://gdcproject.org/downloads/binaries/$ver/$triplet/$name.tar.xz"
+        else
+            local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
+        fi
 
         download_and_unpack "$url" "$path/$1"
 
