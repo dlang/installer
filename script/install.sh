@@ -450,8 +450,9 @@ install_compiler() {
         download_and_unpack "$url" "$path/$1"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
-    elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
+    elif [[ $1 =~ ^gdc-(([0-9]+\.[0-9]+(\.[0-9]+)?)([-+].*)?)$ ]]; then
         local name=${BASH_REMATCH[0]}
+        local ver=${BASH_REMATCH[2]}
         if [ $os != linux ]; then
             fatal "no gdc binaries available for $os"
         fi
@@ -459,7 +460,7 @@ install_compiler() {
             x86_64) local triplet=x86_64-linux-gnu;;
             x86) local triplet=i686-linux-gnu;;
         esac
-        local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
+        local url="http://gdcproject.org/downloads/binaries/$ver/$triplet/$name.tar.xz"
 
         download_and_unpack "$url" "$path/$1"
 
