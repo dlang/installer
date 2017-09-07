@@ -158,7 +158,7 @@ If no argument are provided, the latest DMD compiler will be installed.
 }
 
 command_help() {
-    if [ -z "$1" ]; then
+    if [ -z "${1-}" ]; then
         usage
         return
     fi
