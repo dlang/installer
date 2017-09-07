@@ -277,6 +277,11 @@ parse_args() {
             dmd | dmd-* | gdc | gdc-* | ldc | ldc-*)
                 compiler=$1
                 ;;
+
+            *)
+                usage
+                fatal "Unrecognized command-line parameter: $1"
+                ;;
         esac
         shift
     done
