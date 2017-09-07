@@ -158,7 +158,7 @@ If no argument are provided, the latest DMD compiler will be installed.
 }
 
 command_help() {
-    if [ -z "$1" ]; then
+    if [ -z "${1-}" ]; then
         usage
         return
     fi
@@ -276,6 +276,11 @@ parse_args() {
 
             dmd | dmd-* | gdc | gdc-* | ldc | ldc-*)
                 compiler=$1
+                ;;
+
+            *)
+                usage
+                fatal "Unrecognized command-line parameter: $1"
                 ;;
         esac
         shift
