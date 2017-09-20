@@ -11,10 +11,10 @@ index 67a01b6c..310c8237 100644
      $(MENU_W_SUBMENU_LINK $(ROOT_DIR)community.html, Community)
        $(NAVIGATION_COMMUNITY)
 diff --git a/posix.mak b/posix.mak
-index 580376e2..7e341b31 100644
+index f55a8e54..33245997 100644
 --- a/posix.mak
 +++ b/posix.mak
-@@ -58,10 +58,6 @@ PHOBOS_STABLE_DIR_GENERATED=$(GENERATED)/phobos-release
+@@ -60,10 +60,6 @@ PHOBOS_STABLE_DIR_GENERATED=$(GENERATED)/phobos-release
  #   Makefile dependencies and rules
  PHOBOS_FILES := $(shell find $(PHOBOS_DIR) -name '*.d' -o -name '*.mak' -o -name '*.ddoc')
  PHOBOS_FILES_GENERATED := $(subst $(PHOBOS_DIR), $(PHOBOS_DIR_GENERATED), $(PHOBOS_FILES))
@@ -25,7 +25,7 @@ index 580376e2..7e341b31 100644
  ################################################################################
  
  # stable dub and dmd versions used to build dpl-docs
-@@ -126,6 +122,15 @@ DDOC_VARS_STABLE_HTML=\
+@@ -129,6 +125,15 @@ DDOC_VARS_STABLE_HTML=\
  	  DOCSRC="$(PWD)" \
  	  VERSION="$(abspath ${DMD_DIR}/VERSION)"
  
@@ -41,7 +41,7 @@ index 580376e2..7e341b31 100644
  DDOC_VARS=\
  	DMD="$(abspath ${DMD})" \
  	DMD_DIR="$(abspath ${DMD_DIR})" \
-@@ -199,8 +204,7 @@ SPEC_ROOT=$(addprefix spec/, \
+@@ -202,8 +207,7 @@ SPEC_ROOT=$(addprefix spec/, \
  	abi simd betterc)
  SPEC_DD=$(addsuffix .dd,$(SPEC_ROOT))
  
@@ -51,16 +51,16 @@ index 580376e2..7e341b31 100644
  
  # Website root filenames. They have extension .dd in the source
  # and .html in the generated HTML. Save for the expansion of
-@@ -229,7 +233,7 @@ ALL_FILES = $(ALL_FILES_BUT_SITEMAP) $(DOC_OUTPUT_DIR)/sitemap.html
+@@ -232,7 +236,7 @@ ALL_FILES = $(ALL_FILES_BUT_SITEMAP) $(DOC_OUTPUT_DIR)/sitemap.html
  # Rulez
  ################################################################################
  
 -all : docs html
 +all : html dmd-release druntime-release phobos-release d.tag
  
- docs : dmd-release dmd-prerelease phobos-prerelease druntime-prerelease \
- 	   druntime-release phobos-release apidocs-release apidocs-prerelease
-@@ -255,9 +259,9 @@ ${GENERATED}/${LATEST}.ddoc :
+ docs-release: dmd-release druntime-release phobos-release apidocs-release
+ docs-prerelease: dmd-prerelease druntime-prerelease phobos-prerelease apidocs-prerelease
+@@ -260,9 +264,9 @@ ${GENERATED}/${LATEST}.ddoc :
  	mkdir -p $(dir $@)
  	echo "LATEST=${LATEST}" >$@
  
@@ -72,7 +72,7 @@ index 580376e2..7e341b31 100644
  		$(addprefix --dump , object std etc core ddmd) >$@
  
  ${GENERATED}/modlist-prerelease.ddoc : modlist.d ${STABLE_DMD} $(DRUNTIME_DIR) $(PHOBOS_DIR)
-@@ -418,14 +422,14 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} ${TOOLS_DIR} ${INSTALLER_DIR}:
+@@ -420,14 +424,14 @@ ${DMD_DIR} ${DRUNTIME_DIR} ${PHOBOS_DIR} ${TOOLS_DIR} ${INSTALLER_DIR}:
  # dmd compiler, latest released build and current build
  ################################################################################
  
@@ -91,7 +91,7 @@ index 580376e2..7e341b31 100644
  
  dmd-prerelease : $(STD_DDOC_PRE) $(DMD_DIR) $(DMD)
  	$(MAKE) AUTO_BOOTSTRAP=1 --directory=$(DMD_DIR) -f posix.mak html $(DDOC_VARS_HTML)
-@@ -449,8 +453,8 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
+@@ -451,8 +455,8 @@ druntime-prerelease : ${DRUNTIME_DIR} $(DMD) $(STD_DDOC_PRE)
  		DOCDIR=${DOC_OUTPUT_DIR}/phobos-prerelease \
  		DOCFMT="$(addprefix `pwd`/, $(STD_DDOC_PRE))"
  
@@ -102,7 +102,7 @@ index 580376e2..7e341b31 100644
  	  DOCDIR=${DOC_OUTPUT_DIR}/phobos \
  	  DOCFMT="$(addprefix `pwd`/, $(STD_DDOC))"
  
-@@ -473,9 +477,9 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/object.verbatim : $(DMD)
+@@ -475,9 +479,9 @@ ${DOC_OUTPUT_DIR}/phobos-prerelease/object.verbatim : $(DMD)
  phobos-prerelease : ${PHOBOS_FILES_GENERATED} $(STD_DDOC_PRE) druntime-prerelease
  	$(MAKE) --directory=$(PHOBOS_DIR_GENERATED) -f posix.mak html $(DDOC_VARS_HTML)
  
