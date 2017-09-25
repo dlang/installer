@@ -255,6 +255,7 @@ parse_args() {
                 if [ -z "${2:-}" ]; then
                     fatal '-p|--path must be followed by a path.';
                 fi
+                shift
                 path="$2"
                 ;;
 
