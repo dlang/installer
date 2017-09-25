@@ -9,6 +9,7 @@ declare -A compilers=(
  ["dmd-master-2016-10-24"]="DMD64 D Compiler v2.073.0-master-ab9d712"
  ["ldc-1.0.0"]="LDC - the LLVM D compiler (1.0.0):"
  ["gdc-4.9.3"]="gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3"
+ ["gdc-4.8.5"]="gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5"
 )
 
 for compiler in "${!compilers[@]}"

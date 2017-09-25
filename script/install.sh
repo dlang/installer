@@ -552,7 +552,12 @@ write_env_vars() {
 
         gdc*)
             local binpath=bin
-            local libpath=lib;
+            if [ -d "$path/$1/lib$model" ]; then
+                local libpath=lib$model
+            else
+                # older gdc releases only ship 64-bit libs
+                local libpath=lib
+            fi
             local dc=gdc
             local dmd=gdmd
             ;;
