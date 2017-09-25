@@ -468,7 +468,7 @@ install_compiler() {
 
         download_and_unpack "$url" "$path/$1"
 
-        url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/38a3fb210666850201371070b88a1e617cf38931/dmd-script
+        url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/130f552ca43a77ee5c638fcc5a106f41dac607b9/dmd-script
         log "Downloading gdmd $url"
         download "$url" "$path/$1/bin/gdmd"
         chmod +x "$path/$1/bin/gdmd"
