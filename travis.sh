@@ -15,29 +15,16 @@ declare -A compilers=(
 for compiler in "${!compilers[@]}"
 do
     echo "Testing: $compiler"
-    bash script/install.sh $compiler
-    source ~/dlang/$compiler/activate
+    ./script/install.sh $compiler
 
-    # simple check whether the installation was successful
-    if [[ $compiler =~ dmd ]]
-    then
-        compilerVersion=$(dmd --version | head -n1)
-    elif [[ $compiler =~ ldc ]]
-    then
-        compilerVersion=$(ldc2 --version | head -n1)
-    elif [[ $compiler =~ gdc ]]
-    then
-        compilerVersion=$(gdc --version | head -n1)
-    fi
-
-    if [ "$compilerVersion" != "${compilers[$compiler]}" ]
-    then
-        echo "Mismatch - expected: '${compilers[$compiler]}', received: $compilerVersion"
-        exit 1
-    fi
-
+    . ~/dlang/$compiler/activate
+    compilerVersion=$($DC --version | head -n1)
+    test "$compilerVersion" = "${compilers[$compiler]}"
+    compilerVersion=$($DMD --version | head -n1)
+    test "$compilerVersion" = "${compilers[$compiler]}"
     deactivate
-    bash script/install.sh uninstall $compiler
+
+    ./script/install.sh uninstall $compiler
 done
 
 # check whether all installations have been uninstalled successfully
