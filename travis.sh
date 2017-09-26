@@ -27,6 +27,18 @@ do
     ./script/install.sh uninstall $compiler
 done
 
+# test resolution of latest using the remove error message
+latest=(dmd dmd-beta dmd-master dmd-nightly ldc ldc-beta gdc)
+for compiler in "${latest[@]}"
+do
+    set +e
+    resolved=$(./script/install.sh remove "$compiler" 2>&1)
+    set -e
+    if ! [[ $resolved =~ ^${compiler%-*}-(.+)$ ]]; then
+        echo "Failed to resolve $compiler, got '$resolved'"
+    fi
+done
+
 # check whether all installations have been uninstalled successfully
 if bash script/install.sh list
 then
