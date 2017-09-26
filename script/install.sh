@@ -62,13 +62,16 @@ retry() {
     done
 }
 
-# url path
+# url, path, [gpg signature url to verify]
 download() {
     local url path
     url=$1
     path=$2
 
     retry curl "$url" -o "$path"
+    if [ ! -z "${3:-}" ]; then
+        verify "$3" "$path"
+    fi
 }
 
 # url
@@ -359,8 +362,8 @@ install_dlang_installer() {
     tmp=$(mkdtemp)
 
     mkdir -p "$ROOT"
-    logV "Downloading $url"
-    download "$url" "$tmp/install.sh"
+    log "Downloading $url"
+    download "$url" "$tmp/install.sh" "$url.sig"
     mv "$tmp/install.sh" "$ROOT/install.sh"
     rmdir "$tmp"
     chmod +x "$ROOT/install.sh"
@@ -510,10 +513,7 @@ download_and_unpack() {
     fi
 
     log "Downloading and unpacking $1"
-    download "$1" "$tmp/$name"
-    if [ ! -z "${3:-}" ]; then
-        verify "$3" "$tmp/$name"
-    fi
+    download "$1" "$tmp/$name" "${3:-}"
     if [[ $name =~ \.tar\.xz$ ]]; then
         tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
     else
