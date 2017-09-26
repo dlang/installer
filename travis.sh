@@ -47,7 +47,10 @@ then
     exit 1
 fi
 
+# test in-place update
 bash script/install.sh update --path "$PWD/script"
+# reset script
+git checkout -- script/install.sh
 
 if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     shellcheck script/install.sh

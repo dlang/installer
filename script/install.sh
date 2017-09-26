@@ -64,8 +64,9 @@ retry() {
 
 # url path
 download() {
-    local url=$1
-    local path=$2
+    local url path
+    url=$1
+    path=$2
 
     retry curl "$url" -o "$path"
 }
@@ -354,8 +355,8 @@ Run \`deactivate\` later on to restore your environment."
 
 install_dlang_installer() {
     local url tmp
-    local url=https://dlang.org/install.sh
-    local tmp=$(mkdtemp)
+    url=https://dlang.org/install.sh
+    tmp=$(mkdtemp)
 
     mkdir -p "$path"
     logV "Downloading $url"
