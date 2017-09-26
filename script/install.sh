@@ -255,7 +255,8 @@ parse_args() {
                 if [ -z "${2:-}" ]; then
                     fatal '-p|--path must be followed by a path.';
                 fi
-                path="$2"
+                shift
+                path="$1"
                 ;;
 
             -v | --verbose)
@@ -352,10 +353,15 @@ Run \`deactivate\` later on to restore your environment."
 }
 
 install_dlang_installer() {
-    mkdir -p "$path"
+    local url tmp
     local url=https://dlang.org/install.sh
+    local tmp=$(mkdtemp)
+
+    mkdir -p "$path"
     logV "Downloading $url"
-    download "$url" "$path/install.sh"
+    download "$url" "$tmp/install.sh"
+    mv "$tmp/install.sh" "$path/install.sh"
+    rmdir "$tmp"
     chmod +x "$path/install.sh"
     log "The latest version of this script was installed as $path/install.sh.
 It can be used it to install further D compilers.

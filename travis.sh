@@ -46,4 +46,6 @@ then
     exit 1
 fi
 
+bash script/install.sh update --path "$PWD/script"
+
 shellcheck script/install.sh
