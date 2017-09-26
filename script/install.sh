@@ -7,6 +7,8 @@
 _() {
 set -ueo pipefail
 
+dlang_download_mirror=https://s3-us-west-2.amazonaws.com/downloads.dlang.org
+
 # ------------------------------------------------------------------------------
 
 log_() {
@@ -372,12 +374,12 @@ Run \`$path/install.sh --help\` for usage information.
 resolve_latest() {
     case $compiler in
         dmd)
-            local url=http://downloads.dlang.org/releases/LATEST
+            local url=${dlang_download_mirror}/releases/LATEST
             logV "Determing latest dmd version ($url)."
             compiler="dmd-$(fetch $url)"
             ;;
         dmd-beta)
-            local url=http://downloads.dlang.org/pre-releases/LATEST
+            local url=${dlang_download_mirror}/pre-releases/LATEST
             logV "Determing latest dmd-beta version ($url)."
             compiler="dmd-$(fetch $url)"
             ;;
@@ -388,7 +390,7 @@ resolve_latest() {
             if [[ ! $compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
                [[ ! $compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]
             then
-                local url=http://nightlies.dlang.org/$compiler/LATEST
+                local url=https://nightlies.dlang.org/$compiler/LATEST
                 logV "Determing latest $compiler version ($url)."
                 compiler="dmd-$(fetch "$url")"
             fi
@@ -404,7 +406,7 @@ resolve_latest() {
             compiler="ldc-$(fetch $url)"
             ;;
         gdc)
-            local url=http://gdcproject.org/downloads/LATEST
+            local url=https://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
             compiler="gdc-$(fetch $url)"
             ;;
@@ -432,9 +434,9 @@ install_compiler() {
         fi
 
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
-            local url="http://downloads.dlang.org/pre-releases/2.x/$ver/$basename.$arch"
+            local url="${dlang_download_mirror}/pre-releases/2.x/$ver/$basename.$arch"
         else
-            local url="http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
+            local url="${dlang_download_mirror}/releases/2.x/$ver/$basename.$arch"
         fi
 
         download_and_unpack "$url" "$path/$1" "$url.sig"
@@ -446,7 +448,7 @@ install_compiler() {
         if [ $os = freebsd ]; then
             basename="$basename-$model"
         fi
-        local url="http://nightlies.dlang.org/$1/$basename.tar.xz"
+        local url="https://nightlies.dlang.org/$1/$basename.tar.xz"
 
         download_and_unpack "$url" "$path/$1" "$url.sig"
 
