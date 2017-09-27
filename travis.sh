@@ -24,6 +24,11 @@ do
     test "$compilerVersion" = "${compilers[$compiler]}"
     deactivate
 
+    source $(./script/install.sh $compiler --activate)
+    deactivate
+    source $(./script/install.sh $compiler -a)
+    deactivate
+
     ./script/install.sh uninstall $compiler
 done
 
@@ -60,6 +65,7 @@ fi
 
 # test in-place update
 bash script/install.sh update --path "$PWD/script"
+bash script/install.sh update -p "$PWD/script"
 # reset script
 git checkout -- script/install.sh
 
