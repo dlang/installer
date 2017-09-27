@@ -2,26 +2,37 @@
 
 set -uexo pipefail
 
-declare -A compilers=(
- ["dmd-2.069.2"]="DMD64 D Compiler v2.069.2"
- ["dmd-2.071.2"]="DMD64 D Compiler v2.071.2"
- ["dmd-2016-10-19"]="DMD64 D Compiler v2.073.0-master-878b882"
- ["dmd-master-2016-10-24"]="DMD64 D Compiler v2.073.0-master-ab9d712"
- ["ldc-1.4.0"]="LDC - the LLVM D compiler (1.4.0):"
- ["gdc-4.9.3"]="gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3"
- ["gdc-4.8.5"]="gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5"
+compilers=(
+    dmd-2.069.2
+    dmd-2.071.2
+    dmd-2016-10-19
+    dmd-master-2016-10-24
+    ldc-1.4.0
+    gdc-4.9.3
+    gdc-4.8.5
 )
 
-for compiler in "${!compilers[@]}"
+versions=(
+    'DMD64 D Compiler v2.069.2'
+    'DMD64 D Compiler v2.071.2'
+    'DMD64 D Compiler v2.073.0-master-878b882'
+    'DMD64 D Compiler v2.073.0-master-ab9d712'
+    'LDC - the LLVM D compiler (1.4.0):'
+    'gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3'
+    'gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5'
+)
+
+for idx in "${!compilers[@]}"
 do
+    compiler="${compilers[$idx]}"
     echo "Testing: $compiler"
     ./script/install.sh $compiler
 
     . ~/dlang/$compiler/activate
     compilerVersion=$($DC --version | head -n1)
-    test "$compilerVersion" = "${compilers[$compiler]}"
+    test "$compilerVersion" = "${versions[$idx]}"
     compilerVersion=$($DMD --version | head -n1)
-    test "$compilerVersion" = "${compilers[$compiler]}"
+    test "$compilerVersion" = "${versions[$idx]}"
     deactivate
 
     source $(./script/install.sh $compiler --activate)
