@@ -29,9 +29,9 @@ do
     ./script/install.sh $compiler
 
     . ~/dlang/$compiler/activate
-    compilerVersion=$($DC --version | head -n1)
+    compilerVersion=$($DC --version | sed -n 1p)
     test "$compilerVersion" = "${versions[$idx]}"
-    compilerVersion=$($DMD --version | head -n1)
+    compilerVersion=$($DMD --version | sed -n 1p)
     test "$compilerVersion" = "${versions[$idx]}"
     deactivate
 
