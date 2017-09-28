@@ -2,3 +2,4 @@ osx/dmd
 osx/dmg
 *.dmg
 .DS_Store
+coverage/
