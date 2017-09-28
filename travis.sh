@@ -8,8 +8,6 @@ compilers=(
     dmd-2016-10-19
     dmd-master-2016-10-24
     ldc-1.4.0
-    gdc-4.9.3
-    gdc-4.8.5
 )
 
 versions=(
@@ -18,9 +16,19 @@ versions=(
     'DMD64 D Compiler v2.073.0-master-878b882'
     'DMD64 D Compiler v2.073.0-master-ab9d712'
     'LDC - the LLVM D compiler (1.4.0):'
-    'gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3'
-    'gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5'
 )
+
+if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
+    compilers+=(
+        gdc-4.9.3
+        gdc-4.8.5
+    )
+
+    versions+=(
+        'gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3'
+        'gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5'
+    )
+fi
 
 for idx in "${!compilers[@]}"
 do
