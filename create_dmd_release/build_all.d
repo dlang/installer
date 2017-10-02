@@ -491,7 +491,9 @@ int main(string[] args)
     }
     else
     {
-        std.file.write(dmdVersion, gitTag);
+        immutable dmdVer = std.file.readText(dmdVersion).stripRight;
+        enforce(dmdVer == gitTag,
+                "Mismatch between dmd/VERSION: '"~dmdVer~"' and git tag: '"~gitTag~"'.");
     }
     applyPatches(gitTag, skipDocs, workDir~"/clones");
     prepareExtraBins(workDir);

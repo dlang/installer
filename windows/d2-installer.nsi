@@ -39,7 +39,7 @@
 ; Routinely Update
 ; ----------------
 ; Visual D
-!define VersionVisualD "0.44.2"
+!define VersionVisualD "0.45.1"
 
 ; DMC
 !define VersionDMC "857"
@@ -282,7 +282,7 @@ SectionGroup /e "D2"
     StrCmp $VCVer "" no_vc_detected write_vc_path
 
     no_vc_detected:
-      MessageBox MB_OK "Could not detect Visual Studio (2008-2015 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Visual Studio (2008-2017 are supported). No 64-bit support."
       goto finish_vc_path
 
     write_vc_path:

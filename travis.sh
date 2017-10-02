@@ -66,14 +66,14 @@ done
 cmds=(install uninstall list update)
 for cmd in "${cmds[@]}"
 do
-    ./script/install.sh --help | grep -qF "$cmd"
-    ./script/install.sh -h | grep -qF "$cmd"
-    ./script/install.sh "$cmd" --help | tr -d '\n' | grep -q "Usage\s*install.sh $cmd"
-    ./script/install.sh "$cmd" -h | tr -d '\n' | grep -q "Usage\s*install.sh $cmd"
+    ./script/install.sh --help | grep -F "$cmd" >/dev/null
+    ./script/install.sh -h | grep -F "$cmd" >/dev/null
+    ./script/install.sh "$cmd" --help | tr -d '\n' | grep -q "Usage\s*install.sh $cmd" >/dev/null
+    ./script/install.sh "$cmd" -h | tr -d '\n' | grep -q "Usage\s*install.sh $cmd" >/dev/null
 done
 # remove is alias for uninstall
-./script/install.sh remove --help | tr -d '\n' | grep -q "Usage\s*install.sh uninstall"
-./script/install.sh remove -h | tr -d '\n' | grep -q "Usage\s*install.sh uninstall"
+./script/install.sh remove --help | tr -d '\n' | grep "Usage\s*install.sh uninstall" >/dev/null
+./script/install.sh remove -h | tr -d '\n' | grep "Usage\s*install.sh uninstall" >/dev/null
 
 # check whether all installations have been uninstalled successfully
 if bash script/install.sh list
