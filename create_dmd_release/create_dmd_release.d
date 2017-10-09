@@ -517,8 +517,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             if (bits == Bits.bits32)
             {
                 changeDir(cloneDir~"/dlang.org");
-                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs all");
-                copyFile("d.tag", origDir~"/docs/d.tag");
+                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
+                copyFile("d-release.tag", origDir~"/docs/d.tag");
             }
         }
         else version (Windows)
