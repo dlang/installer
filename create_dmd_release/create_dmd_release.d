@@ -518,7 +518,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             {
                 changeDir(cloneDir~"/dlang.org");
                 run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
-                copyFile("d-release.tag", origDir~"/docs/d.tag");
+                copyFile("d-tags-release.json", cloneDir~"/tools/d-tags.json");
             }
         }
         else version (Windows)
@@ -541,8 +541,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd");
         run(makecmd~" ddemangle");
         run(makecmd~" dustmite");
-        // disabled dman due to https://issues.dlang.org/show_bug.cgi?id=17731
-        // if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
+        if (!skipDocs) run(makecmd~" dman");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
 
