@@ -15,13 +15,13 @@ log_() {
 }
 
 log() {
-    if [ "$verbosity" -gt 0 ]; then
+    if [ "$VERBOSITY" -gt 0 ]; then
         log_ "$@"
     fi
 }
 
 logV() {
-    if [ "$verbosity" -gt 1 ]; then
+    if [ "$VERBOSITY" -gt 1 ]; then
         log_ "$@"
     fi
 }
@@ -43,7 +43,7 @@ curl2() {
 }
 
 curl() {
-    if [ "$verbosity" -gt 0 ]; then
+    if [ "$VERBOSITY" -gt 0 ]; then
         curl2 -# "$@"
     else
         curl2 -sS "$@"
@@ -62,12 +62,16 @@ retry() {
     done
 }
 
-# url path
+# url, path, [gpg signature url to verify]
 download() {
-    local url=$1
-    local path=$2
+    local url path
+    url=$1
+    path=$2
 
     retry curl "$url" -o "$path"
+    if [ ! -z "${3:-}" ]; then
+        verify "$3" "$path"
+    fi
 }
 
 # url
@@ -83,21 +87,21 @@ fetch() {
 
 # ------------------------------------------------------------------------------
 
-command=
-compiler=dmd
-verbosity=1
-path=~/dlang
+COMMAND=
+COMPILER=dmd
+VERBOSITY=1
+ROOT=~/dlang
 case $(uname -s) in
-    Darwin) os=osx;;
-    Linux) os=linux;;
-    FreeBSD) os=freebsd;;
+    Darwin) OS=osx;;
+    Linux) OS=linux;;
+    FreeBSD) OS=freebsd;;
     *)
         fatal "Unsupported OS $(uname -s)"
         ;;
 esac
 case $(uname -m) in
-    x86_64|amd64) arch=x86_64; model=64;;
-    i*86) arch=x86; model=32;;
+    x86_64|amd64) ARCH=x86_64; MODEL=64;;
+    i*86) ARCH=x86; MODEL=32;;
     *)
         fatal "Unsupported Arch $(uname -m)"
         ;;
@@ -107,9 +111,9 @@ check_tools() {
     while [[ $# -gt 0 ]]; do
         if ! command -v "$1" &>/dev/null &&
                 # detect OSX' liblzma support in libarchive
-                ! { [ "$os-$1" == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
+                ! { [ "$OS-$1" == osx-xz ] && otool -L /usr/lib/libarchive.*.dylib | grep -qF liblzma; }; then
             local msg="Required tool $1 not found, please install it."
-            case $os-$1 in
+            case $OS-$1 in
                 osx-xz) msg="$msg http://macpkg.sourceforge.net";;
             esac
             fatal "$msg"
@@ -120,8 +124,8 @@ check_tools() {
 
 # ------------------------------------------------------------------------------
 
-mkdir -p "$path"
-TMP_ROOT=$(mktemp -d "$path/.installer_tmp_XXXXXX")
+mkdir -p "$ROOT"
+TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
 
 mkdtemp() {
     mktemp -d "$TMP_ROOT/XXXXXX"
@@ -158,7 +162,7 @@ If no argument are provided, the latest DMD compiler will be installed.
 }
 
 command_help() {
-    if [ -z "$1" ]; then
+    if [ -z "${1-}" ]; then
         usage
         return
     fi
@@ -255,11 +259,12 @@ parse_args() {
                 if [ -z "${2:-}" ]; then
                     fatal '-p|--path must be followed by a path.';
                 fi
-                path="$2"
+                shift
+                ROOT="$1"
                 ;;
 
             -v | --verbose)
-                verbosity=2
+                VERBOSITY=2
                 ;;
 
             -a | --activate)
@@ -267,29 +272,34 @@ parse_args() {
                 ;;
 
             use | install | uninstall | list | update)
-                command=$1
+                COMMAND=$1
                 ;;
 
             remove)
-                command=uninstall
+                COMMAND=uninstall
                 ;;
 
             dmd | dmd-* | gdc | gdc-* | ldc | ldc-*)
-                compiler=$1
+                COMPILER=$1
+                ;;
+
+            *)
+                usage
+                fatal "Unrecognized command-line parameter: $1"
                 ;;
         esac
         shift
     done
 
     if [ -n "$_help" ]; then
-        command_help $command
+        command_help $COMMAND
         exit 0
     fi
     if [ -n "$_activate" ]; then
-       if [ "${command:-install}" == "install" ]; then
-           verbosity=0
+       if [ "${COMMAND:-install}" == "install" ]; then
+           VERBOSITY=0
        else
-           command_help $command
+           command_help $COMMAND
            exit 1
        fi
     fi
@@ -302,13 +312,13 @@ run_command() {
     case $1 in
         install)
             check_tools curl
-            if [ ! -f "$path/install.sh" ]; then
+            if [ ! -f "$ROOT/install.sh" ]; then
                 install_dlang_installer
             fi
             if [ -z "${2:-}" ]; then
                 fatal "Missing compiler argument for $1 command.";
             fi
-            if [ -d "$path/$2" ]; then
+            if [ -d "$ROOT/$2" ]; then
                 log "$2 already installed";
             else
                 install_compiler "$2"
@@ -319,11 +329,11 @@ run_command() {
             if [ "$(basename "$SHELL")" = fish ]; then
                 local suffix=.fish
             fi
-            if [ "$verbosity" -eq 0 ]; then
-                echo "$path/$2/activate${suffix:-}"
+            if [ "$VERBOSITY" -eq 0 ]; then
+                echo "$ROOT/$2/activate${suffix:-}"
             else
                 log "
-Run \`source $path/$2/activate${suffix:-}\` in your shell to use $2.
+Run \`source $ROOT/$2/activate${suffix:-}\` in your shell to use $2.
 This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1.
 Run \`deactivate\` later on to restore your environment."
             fi
@@ -347,55 +357,60 @@ Run \`deactivate\` later on to restore your environment."
 }
 
 install_dlang_installer() {
-    mkdir -p "$path"
-    local url=https://dlang.org/install.sh
-    logV "Downloading $url"
-    download "$url" "$path/install.sh"
-    chmod +x "$path/install.sh"
-    log "The latest version of this script was installed as $path/install.sh.
+    local url tmp
+    url=https://dlang.org/install.sh
+    tmp=$(mkdtemp)
+
+    mkdir -p "$ROOT"
+    log "Downloading $url"
+    download "$url" "$tmp/install.sh" "$url.sig"
+    mv "$tmp/install.sh" "$ROOT/install.sh"
+    rmdir "$tmp"
+    chmod +x "$ROOT/install.sh"
+    log "The latest version of this script was installed as $ROOT/install.sh.
 It can be used it to install further D compilers.
-Run \`$path/install.sh --help\` for usage information.
+Run \`$ROOT/install.sh --help\` for usage information.
 "
 }
 
 resolve_latest() {
-    case $compiler in
+    case $COMPILER in
         dmd)
             local url=http://downloads.dlang.org/releases/LATEST
             logV "Determing latest dmd version ($url)."
-            compiler="dmd-$(fetch $url)"
+            COMPILER="dmd-$(fetch $url)"
             ;;
         dmd-beta)
             local url=http://downloads.dlang.org/pre-releases/LATEST
             logV "Determing latest dmd-beta version ($url)."
-            compiler="dmd-$(fetch $url)"
+            COMPILER="dmd-$(fetch $url)"
             ;;
         dmd-*) # nightly master or feature branch
             # dmd-nightly, dmd-master, dmd-branch
             # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
             #          dmd-2.068.0 or dmd-2.068.2-5
-            if [[ ! $compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
-               [[ ! $compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]
+            if [[ ! $COMPILER =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
+               [[ ! $COMPILER =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]
             then
-                local url=http://nightlies.dlang.org/$compiler/LATEST
-                logV "Determing latest $compiler version ($url)."
-                compiler="dmd-$(fetch "$url")"
+                local url=http://nightlies.dlang.org/$COMPILER/LATEST
+                logV "Determing latest $COMPILER version ($url)."
+                COMPILER="dmd-$(fetch "$url")"
             fi
             ;;
         ldc)
             local url=https://ldc-developers.github.io/LATEST
             logV "Determing latest ldc version ($url)."
-            compiler="ldc-$(fetch $url)"
+            COMPILER="ldc-$(fetch $url)"
             ;;
         ldc-beta)
             local url=https://ldc-developers.github.io/LATEST_BETA
             logV "Determining latest ldc-beta version ($url)."
-            compiler="ldc-$(fetch $url)"
+            COMPILER="ldc-$(fetch $url)"
             ;;
         gdc)
             local url=http://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
-            compiler="gdc-$(fetch $url)"
+            COMPILER="gdc-$(fetch $url)"
             ;;
     esac
 }
@@ -407,10 +422,10 @@ install_compiler() {
         local ver="2.${BASH_REMATCH[1]}"
 
         if [[ $ver > "2.064z" ]]; then
-            basename="$basename.$os"
+            basename="$basename.$OS"
             ver="$ver${BASH_REMATCH[2]}"
-            if [ $os = freebsd ]; then
-                basename="$basename-$model"
+            if [ $OS = freebsd ]; then
+                basename="$basename-$MODEL"
             fi
         fi
 
@@ -426,47 +441,47 @@ install_compiler() {
             local url="http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
         fi
 
-        download_and_unpack "$url" "$path/$1" "$url.sig"
+        download_and_unpack "$url" "$ROOT/$1" "$url.sig"
 
     # dmd-2015-11-20, dmd-feature_branch-2016-10-20
     elif [[ $1 =~ ^dmd(-(.*))?-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
         local branch=${BASH_REMATCH[2]:-master}
-        local basename="dmd.$branch.$os"
-        if [ $os = freebsd ]; then
-            basename="$basename-$model"
+        local basename="dmd.$branch.$OS"
+        if [ $OS = freebsd ]; then
+            basename="$basename-$MODEL"
         fi
         local url="http://nightlies.dlang.org/$1/$basename.tar.xz"
 
-        download_and_unpack "$url" "$path/$1" "$url.sig"
+        download_and_unpack "$url" "$ROOT/$1" "$url.sig"
 
     # ldc-0.12.1 or ldc-0.15.0-alpha1
     elif [[ $1 =~ ^ldc-([0-9]+\.[0-9]+\.[0-9]+(-.*)?)$ ]]; then
         local ver=${BASH_REMATCH[1]}
-        local url="https://github.com/ldc-developers/ldc/releases/download/v$ver/ldc2-$ver-$os-$arch.tar.xz"
-        if [ $os != linux ] && [ $os != osx ]; then
-            fatal "no ldc binaries available for $os"
+        local url="https://github.com/ldc-developers/ldc/releases/download/v$ver/ldc2-$ver-$OS-$ARCH.tar.xz"
+        if [ $OS != linux ] && [ $OS != osx ]; then
+            fatal "no ldc binaries available for $OS"
         fi
 
-        download_and_unpack "$url" "$path/$1"
+        download_and_unpack "$url" "$ROOT/$1"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
     elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
         local name=${BASH_REMATCH[0]}
-        if [ $os != linux ]; then
-            fatal "no gdc binaries available for $os"
+        if [ $OS != linux ]; then
+            fatal "no gdc binaries available for $OS"
         fi
-        case $arch in
+        case $ARCH in
             x86_64) local triplet=x86_64-linux-gnu;;
             x86) local triplet=i686-linux-gnu;;
         esac
         local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
 
-        download_and_unpack "$url" "$path/$1"
+        download_and_unpack "$url" "$ROOT/$1"
 
-        url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/38a3fb210666850201371070b88a1e617cf38931/dmd-script
+        url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/130f552ca43a77ee5c638fcc5a106f41dac607b9/dmd-script
         log "Downloading gdmd $url"
-        download "$url" "$path/$1/bin/gdmd"
-        chmod +x "$path/$1/bin/gdmd"
+        download "$url" "$ROOT/$1/bin/gdmd"
+        chmod +x "$ROOT/$1/bin/gdmd"
 
     else
         fatal "Unknown compiler '$1'"
@@ -498,10 +513,7 @@ download_and_unpack() {
     fi
 
     log "Downloading and unpacking $1"
-    download "$1" "$tmp/$name"
-    if [ ! -z "${3:-}" ]; then
-        verify "$3" "$tmp/$name"
-    fi
+    download "$1" "$tmp/$name" "${3:-}"
     if [[ $name =~ \.tar\.xz$ ]]; then
         tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
     else
@@ -518,11 +530,11 @@ verify() {
     if [ "$GPG" = x ]; then
         return
     fi
-    if [ ! -f "$path/d-keyring.gpg" ]; then
+    if [ ! -f "$ROOT/d-keyring.gpg" ]; then
         log "Downloading https://dlang.org/d-keyring.gpg"
-        download https://dlang.org/d-keyring.gpg "$path/d-keyring.gpg"
+        download https://dlang.org/d-keyring.gpg "$ROOT/d-keyring.gpg"
     fi
-    if ! $GPG -q --verify --keyring "$path/d-keyring.gpg" --no-default-keyring <(fetch "$1") "$2" 2>/dev/null; then
+    if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "$1") "$2" 2>/dev/null; then
         fatal "Invalid signature $1"
     fi
 }
@@ -531,9 +543,9 @@ write_env_vars() {
     case $1 in
         dmd*)
             local suffix
-            [ $os = osx ] || suffix=$model
-            local binpath=$os/bin$suffix
-            local libpath=$os/lib$suffix
+            [ $OS = osx ] || suffix=$MODEL
+            local binpath=$OS/bin$suffix
+            local libpath=$OS/lib$suffix
             local dc=dmd
             local dmd=dmd
             ;;
@@ -547,14 +559,19 @@ write_env_vars() {
 
         gdc*)
             local binpath=bin
-            local libpath=lib;
+            if [ -d "$ROOT/$1/lib$MODEL" ]; then
+                local libpath=lib$MODEL
+            else
+                # older gdc releases only ship 64-bit libs
+                local libpath=lib
+            fi
             local dc=gdc
             local dmd=gdmd
             ;;
     esac
 
-    logV "Writing environment variables to $path/$1/activate"
-    cat > "$path/$1/activate" <<EOF
+    logV "Writing environment variables to $ROOT/$1/activate"
+    cat > "$ROOT/$1/activate" <<EOF
 deactivate() {
     export PATH="\$_OLD_D_PATH"
     export LIBRARY_PATH="\$_OLD_D_LIBRARY_PATH"
@@ -575,16 +592,16 @@ _OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
 _OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
 _OLD_D_PS1="\${PS1:-}"
 
-export PATH="$path/dub:$path/$1/$binpath:\${PATH:-}"
-export LIBRARY_PATH="$path/$1/$libpath:\${LIBRARY_PATH:-}"
-export LD_LIBRARY_PATH="$path/$1/$libpath:\${LD_LIBRARY_PATH:-}"
+export PATH="$ROOT/dub:$ROOT/$1/$binpath:\${PATH:-}"
+export LIBRARY_PATH="$ROOT/$1/$libpath:\${LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$ROOT/$1/$libpath:\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
 export DC=$dc
 export PS1="($1)\${PS1:-}"
 EOF
 
-    logV "Writing environment variables to $path/$1/activate.fish"
-    cat > "$path/$1/activate.fish" <<EOF
+    logV "Writing environment variables to $ROOT/$1/activate.fish"
+    cat > "$ROOT/$1/activate.fish" <<EOF
 function deactivate
     set -gx PATH \$_OLD_D_PATH
     set -gx LIBRARY_PATH \$_OLD_D_LIBRARY_PATH
@@ -607,9 +624,9 @@ set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
 set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
 set -g _OLD_D_PS1 \$PS1
 
-set -gx PATH "$path/dub" "$path/$1/$binpath" \$PATH
-set -gx LIBRARY_PATH "$path/$1/$libpath" \$LIBRARY_PATH
-set -gx LD_LIBRARY_PATH "$path/$1/$libpath" \$LD_LIBRARY_PATH
+set -gx PATH "$ROOT/dub" "$ROOT/$1/$binpath" \$PATH
+set -gx LIBRARY_PATH "$ROOT/$1/$libpath" \$LIBRARY_PATH
+set -gx LD_LIBRARY_PATH "$ROOT/$1/$libpath" \$LD_LIBRARY_PATH
 set -gx DMD $dmd
 set -gx DC $dc
 functions -c fish_prompt _old_d_fish_prompt
@@ -620,17 +637,17 @@ EOF
 }
 
 uninstall_compiler() {
-    if [ ! -d "$path/$1" ]; then
-        fatal "$1 is not installed in $path"
+    if [ ! -d "$ROOT/$1" ]; then
+        fatal "$1 is not installed in $ROOT"
     fi
-    log "Removing $path/$1"
-    rm -rf "${path:?}/$1"
+    log "Removing $ROOT/$1"
+    rm -rf "${ROOT:?}/$1"
 }
 
 list_compilers() {
     check_tools find
-    if [ -d "$path" ]; then
-        find "$path" \
+    if [ -d "$ROOT" ]; then
+        find "$ROOT" \
              -mindepth 1 \
              -maxdepth 1 \
              -not -name 'dub*' \
@@ -643,36 +660,36 @@ list_compilers() {
 }
 
 install_dub() {
-    if [ $os != linux ] && [ $os != osx ]; then
-        log "no dub binaries available for $os"
+    if [ $OS != linux ] && [ $OS != osx ]; then
+        log "no dub binaries available for $OS"
         return
     fi
     local url=http://code.dlang.org/download/LATEST
     logV "Determing latest dub version ($url)."
     dub="dub-$(fetch $url)"
-    if [ -d "$path/$dub" ]; then
+    if [ -d "$ROOT/$dub" ]; then
         log "$dub already installed"
         return
     fi
     local tmp url
     tmp=$(mkdtemp)
-    url="http://code.dlang.org/files/$dub-$os-$arch.tar.gz"
+    url="http://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
 
     log "Downloading and unpacking $url"
     download "$url" "$tmp/dub.tar.gz"
     tar -C "$tmp" -zxf "$tmp/dub.tar.gz"
     logV "Removing old dub versions"
-    rm -rf "$path/dub" "$path/dub-*"
-    mv "$tmp" "$path/$dub"
-    logV "Linking $path/dub -> $path/$dub"
-    ln -s "$dub" "$path/dub"
+    rm -rf "$ROOT/dub" "$ROOT/dub-*"
+    mv "$tmp" "$ROOT/$dub"
+    logV "Linking $ROOT/dub -> $ROOT/$dub"
+    ln -s "$dub" "$ROOT/dub"
 }
 
 # ------------------------------------------------------------------------------
 
 parse_args "$@"
-resolve_latest "$compiler"
-run_command ${command:-install} "$compiler"
+resolve_latest "$COMPILER"
+run_command ${COMMAND:-install} "$COMPILER"
 }
 
 _ "$@"
