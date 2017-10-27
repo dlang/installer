@@ -456,6 +456,7 @@ int main(string[] args)
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.52.1-WinSSL-zlib-x86-x64.zip";
+    enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -465,6 +466,7 @@ int main(string[] args)
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
+    fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, true);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
@@ -480,6 +482,8 @@ int main(string[] args)
         copyFile(cacheDir~"/"~libC, workDir~"/windows/old-dmd/dmd2/windows/lib/"~libC);
         // Get libcurl for windows
         extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
+        // Get updated OMF import libraries
+        extract(cacheDir~"/"~omflibs, workDir~"/windows/old-dmd/dmd2/windows/lib/");
     }
 
     cloneSources(gitTag, dubTag, isBranch, skipDocs, workDir~"/clones");
