@@ -237,6 +237,7 @@ void prepareExtraBins(string workDir)
         "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
         "rpcrt4.lib", "shell32.lib", "snn.lib", "user32.lib", "uuid.lib",
         "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib", "curl.lib",
+        "update_libs.bat",
     ].addPrefix("lib/");
     auto winLibs64 = ["curl.lib"].addPrefix("lib64/");
     auto winFiles = chain(winBins, winBins64, winLibs, winLibs64).array();
