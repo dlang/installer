@@ -56,6 +56,8 @@
 !define DmcFilename "dmc-${VersionDMC}.exe"
 !define Dmd1Filename "dmd-${Version1}.exe"
 !define VS2013Filename "vs_community.exe"
+!define VCRedistx86Filename "vcredist_x86.exe"
+!define VCRedistx64Filename "vcredist_x64.exe"
 
 ; URLs
 !define BaseURL "http://downloads.dlang.org"
@@ -72,9 +74,22 @@
 
 !define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
 
+; see https://stackoverflow.com/questions/12206314/detect-if-visual-c-redistributable-for-visual-studio-2012-is-installed/14878248
+; selecting VC2010
+!define VCRedistx86Url "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe"
+!define VCRedistx64Url "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe"
+
+!define VCRedistx86RegKey "SOFTWARE\Classes\Installer\Products\1926E8D15D0BCE53481466615F760A7F"
+!define VCRedistx64RegKey "SOFTWARE\Classes\Installer\Products\1D5E3C0FEDA1E123187686FED06E995A"
+
+; ----------------
 ; Publishing Details
 !define DPublisher "Digital Mars"
+!ifdef Light
+!define DName "DMD-Light"
+!else
 !define DName "DMD"
+!endif
 !define ARP "Software\Microsoft\Windows\CurrentVersion\Uninstall\${DName}"
 
 ; Version2 Fallback
@@ -92,10 +107,11 @@
 
 !include "MUI.nsh"
 !include "EnvVarUpdate.nsh"
-!include "ReplaceInFile.nsh"
 !include "FileFunc.nsh"
 !include "TextFunc.nsh"
-
+!ifndef Light
+!include "ReplaceInFile.nsh"
+!endif
 
 ;------------------------------------------------------------
 ; Variables
@@ -120,7 +136,11 @@ Var UCRTVersion
 Name "D Programming Language"
 
 ; Name of the output file of the installer
+!ifdef Light
+!define InstallerFilename "dmd-light-${Version2}.exe"
+!else
 !define InstallerFilename "dmd-${Version2}.exe"
+!endif
 OutFile ${InstallerFilename}
 
 ; Where the program will be installed
@@ -244,8 +264,20 @@ SectionGroup /e "D2"
     CreateDirectory "$INSTDIR"
 
     ; Embed the directory specified
+  !ifdef Light
+    SetOutPath $INSTDIR\dmd2
+    File /r ${EmbedD2Dir}\windows
+    SetOutPath $INSTDIR\dmd2\src\druntime
+    File /r ${EmbedD2Dir}\src\druntime\import
+    SetOutPath $INSTDIR\dmd2\src
+    File /r ${EmbedD2Dir}\src\phobos
+    SetOutPath $INSTDIR\dmd2\windows\bin
+    ; replace sc.ini with the shrinked down version
+    File /oname=sc.ini ${EmbedD2Dir}\windows\bin\sc-light.ini
+  !else
     File /r ${EmbedD2Dir}
-
+  !endif
+  
     ; Create 32-bit command line batch file
     FileOpen $0 "$INSTDIR\dmd2vars32.bat" w
     FileWrite $0 "@echo.$\n"
@@ -279,6 +311,7 @@ SectionGroup /e "D2"
     WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
     WriteUninstaller "uninstall.exe"
 
+  !ifndef Light
     StrCmp $VCVer "" no_vc_detected write_vc_path
 
     no_vc_detected:
@@ -309,6 +342,7 @@ SectionGroup /e "D2"
       !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UCRTVersion=" "UCRTVersion=$UCRTVersion"
     no_ucrt_detected:
       ClearErrors
+  !endif
 
   SectionEnd
 
@@ -321,8 +355,10 @@ SectionGroup /e "D2"
   Section "Start Menu" StartMenuShortcuts
     CreateDirectory "$SMPROGRAMS\D"
 
+  !ifndef Light
     CreateShortCut "$SMPROGRAMS\D\D2 HTML Documentation.lnk" "$INSTDIR\dmd2\html\d\index.html"
     CreateShortCut "$SMPROGRAMS\D\D2 Documentation.lnk" "$INSTDIR\dmd2\windows\bin\d.chm"
+  !endif
     CreateShortCut "$SMPROGRAMS\D\D2 32-bit Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars32.bat""' "" "" SW_SHOWNORMAL "" "Open D2 32-bit Command Prompt"
     CreateShortCut "$SMPROGRAMS\D\D2 64-bit Command Prompt.lnk" '%comspec%' '/k ""$INSTDIR\dmd2vars64.bat""' "" "" SW_SHOWNORMAL "" "Open D2 64-bit Command Prompt"
   SectionEnd
@@ -330,6 +366,7 @@ SectionGroupEnd
 
 
 SectionGroup /e "Extras"
+!ifndef Light
   Section /o "Download Visual D" VisualDDownload
     !insertmacro DownloadAndRun ${VisualDFilename} ${VisualDUrl} ""
   SectionEnd
@@ -343,12 +380,42 @@ SectionGroup /e "Extras"
   Section /o "Download D1" Dmd1Download
     !insertmacro DownloadAndRun ${Dmd1Filename} ${Dmd1Url} ${Dmd1AltUrl}
   SectionEnd
+!else
+  Section "VC2010 x86 Redistributable Runtime" VCRedistributable86
+    !insertmacro DownloadAndRun ${VCRedistx86Filename} ${VCRedistx86Url} ""
+  SectionEnd
+
+
+  Section "VC2010 x64 Redistributable Runtime" VCRedistributable64
+    !insertmacro DownloadAndRun ${VCRedistx64Filename} ${VCRedistx64Url} ""
+  SectionEnd
+!endif
 SectionGroupEnd
 
 ;--------------------------------------------------------
 ; Helper functions
 ;--------------------------------------------------------
 
+!ifdef Light
+Function DetectVCRedistributable
+
+    SetRegView 64 ; look at the 64-bit registry hive if available
+    ClearErrors
+    ReadRegStr $0 HKLM "${VCRedistx86RegKey}" "ProductName"
+    IfErrors vcredistx86_notinstalled
+        SectionSetFlags ${VCRedistributable86} 16 ; unselected and read only
+    vcredistx86_notinstalled:
+
+    ClearErrors
+    ReadRegStr $0 HKLM "${VCRedistx64RegKey}" "ProductName"
+    IfErrors vcredistx64_notinstalled
+        SectionSetFlags ${VCRedistributable64} 16 ; unselected and read only
+    vcredistx64_notinstalled:
+    SetRegView 32 ; retore default
+
+FunctionEnd
+
+!else
 Function DetectVSAndSDK
     ClearErrors
 
@@ -431,6 +498,7 @@ Function DetectVSAndSDK
     no_sdk:
 
 FunctionEnd
+!endif
 
 ;--------------------------------------------------------
 ; Installer functions
@@ -502,6 +570,9 @@ Function .onInit
 
   done_uninst:
 
+!ifdef Light
+  Call DetectVCRedistributable
+!else
   Call DetectVSAndSDK
   StrCmp $VCVer "" ask_vs
   StrCmp $WinSDKPath "" ask_vs
@@ -517,6 +588,7 @@ Function .onInit
     Call DetectVSAndSDK
 
   done_vs:
+!endif
 
 FunctionEnd
 
@@ -545,8 +617,10 @@ Section "Uninstall"
   Delete $INSTDIR\dmd2vars64.bat
 
   ; Remove shortcuts
+!ifndef Light
   Delete "$SMPROGRAMS\D\D2 HTML Documentation.lnk"
   Delete "$SMPROGRAMS\D\D2 Documentation.lnk"
+!endif
   Delete "$SMPROGRAMS\D\D2 32-bit Command Prompt.lnk"
   Delete "$SMPROGRAMS\D\D2 64-bit Command Prompt.lnk"
   RMDir "$SMPROGRAMS\D"

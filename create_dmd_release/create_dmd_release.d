@@ -546,6 +546,18 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
 
+        version(Windows)
+        {
+            if(do64Bit)
+            {
+                changeDir(cloneDir~"/tools/winsdk");
+                string w32api_lib = "../../mingw/w32api/lib";
+                string msvcrt_def_in = "../../mingw/mingwrt/msvcrt-xref/msvcrt.def.in";
+                run("%VCDIR%\\vcvarsall x64 && "~hostDMD~" -run buildsdk.d x64 "~w32api_lib~" lib64 "~msvcrt_def_in);
+                run("%VCDIR%\\vcvarsall x86 && "~hostDMD~" -run buildsdk.d x86 "~w32api_lib~" lib32mscoff "~msvcrt_def_in);
+            }
+        }
+
         // build dub with stable (host) compiler, b/c it breaks
         // too easily with the latest compiler, e.g. for nightlies
         info("Building Dub "~bitsDisplay);
@@ -631,6 +643,9 @@ void createRelease(string branch)
             copyFile(cloneDir~"/phobos/phobos64.lib", osDir~"/lib64/phobos64.lib");
             copyFile(cloneDir~"/druntime/lib/gcstub32mscoff.obj", osDir~"/lib32mscoff/gcstub32mscoff.obj");
             copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
+
+            copyDir(cloneDir~"/tools/winsdk/lib64", osDir~"/lib64/sdk");
+            copyDir(cloneDir~"/tools/winsdk/lib32mscoff", osDir~"/lib32mscoff/sdk");
         }
     }
     else
