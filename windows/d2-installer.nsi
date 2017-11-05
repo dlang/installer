@@ -267,8 +267,10 @@ SectionGroup /e "D2"
   !ifdef Light
     SetOutPath $INSTDIR\dmd2
     File /r ${EmbedD2Dir}\windows
+    File    ${EmbedD2Dir}\license.txt
     SetOutPath $INSTDIR\dmd2\src\druntime
     File /r ${EmbedD2Dir}\src\druntime\import
+    File    ${EmbedD2Dir}\src\druntime\license.txt
     SetOutPath $INSTDIR\dmd2\src
     File /r ${EmbedD2Dir}\src\phobos
     SetOutPath $INSTDIR\dmd2\windows\bin
