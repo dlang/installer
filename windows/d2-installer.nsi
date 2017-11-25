@@ -144,7 +144,7 @@ SetCompressor /SOLID lzma
   System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d_compiler_installer") ?e'
   Pop $R0
   StrCmp $R0 0 +3
-    MessageBox MB_OK|MB_ICONSTOP "An instance of DMD installer is already running"
+    MessageBox /SD IDOK MB_OK|MB_ICONSTOP "An instance of DMD installer is already running"
     Abort
 !macroend
 
@@ -453,7 +453,7 @@ Function .onInit
   StrCmp $R5 "" done_uninst_prev
   MessageBox MB_OKCANCEL|MB_ICONQUESTION \
   "A previous DMD is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
-  IDOK +2
+  /SD IDOK IDOK +2
   Abort
   ClearErrors
   ; Run uninstaller fron installed directory
@@ -480,7 +480,7 @@ Function .onInit
   ReadRegStr $J HKLM "${ARP}" "DisplayVersion"
   MessageBox MB_OKCANCEL|MB_ICONQUESTION \
   "$I v$J is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
-  IDOK uninst
+  /SD IDOK IDOK uninst
   Abort
 
   uninst:
@@ -510,7 +510,7 @@ Function .onInit
   ask_vs:
     MessageBox MB_YESNO|MB_ICONQUESTION \
     "For 64-bit support MSVC and the Windows SDK are needed but no compatible versions were found. Do you want to install VS2013?" \
-    IDYES install_vs IDNO done_vs
+    /SD IDNO IDYES install_vs IDNO done_vs
 
   install_vs:
     !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
