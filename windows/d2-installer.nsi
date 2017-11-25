@@ -144,7 +144,7 @@ SetCompressor /SOLID lzma
   System::Call 'kernel32::CreateMutexA(i 0, i 0, t "digital_mars_d_compiler_installer") ?e'
   Pop $R0
   StrCmp $R0 0 +3
-    MessageBox /SD IDOK MB_OK|MB_ICONSTOP "An instance of DMD installer is already running"
+    MessageBox MB_OK|MB_ICONSTOP "An instance of DMD installer is already running" /SD IDOK
     Abort
 !macroend
 
@@ -160,7 +160,7 @@ SetCompressor /SOLID lzma
   !endif
 
   ; failed
-  MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download ${Filename}$\r$\n$\r$\n${Url}"
+  MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download ${Filename}$\r$\n$\r$\n${Url}" /SD IDOK
 
   Goto dandr_done
 
@@ -282,7 +282,7 @@ SectionGroup /e "D2"
     StrCmp $VCVer "" no_vc_detected write_vc_path
 
     no_vc_detected:
-      MessageBox MB_OK "Could not detect Visual Studio (2008-2017 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Visual Studio (2008-2017 are supported). No 64-bit support." /SD IDOK
       goto finish_vc_path
 
     write_vc_path:
@@ -295,7 +295,7 @@ SectionGroup /e "D2"
     StrCmp $WinSDKPath "" no_sdk_detected write_sdk_path
 
     no_sdk_detected:
-      MessageBox MB_OK "Could not detect Windows SDK (6.0A-10.0 are supported). No 64-bit support."
+      MessageBox MB_OK "Could not detect Windows SDK (6.0A-10.0 are supported). No 64-bit support." /SD IDOK
       goto finish_sdk_path
 
     write_sdk_path:
@@ -461,12 +461,13 @@ Function .onInit
   ; Exit if uninstaller return an error
   IfErrors 0 +3
     MessageBox MB_OK|MB_ICONSTOP \
-    "An error occurred when removing DMD$\n$\nRun '${InstallerFilename} /f' to force install ${DName} ${Version2}"
+    "An error occurred when removing DMD$\n$\nRun '${InstallerFilename} /f' to force install ${DName} ${Version2}" \
+    /SD IDOK
     Abort
   ; Remove in background the remaining uninstaller program itself
   Sleep 1000
   Exec '$R5 /S'
-  ; MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled"
+  ; MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled" /SD IDOK
 
   done_uninst_prev:
   ; End of removing previous dmd installation section
@@ -492,7 +493,8 @@ Function .onInit
     ; Exit if uninstaller return an error
     IfErrors 0 +3
       MessageBox MB_OK|MB_ICONSTOP \
-      "An error occurred when removing $I v$J$\n$\nRun '${InstallerFilename} /f' to force install ${DName} ${Version2}"
+      "An error occurred when removing $I v$J$\n$\nRun '${InstallerFilename} /f' to force install ${DName} ${Version2}" \
+      /SD IDOK
       Abort
     ; Exit if uninstaller is cancelled by user
     StrCmp $K 0 +2
