@@ -124,17 +124,19 @@ check_tools() {
 
 # ------------------------------------------------------------------------------
 
-mkdir -p "$ROOT"
-TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
+init() {
+    mkdir -p "$ROOT"
+    TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
 
-mkdtemp() {
-    mktemp -d "$TMP_ROOT/XXXXXX"
-}
+    mkdtemp() {
+        mktemp -d "$TMP_ROOT/XXXXXX"
+    }
 
-cleanup() {
-    rm -rf "$TMP_ROOT";
+    cleanup() {
+        rm -rf "$TMP_ROOT";
+    }
+    trap cleanup EXIT
 }
-trap cleanup EXIT
 
 # ------------------------------------------------------------------------------
 
@@ -155,9 +157,28 @@ Options
   -h --help     Show this help
   -p --path     Install location (default ~/dlang)
   -v --verbose  Verbose output
+  --config      List all available configuration parameters
 
 Run "install.sh <command> --help to get help for a specific command.
 If no argument are provided, the latest DMD compiler will be installed.
+'
+}
+
+command_config() {
+    log 'Configuration
+
+~/.config/dlang/installer.cfg can be used to store permanent configuration settings.
+Alternatively a global configuration file can be used (/etc/dlang/installer.cfg).
+The parameters are listed in line-wise a <param>=<value> format.
+Lines starting with # are ignored.
+
+Example:
+
+ROOT=~/.dlang
+
+Available options:
+
+    ROOT    Install location (default ~/dlang)
 '
 }
 
@@ -281,6 +302,11 @@ parse_args() {
 
             dmd | dmd-* | gdc | gdc-* | ldc | ldc-*)
                 COMPILER=$1
+                ;;
+
+            --config)
+                command_config
+                exit 0
                 ;;
 
             *)
@@ -686,8 +712,47 @@ install_dub() {
 }
 
 # ------------------------------------------------------------------------------
+# Read user configuration
+# ------------------------------------------------------------------------------
+
+local config_file config_files
+config_files=(
+    "${XDG_CONFIG_HOME:-$HOME/.config/}/dlang/installer.cfg" \
+    "${XDG_CONFIG_DIRS:-/etc}/dlang/installer.cfg" \
+    "$HOME/Library/Application Support/dlang/installer.cfg" \
+)
+config_file=""
+for file in "${config_files[@]}" ; do
+    if [ -e "${file}" ] ; then
+        config_file="${file}"
+    fi
+done
+if [ -n "${config_file}" ] ; then
+    # Use a whitelist of allowed parameters
+    allowedParams=("ROOT")
+    containsValue() {
+      local e value="$1"
+      shift
+      for e; do [[ "${e}" == "${value}" ]] && return 0; done
+      return 1
+    }
+    IFS="="
+    # Ignore empty lines or lines with comments
+    grep -vE "^(#|$)" "${config_file}" | while read -r param value ; do
+        if containsValue "${param}" "${allowedParams[@]}" ; then
+            log "${param}: ${value//\"/}"
+            declare -a "${param}=${value//\"/}"
+        else
+            log "${param} is invalid. Please check."
+        fi
+    done
+    ROOT="${ROOT/#\~/$HOME}"
+fi
+
+# ------------------------------------------------------------------------------
 
 parse_args "$@"
+init
 resolve_latest "$COMPILER"
 run_command ${COMMAND:-install} "$COMPILER"
 }
