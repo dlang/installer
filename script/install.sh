@@ -62,26 +62,43 @@ retry() {
         fi
     done
 }
-
 # url, path, [gpg signature url to verify]
+# url and the gpg signature can be an array of urls
 download() {
-    local url path
-    url=$1
-    path=$2
+    local mirrors path
+    mirrors=($1)
+    path="$2"
 
-    retry curl "$url" -o "$path"
+    try_all_mirrors() {
+        for i in "${!mirrors[@]}" ; do
+            if [ "$i" -gt 0 ] ; then
+                log "Falling back to mirror: ${mirrors[$i]}"
+            fi
+            if curl "${mirrors[$i]}" -o "$path" ; then
+                break
+            fi
+        done
+    }
+    retry try_all_mirrors
     if [ ! -z "${3:-}" ]; then
         verify "$3" "$path"
     fi
 }
 
-# url
+# url (can be an array of urls)
 fetch() {
-    local url path
-    url=$1
+    local mirrors path
+    mirrors=($1)
     path=$(mktemp "$TMP_ROOT/XXXXXX")
 
-    retry curl2 -sS "$url" -o "$path"
+    try_all_mirrors() {
+        for mirror in "${mirrors[@]}" ; do
+            if curl2 -sS "$mirror" -o "$path" ; then
+                break
+            fi
+        done
+    }
+    retry try_all_mirrors
     cat "$path"
     rm "$path"
 }
@@ -371,13 +388,17 @@ Run \`deactivate\` later on to restore your environment."
 }
 
 install_dlang_installer() {
-    local url tmp
-    url=https://dlang.org/install.sh
+    local tmp mirrors
     tmp=$(mkdtemp)
+    mirrors=(
+        "https://dlang.org/install.sh"
+        "https://downloads.dlang.org/other/install.sh"
+        "https://nightlies.dlang.org/install.sh"
+    )
 
     mkdir -p "$ROOT"
-    log "Downloading $url"
-    download "$url" "$tmp/install.sh" "$url.sig"
+    log "Downloading ${mirrors[0]}"
+    download "${mirrors[*]}" "$tmp/install.sh" "${mirrors[*]/%/.sig}"
     mv "$tmp/install.sh" "$ROOT/install.sh"
     rmdir "$tmp"
     chmod +x "$ROOT/install.sh"
@@ -390,14 +411,20 @@ Run \`$ROOT/install.sh --help\` for usage information.
 resolve_latest() {
     case $COMPILER in
         dmd)
-            local url=http://downloads.dlang.org/releases/LATEST
-            logV "Determing latest dmd version ($url)."
-            COMPILER="dmd-$(fetch $url)"
+            local mirrors=(
+                "http://downloads.dlang.org/releases/LATEST"
+                "http://ftp.digitalmars.com/LATEST"
+            )
+            logV "Determing latest dmd version (${mirrors[0]})."
+            COMPILER="dmd-$(fetch "${mirrors[*]}")"
             ;;
         dmd-beta)
-            local url=http://downloads.dlang.org/pre-releases/LATEST
-            logV "Determing latest dmd-beta version ($url)."
-            COMPILER="dmd-$(fetch $url)"
+            local mirrors=(
+                "http://downloads.dlang.org/pre-releases/LATEST"
+                "http://ftp.digitalmars.com/LATEST_BETA"
+            )
+            logV "Determing latest dmd-beta version (${mirrors[0]})."
+            COMPILER="dmd-$(fetch "${mirrors[*]}")"
             ;;
         dmd-*) # nightly master or feature branch
             # dmd-nightly, dmd-master, dmd-branch
@@ -449,13 +476,20 @@ install_compiler() {
             local arch="zip"
         fi
 
+        local mirrors
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
-            local url="http://downloads.dlang.org/pre-releases/2.x/$ver/$basename.$arch"
+            mirrors=(
+                "http://downloads.dlang.org/pre-releases/2.x/$ver/$basename.$arch"
+                "http://ftp.digitalmars.com/$basename.$arch"
+            )
         else
-            local url="http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
+            mirrors=(
+                "http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
+                "http://ftp.digitalmars.com/$basename.$arch"
+            )
         fi
 
-        download_and_unpack "$url" "$ROOT/$1" "$url.sig"
+        download_and_unpack "${mirrors[*]}" "$ROOT/$1" "${mirrors[*]/%/.sig}"
 
     # dmd-2015-11-20, dmd-feature_branch-2016-10-20
     elif [[ $1 =~ ^dmd(-(.*))?-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
@@ -540,13 +574,17 @@ download_and_unpack() {
 }
 
 verify() {
+    local keyring_mirrors=(
+        "https://dlang.org/d-keyring.gpg"
+        "https://github.com/dlang/dlang.org/raw/846269e913114fd77af0cc1aff67269046b70db8/d-keyring.gpg"
+    )
     : "${GPG:=$(find_gpg)}"
     if [ "$GPG" = x ]; then
         return
     fi
     if [ ! -f "$ROOT/d-keyring.gpg" ]; then
         log "Downloading https://dlang.org/d-keyring.gpg"
-        download https://dlang.org/d-keyring.gpg "$ROOT/d-keyring.gpg"
+        download "${keyring_mirrors[*]}" "$ROOT/d-keyring.gpg"
     fi
     if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "$1") "$2" 2>/dev/null; then
         fatal "Invalid signature $1"
