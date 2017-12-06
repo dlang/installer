@@ -1,0 +1,5 @@
+name "installer"
+description "D install scripts"
+authors "D Language Foundation"
+copyright "Copyright © 2017, D Language Foundation"
+license "BSD-1.0"

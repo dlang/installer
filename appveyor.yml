@@ -1,0 +1,62 @@
+image:
+- Visual Studio 2015
+- Visual Studio 2017
+platform: x64
+environment:
+ matrix:
+  - DC: dmd
+    DVersion: nightly
+    arch: x64
+  #- DC: dmd
+    #DVersion: nightly
+    #arch: x86
+  #- DC: dmd
+    #DVersion: beta
+    #arch: x64
+  #- DC: dmd
+    #DVersion: beta
+    #arch: x86
+  #- DC: dmd
+    #DVersion: stable
+    #arch: x64
+  #- DC: dmd
+    #DVersion: stable
+    #arch: x86
+  #- DC: dmd
+    #DVersion: 2.077.1
+    #arch: x64
+  #- DC: dmd
+    #DVersion: 2.077.1
+    #arch: x86
+  #- DC: ldc
+    #DVersion: beta
+    #arch: x86
+  #- DC: ldc
+    #DVersion: beta
+    #arch: x64
+  #- DC: ldc
+    #DVersion: stable
+    #arch: x86
+  #- DC: ldc
+    #DVersion: stable
+    #arch: x64
+  #- DC: ldc
+    #DVersion: 1.6.0
+    #arch: x86
+  #- DC: ldc
+    #DVersion: 1.6.0
+    #arch: x64
+
+skip_tags: false
+build_script:
+ - ps: script\install.ps1
+ - if "%APPVEYOR_BUILD_WORKER_IMAGE:~-4%" == "2017" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" -arch=%compilersetupargs%
+ - if "%APPVEYOR_BUILD_WORKER_IMAGE:~-4%" == "2015" call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" %compilersetupargs%
+
+test_script:
+ - echo %PLATFORM%
+ - echo %Darch%
+ - echo %DC%
+ - echo %PATH%
+ - '%DC% --version'
+ - dub --root=test\minimal_dub --arch=%Darch% --compiler=%DC%
