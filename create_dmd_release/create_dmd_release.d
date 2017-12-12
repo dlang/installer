@@ -481,7 +481,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     changeDir(cloneDir~"/druntime");
     run(makecmd~pic~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
-        file => !file.baseName.startsWith("gcstub", "minit"));
+        file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
@@ -501,7 +501,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         changeDir(cloneDir~"/druntime");
         run(makecmd~msvcEnv~" druntime32mscoff");
         removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
-                    file => !file.baseName.startsWith("gcstub", "minit"));
+                    file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
         changeDir(cloneDir~"/phobos");
@@ -621,15 +621,12 @@ void createRelease(string branch)
     {
         if(do32Bit)
         {
-            copyFile(cloneDir~"/druntime/lib/gcstub.obj", osDir~"/lib/gcstub.obj");
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
             copyDir(cloneDir~"/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {
-            copyFile(cloneDir~"/druntime/lib/gcstub64.obj", osDir~"/lib64/gcstub64.obj");
             copyFile(cloneDir~"/phobos/phobos64.lib", osDir~"/lib64/phobos64.lib");
-            copyFile(cloneDir~"/druntime/lib/gcstub32mscoff.obj", osDir~"/lib32mscoff/gcstub32mscoff.obj");
             copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
         }
     }
