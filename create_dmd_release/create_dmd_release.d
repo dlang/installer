@@ -518,7 +518,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             {
                 changeDir(cloneDir~"/dlang.org");
                 run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
-                copyFile("d-tags-release.json", cloneDir~"/tools/d-tags.json");
+                // put into docs/ folder which gets copied to all other platforms
+                copyFile("d-tags-release.json", origDir~"/docs/d-tags-release.json");
             }
         }
         else version (Windows)
@@ -541,6 +542,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd");
         run(makecmd~" ddemangle");
         run(makecmd~" dustmite");
+        // use tags built with linux docs
+        copyFile(origDir~"/docs/d-tags-release.json", cloneDir~"/tools/d-tags.json");
         if (!skipDocs) run(makecmd~" dman");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
