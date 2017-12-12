@@ -3,7 +3,6 @@ Windows Libraries
 -----------------
 phobos.lib	D runtime library
 snn.lib		Digital Mars C/C++ runtime library
-gcstub.obj
 
 Windows System API Libraries
 ----------------------------
