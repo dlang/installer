@@ -396,6 +396,8 @@ bool branchExists(string gitRepo, string branch)
 void applyPatches(string gitTag, bool skipDocs, string tgtDir)
 {
     auto fmt = "git -C "~tgtDir~"/%1$s apply -3 < patches/%1$s.patch";
+    if (!"patches".exists)
+        return;
     foreach (de; dirEntries("patches", "*.patch", SpanMode.shallow))
     {
         auto proj = de.baseName.stripExtension;
