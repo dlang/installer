@@ -418,13 +418,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     version (Windows)
     {
         auto jobs = "";
-        auto dmdEnv = ` DMD=..\dmd\src\dmd`;
+        auto dmdEnv = ` DMD=..\dmd\generated\`~osDirName~`\release\32\dmd`~exe;
         enum dmdConf = "sc.ini";
     }
     else
     {
         auto jobs = " -j4";
-        auto dmdEnv = " DMD=../dmd/src/dmd";
+        auto dmdEnv = " DMD=../dmd/generated/"~osDirName~"/release/"~bitsStr~"/dmd"~exe;
         enum dmdConf = "dmd.conf";
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD;
@@ -442,32 +442,26 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     if(build64BitTools || bits == Bits.bits32)
     {
         info("Building DMD "~bitsDisplay);
-        removeFile(cloneDir~"/dmd/src/"~dmdConf);
         changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" dmd");
-        copyFile(cloneDir~"/dmd/src/dmd"~exe, cloneDir~"/dmd/src/dmd"~bitsStr~exe);
-        removeFiles(cloneDir~"/dmd/src", "*{"~obj~","~lib~"}", SpanMode.depth);
-    }
+        version (Windows)
+            run(makecmd~" dmd");
+        else
+            run(makecmd);
 
-    // Generate temporary sc.ini/dmd.conf
-    version(Windows)
-    {
-        std.file.write(cloneDir~"/dmd/src/sc.ini", (`
-            [Environment]
-            LIB="%@P%\..\..\phobos" "`~customExtrasDir~`\dmd2\windows\lib" "%@P%\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib"
-            DFLAGS="-I%@P%\..\..\phobos" "-I%@P%\..\..\druntime\import"
-        `).outdent().strip());
+        // Generate temporary sc.ini
+        version(Windows)
+        {
+            std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
+                [Environment]
+                LIB="%@P%\..\..\..\..\..\phobos" "`~customExtrasDir~`\dmd2\windows\lib" "%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib"
+                DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
+            `).outdent().strip());
+        }
     }
-    else version(Posix)
-    {
-        run(makecmd~" dmd.conf");
-    }
-    else
-        static assert(false, "Unsupported platform");
 
     // Copy OPTLINK to same directory as the sc.ini we want it to read
     version(Windows)
-        copyFile(customExtrasDir~"/dmd2/windows/bin/link.exe", cloneDir~"/dmd/src/link.exe");
+        copyFile(customExtrasDir~"/dmd2/windows/bin/link.exe", cloneDir~"/dmd/generated/"~osDirName~"/release/"~bitsStr~"/link.exe");
 
     if(dmdOnly)
         return;
@@ -481,7 +475,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     changeDir(cloneDir~"/druntime");
     run(makecmd~pic~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
-        file => !file.baseName.startsWith("gcstub", "minit"));
+        file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
@@ -501,7 +495,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         changeDir(cloneDir~"/druntime");
         run(makecmd~msvcEnv~" druntime32mscoff");
         removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
-                    file => !file.baseName.startsWith("gcstub", "minit"));
+                    file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
         changeDir(cloneDir~"/phobos");
@@ -517,8 +511,9 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             if (bits == Bits.bits32)
             {
                 changeDir(cloneDir~"/dlang.org");
-                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs all");
-                copyFile("d.tag", origDir~"/docs/d.tag");
+                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
+                // put into docs/ folder which gets copied to all other platforms
+                copyFile("d-tags-release.json", origDir~"/docs/d-tags-release.json");
             }
         }
         else version (Windows)
@@ -541,8 +536,12 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd");
         run(makecmd~" ddemangle");
         run(makecmd~" dustmite");
-        // disabled dman due to https://issues.dlang.org/show_bug.cgi?id=17731
-        // if (!skipDocs) run(makecmd~" dman DOC="~origDir~"/docs");
+        if (!skipDocs)
+        {
+            // use tags built with linux docs
+            copyFile(origDir~"/docs/d-tags-release.json", cloneDir~"/tools/d-tags.json");
+            run(makecmd~" dman");
+        }
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
 
@@ -621,15 +620,12 @@ void createRelease(string branch)
     {
         if(do32Bit)
         {
-            copyFile(cloneDir~"/druntime/lib/gcstub.obj", osDir~"/lib/gcstub.obj");
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
             copyDir(cloneDir~"/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {
-            copyFile(cloneDir~"/druntime/lib/gcstub64.obj", osDir~"/lib64/gcstub64.obj");
             copyFile(cloneDir~"/phobos/phobos64.lib", osDir~"/lib64/phobos64.lib");
-            copyFile(cloneDir~"/druntime/lib/gcstub32mscoff.obj", osDir~"/lib32mscoff/gcstub32mscoff.obj");
             copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
         }
     }
@@ -658,7 +654,7 @@ void createRelease(string branch)
     {
         if(do32Bit)
         {
-            copyFile(cloneDir~"/dmd/src/dmd32"~exe, releaseBin32Dir~"/dmd"~exe);
+            copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/32/dmd"~exe, releaseBin32Dir~"/dmd"~exe);
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/32", releaseBin32Dir, file => !file.endsWith(obj));
             copyFile(cloneDir~"/dub/bin/dub32"~exe, releaseBin32Dir~"/dub"~exe);
         }
@@ -669,7 +665,7 @@ void createRelease(string branch)
     {
         if(do64Bit)
         {
-            copyFile(cloneDir~"/dmd/src/dmd64"~exe, releaseBin64Dir~"/dmd"~exe);
+            copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
             copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         }

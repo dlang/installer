@@ -98,7 +98,7 @@ fi
 
 
 # assign variables
-MAINTAINER="Jordi Sayol <g.sayol@yahoo.es>"
+MAINTAINER="Jordi Sayol <g.sayol@gmail.com>"
 VERSION=${1:2}
 MAJOR=0
 MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION)

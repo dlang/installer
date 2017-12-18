@@ -29,7 +29,7 @@ enum freebsd_64 = Platform(OS.freebsd, Model._64);
 /// Name: create_dmd_release-linux
 /// VagrantBox.es: Opscode debian-7.4
 /// URL: http://opscode-vm-bento.s3.amazonaws.com/vagrant/virtualbox/opscode_debian-7.4_chef-provisionerless.box
-/// Setup: sudo dpkg --add-architecture i386; sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm unzip libcurl3 libcurl3:i386;
+/// Setup: echo 'deb http://deb.debian.org/debian wheezy-backports main' | sudo tee -a /etc/apt/sources.list; sudo dpkg --add-architecture i386; sudo apt-get -y update; sudo apt-get -y -t wheezy-backports install git g++-multilib dpkg-dev rpm rsync unzip libcurl3 libcurl3:i386 --no-install-recommends; sudo apt-get clean
 enum linux_both = Platform(OS.linux, Model._both);
 
 /// OSes that require licenses must be setup manually
@@ -396,6 +396,8 @@ bool branchExists(string gitRepo, string branch)
 void applyPatches(string gitTag, bool skipDocs, string tgtDir)
 {
     auto fmt = "git -C "~tgtDir~"/%1$s apply -3 < patches/%1$s.patch";
+    if (!"patches".exists)
+        return;
     foreach (de; dirEntries("patches", "*.patch", SpanMode.shallow))
     {
         auto proj = de.baseName.stripExtension;
