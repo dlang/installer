@@ -325,9 +325,9 @@ run_command() {
                 install_compiler "$2"
             fi
 
-            local -r dub_bin_path=$(find_dub "$2")
-            if [ -f "${dub_bin_path}/dub" ] ; then
-                local -r dub_version=$("${dub_bin_path}/dub" --version | cut -f3 -d' ' | tr -d ,)
+            local -r binpath=$(binpath_for_compiler "$2")
+            if [ -f "$ROOT/$2/$binpath/dub" ]; then
+                local -r dub_version=$("$ROOT/$2/$binpath/dub" --version | cut -f3 -d' ' | tr -d ,)
                 log "dub ${dub_version} already installed";
             else
                 DUB_BIN_PATH="${ROOT}/dub"
@@ -498,26 +498,6 @@ install_compiler() {
     fi
 }
 
-# Checks whether a DUB executable is already included in the release
-find_dub() {
-    case $1 in
-        dmd*)
-            local suffix=
-            if [ "${OS:-}" != "osx" ] ; then
-                local suffix=$MODEL
-            fi
-            local bin_path="${OS}/bin${suffix}"
-            ;;
-        ldc*)
-            local bin_path=bin
-            ;;
-        *)
-            local bin_path=
-            ;;
-    esac
-    echo "$ROOT/$1/$bin_path"
-}
-
 find_gpg() {
     if command -v gpg2 &>/dev/null; then
         echo gpg2
@@ -569,26 +549,43 @@ verify() {
     fi
 }
 
-write_env_vars() {
+binpath_for_compiler() {
     case $1 in
         dmd*)
             local suffix
             [ $OS = osx ] || suffix=$MODEL
-            local binpath=$OS/bin$suffix
+            local -r binpath=$OS/bin$suffix
+            ;;
+
+        ldc*)
+            local -r binpath=bin
+            ;;
+
+        gdc*)
+            local -r binpath=bin
+            ;;
+    esac
+    echo "$binpath"
+}
+
+write_env_vars() {
+    local -r binpath=$(binpath_for_compiler "$1")
+    case $1 in
+        dmd*)
+            local suffix
+            [ $OS = osx ] || suffix=$MODEL
             local libpath=$OS/lib$suffix
             local dc=dmd
             local dmd=dmd
             ;;
 
         ldc*)
-            local binpath=bin
             local libpath=lib
             local dc=ldc2
             local dmd=ldmd2
             ;;
 
         gdc*)
-            local binpath=bin
             if [ -d "$ROOT/$1/lib$MODEL" ]; then
                 local libpath=lib$MODEL
             else
