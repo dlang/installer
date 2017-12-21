@@ -622,9 +622,9 @@ _OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
 _OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
 _OLD_D_PS1="\${PS1:-}"
 
-export PATH="${DUB_BIN_PATH}:$ROOT/$1/$binpath:\${PATH:-}"
-export LIBRARY_PATH="$ROOT/$1/$libpath:\${LIBRARY_PATH:-}"
-export LD_LIBRARY_PATH="$ROOT/$1/$libpath:\${LD_LIBRARY_PATH:-}"
+export PATH="${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT/$1/$binpath\${PATH:+:}\${PATH:-}"
+export LIBRARY_PATH="$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
 export DC=$dc
 export PS1="($1)\${PS1:-}"
@@ -654,9 +654,9 @@ set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
 set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
 set -g _OLD_D_PS1 \$PS1
 
-set -gx PATH "${DUB_BIN_PATH}" "$ROOT/$1/$binpath" \$PATH
-set -gx LIBRARY_PATH "$ROOT/$1/$libpath" \$LIBRARY_PATH
-set -gx LD_LIBRARY_PATH "$ROOT/$1/$libpath" \$LD_LIBRARY_PATH
+set -gx PATH ${DUB_BIN_PATH:+'}${DUB_BIN_PATH}${DUB_BIN_PATH:+' }'$ROOT/$1/$binpath' \$PATH
+set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH
+set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH
 set -gx DMD $dmd
 set -gx DC $dc
 functions -c fish_prompt _old_d_fish_prompt
