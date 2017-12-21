@@ -327,8 +327,11 @@ run_command() {
 
             local -r binpath=$(binpath_for_compiler "$2")
             if [ -f "$ROOT/$2/$binpath/dub" ]; then
-                local -r dub_version=$("$ROOT/$2/$binpath/dub" --version | cut -f3 -d' ' | tr -d ,)
-                log "dub ${dub_version} already installed";
+                if [[ $("$ROOT/$2/$binpath/dub" --version) =~ ([0-9]+\.[0-9]+\.[0-9]+(-[^, ]+)?) ]]; then
+                    log "Using dub ${BASH_REMATCH[1]} shipped with $2"
+                else
+                    log "Using dub shipped with $2"
+                fi
             else
                 DUB_BIN_PATH="${ROOT}/dub"
                 install_dub
