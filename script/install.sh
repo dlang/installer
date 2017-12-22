@@ -654,7 +654,7 @@ set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
 set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
 set -g _OLD_D_PS1 \$PS1
 
-set -gx PATH ${DUB_BIN_PATH:+'}${DUB_BIN_PATH}${DUB_BIN_PATH:+' }'$ROOT/$1/$binpath' \$PATH
+set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT/$1/$binpath' \$PATH
 set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH
 set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH
 set -gx DMD $dmd
