@@ -3,6 +3,7 @@
 # Copyright: Copyright Martin Nowak 2015 -.
 # License: Boost License 1.0 (www.boost.org/LICENSE_1_0.txt)
 # Authors: Martin Nowak
+# Documentation: https://dlang.org/install.html
 
 _() {
 set -ueo pipefail
