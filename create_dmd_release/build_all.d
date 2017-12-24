@@ -487,6 +487,9 @@ int main(string[] args)
         extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
         // Get updated OMF import libraries
         extract(cacheDir~"/"~omflibs, workDir~"/windows/old-dmd/dmd2/windows/lib/");
+
+        // grab mingw sources
+        run("git clone --depth 1 --branch 5.0-active https://git.code.sf.net/p/mingw/mingw-org-wsl.git " ~ workDir ~ "/clones/mingw");
     }
 
     cloneSources(gitTag, dubTag, isBranch, skipDocs, workDir~"/clones");

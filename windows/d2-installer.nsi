@@ -55,7 +55,11 @@
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
 !define DmcFilename "dmc-${VersionDMC}.exe"
 !define Dmd1Filename "dmd-${Version1}.exe"
-!define VS2013Filename "vs_community.exe"
+!define VS2013Filename "vs_community2013.exe"
+!define VS2017Filename "vs_community2017.exe"
+!define VS2017BTFilename "vs_BuildTools2017.exe"
+!define VCRedistx86Filename "vcredist_x86.exe"
+!define VCRedistx64Filename "vcredist_x64.exe"
 
 ; URLs
 !define BaseURL "http://downloads.dlang.org"
@@ -71,7 +75,18 @@
 !define Dmd1AltUrl "${BaseURLAlt}/${Dmd1Filename}"
 
 !define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
+!define VS2017Url "https://download.visualstudio.microsoft.com/download/pr/100404311/045b56eb413191d03850ecc425172a7d/vs_Community.exe"
+!define VS2017BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/100404314/e64d79b40219aea618ce2fe10ebd5f0d/vs_BuildTools.exe"
 
+; see https://stackoverflow.com/questions/12206314/detect-if-visual-c-redistributable-for-visual-studio-2012-is-installed/14878248
+; selecting VC2010
+!define VCRedistx86Url "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe"
+!define VCRedistx64Url "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe"
+
+!define VCRedistx86RegKey "SOFTWARE\Classes\Installer\Products\1926E8D15D0BCE53481466615F760A7F"
+!define VCRedistx64RegKey "SOFTWARE\Classes\Installer\Products\1D5E3C0FEDA1E123187686FED06E995A"
+
+; ----------------
 ; Publishing Details
 !define DPublisher "Digital Mars"
 !define DName "DMD"
@@ -92,10 +107,9 @@
 
 !include "MUI.nsh"
 !include "EnvVarUpdate.nsh"
-!include "ReplaceInFile.nsh"
 !include "FileFunc.nsh"
 !include "TextFunc.nsh"
-
+!include "Sections.nsh"
 
 ;------------------------------------------------------------
 ; Variables
@@ -107,9 +121,6 @@ Var K
 Var InstanceCheck
 Var VCVer
 Var VCPath
-Var WinSDKPath
-Var UCRTPath
-Var UCRTVersion
 
 
 ;--------------------------------------------------------
@@ -152,25 +163,25 @@ SetCompressor /SOLID lzma
 !macro DownloadAndRun Filename Url AltUrl
   inetc::get /CAPTION "Downloading ${Filename}..." /BANNER "" "${Url}" "$TEMP\${Filename}"
   Pop $0
-  StrCmp $0 "OK" run
+  StrCmp $0 "OK" run_${Filename}
   !if `${AltUrl}` != ""
     inetc::get /CAPTION "Downloading ${Filename}..." /BANNER "" "${AltUrl}" "$TEMP\${Filename}"
     Pop $0
-    StrCmp $0 "OK" run
+    StrCmp $0 "OK" run_${Filename}
   !endif
 
   ; failed
   MessageBox MB_OK|MB_ICONEXCLAMATION "Could not download ${Filename}$\r$\n$\r$\n${Url}" /SD IDOK
 
-  Goto dandr_done
+  Goto dandr_done_${Filename}
 
-  run:
+  run_${Filename}:
   DetailPrint "Running ${Filename}"
   ExecWait "$TEMP\${Filename}"
 
   Delete "$TEMP\${Filename}"
 
-  dandr_done:
+  dandr_done_${Filename}:
 !macroend
 
 ; Read SDK registry entry and check if kernel32.lib exists in the expected lib folder
@@ -211,6 +222,7 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
+Page custom VCInstallPage VCInstallPageValidate
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
@@ -245,7 +257,7 @@ SectionGroup /e "D2"
 
     ; Embed the directory specified
     File /r ${EmbedD2Dir}
-
+  
     ; Create 32-bit command line batch file
     FileOpen $0 "$INSTDIR\dmd2vars32.bat" w
     FileWrite $0 "@echo.$\n"
@@ -278,38 +290,6 @@ SectionGroup /e "D2"
     WriteRegDWORD HKLM "${ARP}" "NoModify" 1
     WriteRegDWORD HKLM "${ARP}" "NoRepair" 1
     WriteUninstaller "uninstall.exe"
-
-    StrCmp $VCVer "" no_vc_detected write_vc_path
-
-    no_vc_detected:
-      MessageBox MB_OK "Could not detect Visual Studio (2008-2017 are supported). No 64-bit support." /SD IDOK
-      goto finish_vc_path
-
-    write_vc_path:
-      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";VCINSTALLDIR=" "VCINSTALLDIR=$VCPath"
-      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";$VCVer " ""
-
-    finish_vc_path:
-      ClearErrors
-
-    StrCmp $WinSDKPath "" no_sdk_detected write_sdk_path
-
-    no_sdk_detected:
-      MessageBox MB_OK "Could not detect Windows SDK (6.0A-10.0 are supported). No 64-bit support." /SD IDOK
-      goto finish_sdk_path
-
-    write_sdk_path:
-      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";WindowsSdkDir=" "WindowsSdkDir=$WinSDKPath"
-
-    finish_sdk_path:
-      ClearErrors
-	  
-    StrCmp $UCRTVersion "" no_ucrt_detected
-      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UniversalCRTSdkDir=" "UniversalCRTSdkDir=$UCRTPath"
-      !insertmacro _ReplaceInFile "$INSTDIR\dmd2\windows\bin\sc.ini" ";UCRTVersion=" "UCRTVersion=$UCRTVersion"
-    no_ucrt_detected:
-      ClearErrors
-
   SectionEnd
 
 
@@ -345,10 +325,78 @@ SectionGroup /e "Extras"
 SectionGroupEnd
 
 ;--------------------------------------------------------
+; Custom page
+;--------------------------------------------------------
+
+Function VCInstallPage
+ 
+  Call DetectVC
+  StrCmp $VCVer "" ask_vs
+  Abort
+  ask_vs:
+ 
+  ReserveFile "vcinstall.ini"
+  !insertmacro MUI_HEADER_TEXT "Choose Visual Studio Installation" "Choose the Visual C runtime to link against"
+  !insertmacro MUI_INSTALLOPTIONS_EXTRACT "vcinstall.ini"
+  !insertmacro MUI_INSTALLOPTIONS_DISPLAY "vcinstall.ini"
+ 
+FunctionEnd
+
+Function VCInstallPageValidate
+
+  !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 2" "State"
+  StrCmp $0 1 install_vs2013
+  !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 3" "State"
+  StrCmp $0 1 install_vs2017
+  !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 4" "State"
+  StrCmp $0 1 install_bt2017
+  !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 5" "State"
+  StrCmp $0 1 install_vc2010
+  goto done_vc
+  
+  install_vs2013:
+    !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
+    goto done_vc
+
+  install_vs2017:
+    !insertmacro DownloadAndRun ${VS2017Filename} ${VS2017Url} ""
+    goto done_vc
+
+  install_bt2017:
+    !insertmacro DownloadAndRun ${VS2017BTFilename} ${VS2017BuildToolsUrl} ""
+    goto done_vc
+
+  install_vc2010:
+    Call InstallVCRedistributable
+    goto done_vc
+
+  done_vc:
+
+FunctionEnd
+
+;--------------------------------------------------------
 ; Helper functions
 ;--------------------------------------------------------
 
-Function DetectVSAndSDK
+Function InstallVCRedistributable
+
+    SetRegView 64 ; look at the 64-bit registry hive if available
+    ClearErrors
+    ReadRegStr $0 HKLM "${VCRedistx86RegKey}" "ProductName"
+    IfErrors 0 vcredistx86_installed
+        !insertmacro DownloadAndRun ${VCRedistx86Filename} ${VCRedistx86Url} ""
+    vcredistx86_installed:
+
+    ClearErrors
+    ReadRegStr $0 HKLM "${VCRedistx64RegKey}" "ProductName"
+    IfErrors 0 vcredistx64_installed
+        !insertmacro DownloadAndRun ${VCRedistx64Filename} ${VCRedistx64Url} ""
+    vcredistx64_installed:
+    SetRegView 32 ; retore default
+
+FunctionEnd
+
+Function DetectVC
     ClearErrors
 
     ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\SxS\VS7" "15.0"
@@ -383,51 +431,7 @@ Function DetectVSAndSDK
     done_vs:
     StrCpy $VCPath $0
     StrCpy $VCVer $1
-
-    ; detect ucrt
-    ReadRegStr $0 HKLM "Software\Microsoft\Windows Kits\Installed Roots" "KitsRoot10"
-    IfErrors done done_ucrt
-
-    done_ucrt:
-    StrCpy $UCRTPath $0
-
-      StrCpy $UCRTVersion ""
-      FindFirst $0 $1 $UCRTPath\Lib\*.*
-      loop_ff:
-        StrCmp $1 "" done_ff
-        StrCpy $UCRTVersion $1 ; hoping the directory is retrieved in ascending order (done by NTFS)
-        FindNext $0 $1
-        Goto loop_ff
-      done_ff:
-      FindClose $0
-
     done:
-
-    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot10" "Lib\$UCRTVersion\um\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot81" "Lib\winv6.3\um\x64" 
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1" "InstallationFolder" "Lib\winv6.3\um\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.1A" "InstallationFolder" "Lib\winv6.3\um\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Windows Kits\Installed Roots" "KitsRoot" "Lib\win8\um\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0" "InstallationFolder" "Lib\win8\um\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v8.0A" "InstallationFolder" "Lib\win8\um\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.1A" "InstallationFolder" "Lib\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v7.0A" "InstallationFolder" "Lib\x64"
-    IfErrors 0 done_sdk
-    !insertmacro _DetectSDK "Microsoft SDKs\Windows\v6.0A" "InstallationFolder" "Lib\x64"
-    IfErrors no_sdk done_sdk
-
-    done_sdk:
-    StrCpy $WinSDKPath $0
-
-    no_sdk:
 
 FunctionEnd
 
@@ -502,23 +506,6 @@ Function .onInit
     Exec '$R0 /IC False /S'
 
   done_uninst:
-
-  Call DetectVSAndSDK
-  StrCmp $VCVer "" ask_vs
-  StrCmp $WinSDKPath "" ask_vs
-  Goto done_vs
-
-  ask_vs:
-    MessageBox MB_YESNO|MB_ICONQUESTION \
-    "For 64-bit support MSVC and the Windows SDK are needed but no compatible versions were found. Do you want to install VS2013?" \
-    /SD IDNO IDYES install_vs IDNO done_vs
-
-  install_vs:
-    !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
-    Call DetectVSAndSDK
-
-  done_vs:
-
 FunctionEnd
 
 
