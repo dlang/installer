@@ -9,6 +9,11 @@ NSIS="\program files (x86)\nsis\makensis"
 dmd-$(V2).exe : dinstaller.nsi dinstaller_descriptions.nsh EnvVarUpdate.nsh makefile
 	$(NSIS) /DVersion1=$(V1) /DVersion2=$(V2) dinstaller.nsi
 
+dmd-light-$(V2).exe : d2-installer.nsi d2-installer-descriptions.nsh EnvVarUpdate.nsh makefile
+	$(NSIS) /DLight /DVersion2=$(V2) d2-installer.nsi
+
+light: dmd-light-$(V2).exe
+
 clean :
 	del dmd-$(V2).exe
 
