@@ -79,7 +79,7 @@ do
 done
 
 # test resolution of latest using the remove error message
-latest=(dmd dmd-beta dmd-master dmd-nightly ldc ldc-beta gdc dmd-2018-10-14)
+latest=(dmd dmd-beta dmd-master dmd-nightly ldc ldc-beta ldc-nightly gdc dmd-2018-10-14)
 for compiler in "${latest[@]}"
 do
     set +e

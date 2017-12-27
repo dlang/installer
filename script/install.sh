@@ -205,7 +205,7 @@ command_help() {
   dmd|gdc|ldc           latest version of a compiler
   dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.071.1, ldc-1.1.0-beta2)
   dmd|ldc-beta          latest beta version of a compiler
-  dmd-nightly           latest dmd nightly
+  dmd|ldc-nightly       latest nightly version of a compiler
   dmd-2016-08-08        specific dmd nightly
 '
 
@@ -474,6 +474,17 @@ resolve_latest() {
             logV "Determining latest ldc-beta version ($url)."
             COMPILER="ldc-$(fetch $url)"
             ;;
+        ldc-nightly)
+            local ci_url=https://github.com/ldc-developers/ldc/releases/tag/CI
+            logV "Finding latest ldc-nightly binary package (at $ci_url)."
+            local package
+            package="$(fetch $ci_url | grep -o "ldc2-[0-9a-f]*-$OS-$ARCH-[0-9]*.tar.xz" | head -n 1)"
+            if [[ $package =~ ^ldc2-([0-9a-f]*)-$OS-$ARCH-([0-9]*)\.tar\.xz$ ]]; then
+                COMPILER="ldc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+            else
+                fatal "Could not find ldc-nightly binaries (OS: $OS, arch: $ARCH)"
+            fi
+            ;;
         gdc)
             local url=http://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
@@ -538,6 +549,15 @@ install_compiler() {
         fi
 
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
+
+    # ldc-nightly: ldc-8c0abd52-20171222
+    elif [[ $1 =~ ^ldc-([0-9a-f]+)-([0-9]+) ]]; then
+        local package_hash=${BASH_REMATCH[1]}
+        local package_date=${BASH_REMATCH[2]}
+        local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH-$package_date.tar.xz"
+
+        # Install into 'ldc-8c0abd52-20171222' directory.
+        download_and_unpack "$url" "$ROOT/$1"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
     elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
