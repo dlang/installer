@@ -38,6 +38,8 @@ build_script:
 
   - cd installer\create_dmd_release
   - rdmd --build-only create_dmd_release.d
+  - set VCDIR=%VCINSTALLDIR%
+  - set SDKDIR=%WindowsSdkDir%
   - create_dmd_release.exe master --skip-docs --extras=..\..\localextras-windows --host-dmd=c:\projects\dmd2\windows\bin\dmd.exe
 
   - for /f %%f in (dmd.master.windows\dmd2\src\VERSION) do (set version=%%f)
