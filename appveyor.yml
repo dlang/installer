@@ -45,7 +45,7 @@ build_script:
 
   - for /f %%f in (dmd.master.windows\dmd2\src\VERSION) do (set version=%%f)
   - cd c:\projects\installer\windows
-  - makensis /DVersion2=%VERSION% /DEmbedD2Dir=..\create_dmd_release\dmd.%BRANCH%.windows\dmd2 d2-installer.nsi
+  - call "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%VERSION% /DEmbedD2Dir=..\create_dmd_release\dmd.%BRANCH%.windows\dmd2 d2-installer.nsi
 
 test_script: true
 
