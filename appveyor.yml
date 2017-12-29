@@ -24,6 +24,8 @@ build_script:
         7z x bup.zip dm\bin\implib.exe > $null
         Start-FileDownload "http://semitwist.com/download/app/dmd-localextras.7z" -FileName extras.7z
         7z x extras.7z > $null
+        Start-FileDownload "http://nsis.sourceforge.net/mediawiki/images/c/c9/Inetc.zip" -FileName inetc.zip
+        7z x -o"c:\Program Files (x86)\NSIS" inetc.zip 
 
   - call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
   - set PATH=c:\projects\dmd2\windows\bin;c:\projects\dm\bin;%PATH%
