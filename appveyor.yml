@@ -1,0 +1,55 @@
+
+os: Visual Studio 2015
+
+environment:
+  matrix:
+    - ARCH:                x64
+      D_COMPILER:          dmd
+      D_VERSION:           2.077.1
+      BRANCH:              master
+
+cache:
+
+init:
+  - git config --global core.autocrlf input
+
+build_script:
+  - cd c:/projects/
+  - ps: |
+    Start-FileDownload "http://downloads.dlang.org/releases/2.x/$Env:D_VERSION}/dmd.$Env:D_VERSION.windows.7z" -FileName dmd2.7z
+    7z x dmd2.7z > /dev/null
+    Start-FileDownload "http://downloads.dlang.org/other/dmc857c.zip" -FileName dmc857.zip
+    7z x dmd2.zip > /dev/null
+    Start-FileDownload "http://ftp.digitalmars.com/bup.zip" -FileName bup.zip
+    7z x bup.zip dm\bin\implib.exe > /dev/null
+    Start-FileDownload "http://semitwist.com/download/app/dmd-localextras.7z" -FileName extras.7z
+    7z x extras.7z > /dev/null
+
+  - set PATH=c:\projects\dmd2\windows\bin;c:\projects\dm\bin;%PATH%
+
+  - if not exist build\nul md nul
+  - set BASE=%TEMP%\create_dmd_release
+  - git clone --depth 1 --branch %BRANCH% https://github.com/dlang/dmd.git "%BASE%/dmd"
+  - git clone --depth 1 --branch %BRANCH% https://github.com/dlang/druntime.git "%BASE%/druntime"
+  - git clone --depth 1 --branch %BRANCH% https://github.com/dlang/phobos.git "%BASE%/phobos"
+  - git clone --depth 1 --branch %BRANCH% https://github.com/dlang/tools.git "%BASE%/tools"
+  - git clone --depth 1 --branch %BRANCH% https://github.com/dlang/dlang.org.git "%BASE%/dlang.org"
+  - git clone --depth 1 --branch %BRANCH% https://github.com/dlang/dub.git "%BASE%/dub"
+
+  - cd installer\create_dmd_release
+  - rdmd --build-only create_dmd_release.d
+  - create_dmd_release.exe master --skip-docs --extras=..\..\localextras-windows --host-dmd=c:\projects\dmd2\windows\bin\dmd.exe
+
+  - for /f %%f in (dmd.master.windows\dmd2\src\VERSION) do (set version=%%f)
+  - cd c:\projects\installer\windows
+  - makensis /DVersion2=%VERSION% /DEmbedD2Dir=..\create_dmd_release\dmd.%BRANCH%.windows\dmd2 d2-installer.nsi
+
+test_script: true
+
+after_build:
+  - cd c:\projects\installer\windows
+  - for %%I in (*.exe) do (set BUILD_EXE=%%I && set ARTIFACT=%%~dpnI-%APPVEYOR_BUILD_NUMBER%.exe)
+  - copy %BUILD_EXE% %ARTIFACT%
+  - ps: |
+        echo 'Creating artifacts...'
+        Push-AppveyorArtifact $Env:ARTIFACT
