@@ -17,13 +17,13 @@ build_script:
   - cd c:/projects/
   - ps: |
         Start-FileDownload "http://downloads.dlang.org/releases/2.x/$Env:D_VERSION}/dmd.$Env:D_VERSION.windows.7z" -FileName dmd2.7z
-        7z x dmd2.7z > /dev/null
+        7z x dmd2.7z > $null
         Start-FileDownload "http://downloads.dlang.org/other/dmc857c.zip" -FileName dmc857.zip
-        7z x dmd2.zip > /dev/null
+        7z x dmd2.zip > $null
         Start-FileDownload "http://ftp.digitalmars.com/bup.zip" -FileName bup.zip
-        7z x bup.zip dm\bin\implib.exe > /dev/null
+        7z x bup.zip dm\bin\implib.exe > $null
         Start-FileDownload "http://semitwist.com/download/app/dmd-localextras.7z" -FileName extras.7z
-        7z x extras.7z > /dev/null
+        7z x extras.7z > $null
 
   - set PATH=c:\projects\dmd2\windows\bin;c:\projects\dm\bin;%PATH%
 
