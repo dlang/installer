@@ -16,7 +16,7 @@ init:
 build_script:
   - cd c:/projects/
   - ps: |
-        Start-FileDownload "http://downloads.dlang.org/releases/2.x/$Env:D_VERSION}/dmd.$Env:D_VERSION.windows.7z" -FileName dmd2.7z
+        Start-FileDownload "http://downloads.dlang.org/releases/2.x/$Env:D_VERSION/dmd.$Env:D_VERSION.windows.7z" -FileName dmd2.7z
         7z x dmd2.7z > $null
         Start-FileDownload "http://downloads.dlang.org/other/dmc857c.zip" -FileName dmc857.zip
         7z x dmd2.zip > $null
