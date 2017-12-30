@@ -4,13 +4,13 @@ os: Visual Studio 2017
 environment:
   matrix:
     - ARCH:                x86
-      BRANCH:              master
+      LLVM_VER:            5.0.1
 
 cache:
-  - bin\lld-link.exe -> windows\build_lld.bat
+  - 'lld-link-%LLVM_VER%.zip -> windows\build_lld.bat'
 
 artifacts:
-  - path: bin\lld-link.exe
+  - path: bin\lld-link-$(LLVM_VER).zip
     name: lld
 
 init:
@@ -18,6 +18,6 @@ init:
 
 build_script:
   - cd c:/projects/installer
-  - if not exist bin\lld-link.exe call windows\build_lld.bat
+  - if not exist lld-link-%LLVM_VER%.zip call windows\build_lld.bat
 
 test_script: true
