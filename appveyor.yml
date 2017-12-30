@@ -7,8 +7,11 @@ environment:
       BRANCH:              master
 
 cache:
-  - path c:\projects\bin\lld-link.exe
-    name lld
+  - c:\projects\bin\lld-link.exe
+
+artifacts:
+  - path: c:\projects\bin\lld-link.exe
+    name: lld
 
 init:
   - git config --global core.autocrlf input
@@ -34,7 +37,6 @@ build_script:
   - if not exist ..\bin\nul md ..\bin
   - copy MinSizeRel\bin\lld-link.exe ..\bin
   - cd ..
-
   - :lld_done
 
 test_script: true
