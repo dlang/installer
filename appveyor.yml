@@ -18,6 +18,6 @@ init:
 
 build_script:
   - cd c:/projects/installer
-  - if exist bin\lld-link.exe call windows\build_lld.bat
+  - if not exist bin\lld-link.exe call windows\build_lld.bat
 
 test_script: true
