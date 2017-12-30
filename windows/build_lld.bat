@@ -1,5 +1,7 @@
 @setlocal
 
+set ROOT=%CD%
+
 call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
 
 set LLVM_URL=http://releases.llvm.org/%LLVM_VER%
@@ -21,11 +23,11 @@ cd %lld_build_dir%
 
 set CMAKE_OPT=-G "Visual Studio 15"
 set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_BUILD_TYPE=Release
-set CMAKE_OPT=%CMAKE_OPT% -DLLVM_TARGETS_TO_BUILD=X86 
+set CMAKE_OPT=%CMAKE_OPT% -DLLVM_TARGETS_TO_BUILD=X86
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_INCLUDE_DIRS="c:/projects/llvm/include"
 
 cmake %CMAKE_OPT% ..\llvm || exit /B 1
 devenv LLVM.sln /project lld /Build "MinSizeRel|Win32" || exit /B 1
 
 cd MinSizeRel\bin
-7z a ../../../../lld-link-%LLVM_VER%.zip lld-link.exe
+7z a %ROOT%\lld-link-%LLVM_VER%.zip lld-link.exe

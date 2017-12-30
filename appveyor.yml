@@ -17,7 +17,6 @@ init:
   - git config --global core.autocrlf input
 
 build_script:
-  - cd c:/projects/installer
   - if not exist lld-link-%LLVM_VER%.zip call windows\build_lld.bat
 
 test_script: true
