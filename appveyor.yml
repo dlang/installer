@@ -10,7 +10,7 @@ cache:
   - 'lld-link-%LLVM_VER%.zip -> windows\build_lld.bat'
 
 artifacts:
-  - path: bin\lld-link-$(LLVM_VER).zip
+  - path: lld-link-$(LLVM_VER).zip
     name: lld
 
 init:

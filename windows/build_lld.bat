@@ -27,4 +27,5 @@ set CMAKE_OPT=%CMAKE_OPT% -DLLVM_INCLUDE_DIRS="c:/projects/llvm/include"
 cmake %CMAKE_OPT% ..\llvm || exit /B 1
 devenv LLVM.sln /project lld /Build "MinSizeRel|Win32" || exit /B 1
 
-zip ../../lld-link-%LLVM_VER%.zip MinSizeRel\bin\lld-link.exe
+cd MinSizeRel\bin
+7z a ../../../../lld-link-%LLVM_VER%.zip lld-link.exe
