@@ -10,7 +10,7 @@ cache:
   - bin\lld-link.exe -> windows\build_lld.bat
 
 artifacts:
-  - path: c:\projects\bin\lld-link.exe
+  - path: bin\lld-link.exe
     name: lld
 
 init:
