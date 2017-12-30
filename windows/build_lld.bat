@@ -1,7 +1,10 @@
 @setlocal
+
+set LLVM_BRANCH=master
+
 call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
-git clone --depth 1 --branch %BRANCH% https://github.com/llvm-mirror/llvm.git llvm || exit /B 1
-git clone --depth 1 --branch %BRANCH% https://github.com/llvm-mirror/lld.git llvm\tools\lld || exit /B 1
+git clone --depth 1 --branch %LLVM_BRANCH% https://github.com/llvm-mirror/llvm.git llvm || exit /B 1
+git clone --depth 1 --branch %LLVM_BRANCH% https://github.com/llvm-mirror/lld.git llvm\tools\lld || exit /B 1
 
 set lld_build_dir=build-lld
 if not exist %lld_build_dir%\nul md %lld_build_dir%
