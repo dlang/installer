@@ -9,9 +9,6 @@ artifacts:
   - path: lld-link-$(LLVM_VER).zip
     name: lld
 
-init:
-  - git config --global core.autocrlf input
-
 build_script:
   - call windows\build_lld.bat
 
