@@ -1,13 +1,9 @@
-
 os: Visual Studio 2017
 
 environment:
   matrix:
     - ARCH:                x86
       LLVM_VER:            5.0.1
-
-cache:
-  - 'lld-link-%LLVM_VER%.zip -> windows\build_lld.bat'
 
 artifacts:
   - path: lld-link-$(LLVM_VER).zip
@@ -17,6 +13,6 @@ init:
   - git config --global core.autocrlf input
 
 build_script:
-  - if not exist lld-link-%LLVM_VER%.zip call windows\build_lld.bat
+  - call windows\build_lld.bat
 
 test_script: true
