@@ -2,6 +2,12 @@
 
 set ROOT=%CD%
 
+set DMD_URL=http://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
+echo DMD_URL=%DMD_URL%
+appveyor DownloadFile %DMD_URL% -FileName dmd2.7z || exit /B 1
+7z x dmd2.7z || exit /B 1
+set PATH=%ROOT%\dmd2\windows\bin;%PATH%
+
 echo b80b0c9d0158f9125e482b50fe00b70dde11d7a015ee687ca455fe2ea2ec8733 *w32api.src.tar.xz> sha256sums
 echo 77233333f5440287840d134804bcecf3144ec3efc7fd7f7c6dce318e4e7146ee *mingwrt.src.tar.xz>> sha256sums
 
