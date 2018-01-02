@@ -36,6 +36,8 @@ move curl-%CURL_VER% curl
 
 SET ZLIB_PATH=%ROOT%\zlib
 
+call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvars32.bat"
+
 :: --------------------------------------------------------------------
 :: Build x86 DLL and import libs
 
@@ -43,16 +45,16 @@ SET PATH=%MINGW_PATH%;%ORIG_PATH%
 echo %PATH%
 dir %MINGW_PATH%
 
-mingw32-make -C zlib -f win32\Makefile.gcc
-mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static
+mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
+mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static || exit /B 1
 strip -s curl\lib\libcurl.dll
 
 mkdir dmd2\windows\bin dmd2\windows\lib
 copy curl\lib\libcurl.dll dmd2\windows\bin
-dm\bin\implib /system dmd2\windows\lib\curl.lib curl\lib\libcurl.dll
+dm\bin\implib /system dmd2\windows\lib\curl.lib curl\lib\libcurl.dll || exit /B 1
 mkdir dmd2\windows\lib32mscoff
-bin\pexports curl\lib\libcurl.dll > curl.def
-lib /MACHINE:X86 /DEF:curl.def /OUT:dmd2\windows\lib32mscoff\curl.lib
+bin\pexports curl\lib\libcurl.dll > curl.def || exit /B 1
+lib /MACHINE:X86 /DEF:curl.def /OUT:dmd2\windows\lib32mscoff\curl.lib || exit /B 1
 del dmd2\windows\lib32mscoff\curl.exp
 
 mingw32-make -C zlib -fwin32/Makefile.gcc clean
@@ -65,14 +67,14 @@ SET PATH=%MINGW64_PATH%;%ORIG_PATH%
 echo %PATH%
 dir %MINGW64_PATH%
 
-mingw32-make -C zlib -f win32\Makefile.gcc
-mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static
+mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
+mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static || exit /B 1
 strip -s curl\lib\libcurl.dll
 
 mkdir dmd2\windows\bin64 dmd2\windows\lib64
 copy curl\lib\libcurl.dll dmd2\windows\bin64
-bin\pexports curl\lib\libcurl.dll > curl.def
-lib /MACHINE:X64 /DEF:curl.def /OUT:dmd2\windows\lib64\curl.lib
+bin\pexports curl\lib\libcurl.dll > curl.def || exit /B 1
+lib /MACHINE:X64 /DEF:curl.def /OUT:dmd2\windows\lib64\curl.lib || exit /B 1
 del dmd2\windows\lib64\curl.exp
 
 mingw32-make -C zlib -fwin32/Makefile.gcc clean
