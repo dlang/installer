@@ -36,14 +36,11 @@ move curl-%CURL_VER% curl
 
 SET ZLIB_PATH=%ROOT%\zlib
 
-call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvars32.bat"
-
 :: --------------------------------------------------------------------
 :: Build x86 DLL and import libs
 
 SET PATH=%MINGW_PATH%;%ORIG_PATH%
-echo %PATH%
-dir %MINGW_PATH%
+call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
 
 mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
 mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static || exit /B 1
@@ -64,8 +61,7 @@ mingw32-make -C curl\lib -f Makefile.m32 clean
 :: Build x64 DLL and import libs
 
 SET PATH=%MINGW64_PATH%;%ORIG_PATH%
-echo %PATH%
-dir %MINGW64_PATH%
+call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
 
 mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
 mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static || exit /B 1
