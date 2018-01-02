@@ -40,7 +40,6 @@ SET ZLIB_PATH=%ROOT%\zlib
 :: Build x86 DLL and import libs
 
 SET PATH=%MINGW_PATH%;%ORIG_PATH%
-call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
 echo %PATH%
 dir %MINGW_PATH%
 
@@ -63,7 +62,6 @@ mingw32-make -C curl\lib -f Makefile.m32 clean
 :: Build x64 DLL and import libs
 
 SET PATH=%MINGW64_PATH%;%ORIG_PATH%
-call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 echo %PATH%
 dir %MINGW64_PATH%
 
