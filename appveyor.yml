@@ -1,0 +1,15 @@
+os: Visual Studio 2015
+
+environment:
+  CURL_VER: 7.57.0
+  ZLIB_VER: 1.2.11
+  PEXPORTS_VER: 0.47
+
+artifacts:
+  - name: libcurl
+    path: libcurl-$(CURL_VER)-WinSSL-zlib-x86-x64.zip
+
+build_script:
+  - call windows\build_curl.bat
+
+test_script: true
