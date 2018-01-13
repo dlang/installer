@@ -696,7 +696,7 @@ install_dub() {
         return
     fi
     local url=http://code.dlang.org/download/LATEST
-    logV "Determing latest dub version ($url)."
+    logV "Determining latest dub version ($url)."
     dub="dub-$(fetch $url)"
     if [ -d "$ROOT/$dub" ]; then
         log "$dub already installed"
