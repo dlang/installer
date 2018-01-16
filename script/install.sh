@@ -86,6 +86,16 @@ download() {
     fi
 }
 
+# path, urls...
+download_with_verify() {
+    download "$1" 1 "${@:2}"
+}
+
+# path, urls...
+download_without_verify() {
+    download "$1" 0 "${@:2}"
+}
+
 # urls...
 fetch() {
     local mirrors path
@@ -399,7 +409,7 @@ install_dlang_installer() {
 
     mkdir -p "$ROOT"
     log "Downloading ${mirrors[0]}"
-    download "$tmp/install.sh" 1 ${mirrors[@]}
+    download_with_verify "$tmp/install.sh" "${mirrors[@]}"
     mv "$tmp/install.sh" "$ROOT/install.sh"
     rmdir "$tmp"
     chmod +x "$ROOT/install.sh"
@@ -491,7 +501,7 @@ install_compiler() {
             )
         fi
 
-        download_and_unpack "$ROOT/$compiler" 1 "${mirrors[@]}"
+        download_and_unpack_with_verify "$ROOT/$compiler" "${mirrors[@]}"
 
     # dmd-2015-11-20, dmd-feature_branch-2016-10-20
     elif [[ $1 =~ ^dmd(-(.*))?-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
@@ -502,7 +512,7 @@ install_compiler() {
         fi
         local url="http://nightlies.dlang.org/$1/$basename.tar.xz"
 
-        download_and_unpack "$ROOT/$compiler" 1 "$url"
+        download_and_unpack_with_verify "$ROOT/$compiler" "$url"
 
     # ldc-0.12.1 or ldc-0.15.0-alpha1
     elif [[ $1 =~ ^ldc-([0-9]+\.[0-9]+\.[0-9]+(-.*)?)$ ]]; then
@@ -512,7 +522,7 @@ install_compiler() {
             fatal "no ldc binaries available for $OS"
         fi
 
-        download_and_unpack "$ROOT/$compiler" 0 "$url"
+        download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
     elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
@@ -526,11 +536,11 @@ install_compiler() {
         esac
         local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
 
-        download_and_unpack "$ROOT/$compiler" 0 "$url"
+        download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
         url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/130f552ca43a77ee5c638fcc5a106f41dac607b9/dmd-script
         log "Downloading gdmd $url"
-        download "$ROOT/$1/bin/gdmd" 0 "$url"
+        download_without_verify "$ROOT/$1/bin/gdmd" "$url"
         chmod +x "$ROOT/$1/bin/gdmd"
 
     else
@@ -568,7 +578,7 @@ download_and_unpack() {
     fi
 
     log "Downloading and unpacking ${urls[0]}"
-    download "$tmp/$name" "$do_verify"  "${urls[@]}"
+    download "$tmp/$name" "$do_verify" "${urls[@]}"
     if [[ $name =~ \.tar\.xz$ ]]; then
         tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
     else
@@ -578,6 +588,16 @@ download_and_unpack() {
     fi
     rm "$tmp/$name"
     mv "$tmp" "$path"
+}
+
+# path, urls...
+download_and_unpack_with_verify() {
+    download_and_unpack "$1" 1 "${@:2}"
+}
+
+# path, urls...
+download_and_unpack_without_verify() {
+    download_and_unpack "$1" 0 "${@:2}"
 }
 
 # path, urls...
@@ -596,7 +616,7 @@ verify() {
     fi
     if [ ! -f "$ROOT/d-keyring.gpg" ]; then
         log "Downloading https://dlang.org/d-keyring.gpg"
-        download "$ROOT/d-keyring.gpg" 0 "${keyring_mirrors[@]}"
+        download_without_verify "$ROOT/d-keyring.gpg" "${keyring_mirrors[@]}"
     fi
     if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>/dev/null; then
         fatal "Invalid signature ${urls[0]}"
@@ -757,7 +777,7 @@ install_dub() {
     url="http://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
 
     log "Downloading and unpacking $url"
-    download "$tmp/dub.tar.gz" 0 "$url"
+    download_without_verify "$tmp/dub.tar.gz" "$url"
     tar -C "$tmp" -zxf "$tmp/dub.tar.gz"
     logV "Removing old dub versions"
     rm -rf "$ROOT/dub" "$ROOT/dub-*"
