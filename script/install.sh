@@ -81,8 +81,8 @@ download() {
         done
     }
     retry try_all_mirrors
-    if [ $do_verify -eq 1 ]; then
-        verify "$path" ${mirrors[@]/%/.sig}
+    if [ "$do_verify" -eq 1 ]; then
+        verify "$path" "${mirrors[@]/%/.sig}"
     fi
 }
 
