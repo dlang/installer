@@ -199,7 +199,7 @@ Function .onInit
   ReadRegStr $I HKLM "${ARP}" "DisplayName"
   ReadRegStr $J HKLM "${ARP}" "DisplayVersion"
   MessageBox MB_OKCANCEL|MB_ICONQUESTION \
-  "$I v$J is installed on your system$\n$\nPress 'OK' to replace by ${DmcName} ${VersionDmc}" \
+  "$I v$J is installed on your system$\n$\nPress 'OK' to replace it with ${DmcName} ${VersionDmc}" \
   IDOK uninst
   Abort
 
