@@ -172,6 +172,8 @@ display_path() {
 COMMAND=
 COMPILER=dmd
 VERBOSITY=1
+GET_PATH_AUTO_INSTALL=0
+GET_PATH_COMPILER=dc
 # Set a default install path depending on the POSIX/Windows environment.
 if posix_terminal; then
     ROOT=~/dlang
@@ -236,6 +238,7 @@ Commands
   uninstall     Remove an installed D compiler
   list          List all installed D compilers
   update        Update this dlang script
+  get-path      Path of the installed compiler executable
 
 Options
 
@@ -331,6 +334,36 @@ Description
 
   Update the dlang installer itself and the keyring.
 '
+            ;;
+
+        get-path)
+            log 'Usage
+
+  install.sh get-path <compiler>
+
+Description
+
+  Find the path of an installed D compiler.
+
+Options
+
+  --install         Install the compiler if it is not installed
+  --dmd             Find the DMD-alike interface instead
+  --dub             Find the DUB instance
+
+Examples
+
+  install.sh
+  install.sh get-path dmd
+  install.sh get-path dmd-2.093.0 --install
+  install.sh get-path --dmd ldc-1.19.0
+  install.sh get-path --dub ldc-1.19.0
+  install.sh get-path ldc-1.19.0 --install
+  install.sh get-path --dub dub-1.21.0
+'
+            log "$_compiler"
+            ;;
+
     esac
 }
 
@@ -338,7 +371,9 @@ Description
 
 parse_args() {
     local _help=
-    local _activate=
+    local _installAction=
+    local _getPathAction=
+    local _autoInstallFlag=
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -359,10 +394,35 @@ parse_args() {
                 ;;
 
             -a | --activate)
-                _activate=1
+                if [ -n "$_installAction" ]; then
+                    fatal "$1 conflicts with --${_installAction}"
+                fi
+                _installAction="activate"
+                ;;
+
+            --dmd)
+                if [ -n "$_getPathAction" ]; then
+                    fatal "$1 conflicts with --${_getPathAction}"
+                fi
+                _getPathAction="dmd"
+                ;;
+
+            --dub)
+                if [ -n "$_getPathAction" ]; then
+                    fatal "$1 conflicts with --${_getPathAction}"
+                fi
+                _getPathAction="dub"
+                ;;
+
+            --install)
+                _autoInstallFlag=1
                 ;;
 
             use | install | uninstall | list | update)
+                COMMAND=$1
+                ;;
+
+            get-path)
                 COMMAND=$1
                 ;;
 
@@ -390,14 +450,41 @@ parse_args() {
         command_help $COMMAND
         exit 0
     fi
-    if [ -n "$_activate" ]; then
-       if [ "${COMMAND:-install}" == "install" ]; then
-           VERBOSITY=0
-       else
-           command_help $COMMAND
-           exit 1
-       fi
+    local command_="${COMMAND:-install}"
+    if [ -n "$_installAction" ] ; then
+        if [ "$command_" == "install" ]; then
+            VERBOSITY=0
+        else
+            logE "ERROR: --activate is not allowed for ${command_}."
+            command_help $COMMAND
+            exit 1
+        fi
     fi
+    if [ -n "$_autoInstallFlag" ] ; then
+        if [ "$command_" == "get-path" ]; then
+            GET_PATH_AUTO_INSTALL=1
+        else
+            logE "ERROR: --install is not allowed for ${command_}."
+            command_help $COMMAND
+            exit 1
+        fi
+    fi
+    if [ -n "$_getPathAction" ] ; then
+        if [ "$command_" == "get-path" ]; then
+            case "$_getPathAction" in
+                dmd|dub)
+                    GET_PATH_COMPILER=$_getPathAction
+                    ;;
+                *)
+                    fatal "Internal Error. Invalid get-path: $_getPathAction"
+            esac
+        else
+            logE "ERROR: --${_getPathAction} is not allowed for ${command_}."
+            command_help $COMMAND
+            exit 1
+        fi
+    fi
+
     IFS="," read -r _compiler _dub <<< "$COMPILER"
     if [ -n "${_dub:-}" ] ; then
         COMPILER="$_compiler"
@@ -411,51 +498,7 @@ parse_args() {
 run_command() {
     case $1 in
         install)
-            check_tools curl
-            if [ ! -f "$ROOT/install.sh" ] || [ ! -f "$ROOT/d-keyring.gpg" ] ; then
-                install_dlang_installer
-            fi
-            if [ -z "${2:-}" ]; then
-                fatal "Missing compiler argument for $1 command.";
-            fi
-            if [ -d "$ROOT/$2" ]; then
-                log "$2 already installed";
-            else
-                install_compiler "$2"
-            fi
-
-            # Only try to install dub if it wasn't the main compiler
-            if ! [[ $COMPILER =~ ^dub ]] ; then
-                if [ -n "${DUB:-}" ] ; then
-                    # A dub version was explicitly specified with ,dub-1.8.0
-                    DUB_BIN_PATH="${ROOT}/${DUB}"
-                    # Check whether the latest dub version needs to be resolved
-                    if ! [[ $DUB =~ ^dub- ]] ; then
-                        resolve_latest "$DUB"
-                        install_dub "dub-$DUB_VERSION"
-                    else
-                        install_dub "$DUB"
-                    fi
-                else
-                    # compiler was installed without requesting dub
-                    local -r binpath=$(binpath_for_compiler "$2")
-                    if [ -f "$ROOT/$2/$binpath/dub" ]; then
-                        if [[ $("$ROOT/$2/$binpath/dub" --version) =~ ([0-9]+\.[0-9]+\.[0-9]+(-[^, ]+)?) ]]; then
-                            log "Using dub ${BASH_REMATCH[1]} shipped with $2"
-                        else
-                            log "Using dub shipped with $2"
-                        fi
-                    else
-                        # no dub bundled - manually installing
-                        DUB_BIN_PATH="${ROOT}/dub"
-                        resolve_latest dub
-                        install_dub "dub-$DUB_VERSION"
-                    fi
-                fi
-            fi
-
-            write_env_vars "$2"
-
+            install_d "$1" "${2:-}"
             if posix_terminal; then
                 if [ "$(basename "$SHELL")" = fish ]; then
                     local suffix=.fish
@@ -478,6 +521,44 @@ Run \`$(display_path "$ROOT/$2/activate.bat")\` to add $2 to your PATH."
             fi
             ;;
 
+        get-path)
+            if [ $GET_PATH_AUTO_INSTALL -eq 0 ] ; then
+                if [ ! -d "$ROOT/$2" ]; then
+                    fatal "Requested $2 is not installed. Install or rerun with --install.";
+                fi
+                if [ "$GET_PATH_COMPILER" == "dub" ] ; then
+                    local dubBinPath
+                    dubBinPath="$(binexec_for_dub_compiler "$2")"
+                    if [ ! -f "$dubBinPath" ] ; then
+                        fatal "Requested DUB is not installed. Install or rerun with --install.";
+                    fi
+                fi
+            fi
+            previousVerbosity=$VERBOSITY
+            VERBOSITY=-1
+            install_d "$1" "${2:-}"
+            VERBOSITY=$previousVerbosity
+            case "$GET_PATH_COMPILER" in
+                dmd)
+                    if [[ $COMPILER =~ ^dub ]] ; then
+                        fatal "ERROR: DUB is not a compiler."
+                    fi
+                    echo "$ROOT/$2/$(binexec_for_dmd_compiler "$2")"
+                    ;;
+                dc)
+                    if [[ $COMPILER =~ ^dub ]] ; then
+                        fatal "ERROR: DUB is not a compiler."
+                    fi
+                    echo "$ROOT/$2/$(binexec_for_dc_compiler "$2")"
+                    ;;
+                dub)
+                    binexec_for_dub_compiler "$2"
+                    ;;
+                *)
+                fatal "Unknown value for GET_PATH_COMPILER encountered."
+            esac
+            ;;
+
         uninstall)
             if [ -z "${2:-}" ]; then
                 fatal "Missing compiler argument for $1 command.";
@@ -493,6 +574,55 @@ Run \`$(display_path "$ROOT/$2/activate.bat")\` to add $2 to your PATH."
             install_dlang_installer
             ;;
     esac
+}
+
+install_d() {
+    local commandName="$1"
+    if [ -z "${2:-}" ]; then
+        fatal "Missing compiler argument for $commandName command.";
+    fi
+    local compilerName="$2"
+    check_tools curl
+    if [ ! -f "$ROOT/install.sh" ] || [ ! -f "$ROOT/d-keyring.gpg" ] ; then
+        install_dlang_installer
+    fi
+    if [ -d "$ROOT/$compilerName" ]; then
+        log "$compilerName already installed";
+    else
+        install_compiler "$compilerName"
+    fi
+
+    # Only try to install dub if it wasn't the main compiler
+    if ! [[ $COMPILER =~ ^dub ]] ; then
+        if [ -n "${DUB:-}" ] ; then
+            # A dub version was explicitly specified with ,dub-1.8.0
+            DUB_BIN_PATH="${ROOT}/${DUB}"
+            # Check whether the latest dub version needs to be resolved
+            if ! [[ $DUB =~ ^dub- ]] ; then
+                resolve_latest "$DUB"
+                install_dub "dub-$DUB_VERSION"
+            else
+                install_dub "$DUB"
+            fi
+        else
+            # compiler was installed without requesting dub
+            local -r binpath=$(binpath_for_compiler "$compilerName")
+            if [ -f "$ROOT/$2/$binpath/dub" ]; then
+                if [[ $("$ROOT/$2/$binpath/dub" --version) =~ ([0-9]+\.[0-9]+\.[0-9]+(-[^, ]+)?) ]]; then
+                    log "Using dub ${BASH_REMATCH[1]} shipped with $compilerName"
+                else
+                    log "Using dub shipped with $compilerName"
+                fi
+            else
+                # no dub bundled - manually installing
+                DUB_BIN_PATH="${ROOT}/dub"
+                resolve_latest dub
+                install_dub "dub-$DUB_VERSION"
+            fi
+        fi
+    fi
+
+    write_env_vars "$compilerName"
 }
 
 install_dlang_installer() {
@@ -850,6 +980,67 @@ binpath_for_compiler() {
             ;;
     esac
     echo "$binpath"
+}
+
+# Path to the compiler executable with a DMD-compatible interface
+binexec_for_dmd_compiler() {
+    local binPath
+    binPath=$(binpath_for_compiler "$1")/
+    case $1 in
+        dmd*)
+            binPath+=dmd
+            ;;
+        ldc*)
+            binPath+=ldmd2
+            ;;
+        gdc*)
+            binPath+=gdmd
+            ;;
+    esac
+    echo "$binPath"
+}
+
+# Path to the compiler executable with its custom interface
+binexec_for_dc_compiler() {
+    local binPath
+    binPath=$(binpath_for_compiler "$1")/
+    case $1 in
+        dmd*)
+            binPath+=dmd
+            ;;
+        ldc*)
+            binPath+=ldc2
+            ;;
+        gdc*)
+            binPath+=gdc
+            ;;
+    esac
+    echo "$binPath"
+}
+
+binexec_for_dub_compiler() {
+    local dub binPath
+    dub="${DUB:-}"
+    if [[ "$dub" =~ ^dub- ]] ; then
+        binPath="$ROOT/$DUB/dub"
+    elif [ "$dub" == "dub" ] ; then
+        binPath="$ROOT/$DUB/dub"
+    else
+        binPath="$ROOT/$1/$(binpath_for_compiler "$1")"
+        case $1 in
+            dub*)
+                binPath+=dub
+                ;;
+            dmd*|ldc*|gdc*)
+                binPath+=/dub
+                ;;
+        esac
+        # check for old compiler which ship without dub
+        if [ ! -f "$binPath" ]; then
+            binPath="$ROOT/dub/dub"
+        fi
+    fi
+    echo "$binPath"
 }
 
 write_env_vars() {
