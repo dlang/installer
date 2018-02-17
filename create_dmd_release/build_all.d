@@ -228,7 +228,7 @@ void prepareExtraBins(string workDir)
 {
     auto extraBins = [
         windows_both : [
-            "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
+            "windbg.hlp", "lib.exe", "link.exe", "make.exe",
             "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
             "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll"
         ].addPrefix("bin/").array,
