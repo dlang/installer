@@ -230,8 +230,32 @@ void prepareExtraBins(string workDir)
         "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
         "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
         "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll", "libcurl.dll",
+        "lld-link.exe",
     ].addPrefix("bin/");
     auto winBins64 = ["libcurl.dll"].addPrefix("bin64/");
+    auto mingwCoffLibs = [
+        "aclui.lib", "advapi32.lib", "avicap32.lib", "avifil32.lib", "bthprops.lib",
+        "cap.lib", "comctl32.lib", "comdlg32.lib", "crypt32.lib", "ctl3d32.lib",
+        "d3d8.lib", "d3d9.lib", "d3dim.lib", "d3drm.lib", "d3dx8d.lib", "d3dx9d.lib",
+        "d3dxof.lib", "ddraw.lib", "dhcpcsvc.lib", "dinput8.lib", "dinput.lib", "dlcapi.lib",
+        "dnsapi.lib", "dplayx.lib", "dpnaddr.lib", "dpnet.lib", "dpnlobby.lib", "dpvoice.lib",
+        "dsetup.lib", "dsound.lib", "faultrep.lib", "gdi32.lib", "gdiplus.lib", "glaux.lib",
+        "glu32.lib", "icmui.lib", "igmpagnt.lib", "imagehlp.lib", "imm32.lib", "iphlpapi.lib",
+        "kernel32.lib", "ksproxy.lib", "ksuser.lib", "lz32.lib", "mapi32.lib", "mfcuia32.lib",
+        "mgmtapi.lib", "mprapi.lib", "mpr.lib", "mqrt.lib", "msacm32.lib", "mscms.lib",
+        "msdmo.lib", "msimg32.lib", "msvcp60.lib", "msvcrt100.lib", "msvfw32.lib",
+        "mswsock.lib", "nddeapi.lib", "netapi32.lib", "ntdll.lib", "odbc32.lib",
+        "odbccp32.lib", "oldnames.lib", "ole32.lib", "oleacc.lib", "oleaut32.lib",
+        "olecli32.lib", "oledlg.lib", "olepro32.lib", "olesvr32.lib", "opengl32.lib",
+        "penwin32.lib", "pkpd32.lib", "powrprof.lib", "psapi.lib", "quartz.lib",
+        "rapi.lib", "rasapi32.lib", "rasdlg.lib", "rpcdce4.lib", "rpcns4.lib", "rpcrt4.lib",
+        "rtm.lib", "rtutils.lib", "secur32.lib", "setupapi.lib", "shell32.lib", "shfolder.lib",
+        "shlwapi.lib", "snmpapi.lib", "svrapi.lib", "tapi32.lib", "thunk32.lib",
+        "url.lib", "user32.lib", "userenv.lib", "usp10.lib", "uuid.lib", "uxtheme.lib",
+        "vdmdbg.lib", "version.lib", "win32spl.lib", "wininet.lib", "winmm.lib",
+        "winspool.lib", "winstrm.lib", "wldap32.lib", "wow32.lib", "ws2_32.lib",
+        "wsnmp32.lib", "wsock32.lib", "wst.lib", "wtsapi32.lib",
+    ];
     auto winLibs = [
         "advapi32.lib", "COMCTL32.LIB", "comdlg32.lib", "CTL3D32.LIB",
         "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
@@ -239,8 +263,9 @@ void prepareExtraBins(string workDir)
         "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib", "curl.lib",
         "update_libs.bat",
     ].addPrefix("lib/");
-    auto winLibs64 = ["curl.lib"].addPrefix("lib64/");
-    auto winFiles = chain(winBins, winBins64, winLibs, winLibs64).array();
+    auto winLibs32Coff = (mingwCoffLibs ~ "curl.lib").addPrefix("lib32mscoff/");
+    auto winLibs64 = (mingwCoffLibs ~ "curl.lib").addPrefix("lib64/");
+    auto winFiles = chain(winBins, winBins64, winLibs, winLibs32Coff, winLibs64).array();
 
     auto extraBins = [
         windows_both : winFiles,
@@ -460,6 +485,8 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.52.1-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
+    enum mingwlibs = "mingw-libs-5.0.2.zip";
+    enum lld = "lld-link-5.0.1.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -470,6 +497,8 @@ int main(string[] args)
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
     fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, true);
+    fetchFile("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, true);
+    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, true);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
@@ -487,9 +516,10 @@ int main(string[] args)
         extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
         // Get updated OMF import libraries
         extract(cacheDir~"/"~omflibs, workDir~"/windows/old-dmd/dmd2/windows/lib/");
-
-        // grab mingw sources
-        run("git clone --depth 1 --branch 5.0-active https://git.code.sf.net/p/mingw/mingw-org-wsl.git " ~ workDir ~ "/clones/mingw");
+        // Get mingw coff libraries
+        extract(cacheDir~"/"~mingwlibs, workDir~"/windows/old-dmd/");
+        // Get lld-link.exe
+        extract(cacheDir~"/"~lld, workDir~"/windows/old-dmd/dmd2/windows/bin/");
     }
 
     cloneSources(gitTag, dubTag, isBranch, skipDocs, workDir~"/clones");
