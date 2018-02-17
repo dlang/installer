@@ -11,7 +11,7 @@ set PATH=%ROOT%\dmd2\windows\bin;%PATH%
 echo b80b0c9d0158f9125e482b50fe00b70dde11d7a015ee687ca455fe2ea2ec8733 *w32api.src.tar.xz> sha256sums
 echo 77233333f5440287840d134804bcecf3144ec3efc7fd7f7c6dce318e4e7146ee *mingwrt.src.tar.xz>> sha256sums
 
-set MINGW_BASEURL=https://10gbps-io.dl.sourceforge.net/project/mingw/MinGW/Base
+set MINGW_BASEURL=https://sourceforge.net/projects/mingw/files/MinGW/Base/
 set W32API_URL=%MINGW_BASEURL%/w32api/w32api-%MINGW_VER%/w32api-%MINGW_VER%-mingw32-src.tar.xz
 set MINGWRT_URL=%MINGW_BASEURL%/mingwrt/mingwrt-%MINGW_VER%/mingwrt-%MINGW_VER%-mingw32-src.tar.xz
 
