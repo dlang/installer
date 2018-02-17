@@ -574,11 +574,11 @@ void createRelease(string branch)
     if(exists(allExtrasDir)) copyDir(allExtrasDir, releaseDir);
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
-    // Copy sources (should cppunit be omitted??)
+    // Copy sources
     copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd");
-    copyDirVersioned(cloneDir~"/dmd/ini",  releaseDir~"/dmd2");
     copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime");
     copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos");
+    copyDirVersioned(cloneDir~"/dmd/ini/" ~ osDirName,  releaseDir~"/dmd2/" ~ osDirName);
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
     if(exists(cloneDir~"/druntime/doc"))
