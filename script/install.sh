@@ -403,7 +403,6 @@ install_dlang_installer() {
     tmp=$(mkdtemp)
     mirrors=(
         "https://dlang.org/install.sh"
-        "https://downloads.dlang.org/other/install.sh"
         "https://nightlies.dlang.org/install.sh"
     )
 
@@ -608,7 +607,6 @@ verify() {
     local keyring_mirrors=(
         "https://dlang.org/d-keyring.gpg"
         "https://nightlies.dlang.org/d-keyring.gpg"
-        "https://github.com/dlang/dlang.org/raw/846269e913114fd77af0cc1aff67269046b70db8/d-keyring.gpg"
     )
     : "${GPG:=$(find_gpg)}"
     if [ "$GPG" = x ]; then
