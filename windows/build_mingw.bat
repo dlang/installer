@@ -37,10 +37,10 @@ set msvcrt_def_in=../../mingwrt/msvcrt-xref/msvcrt.def.in
 call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 rem CWD might be changed by vcvars64.bat
 cd %ROOT%\windows\mingw
-dmd -run buildsdk.d x64 %w32api_lib% lib64 %msvcrt_def_in% || exit /B 1
+dmd -run buildsdk.d x64 %w32api_lib% dmd2\windows\lib64 %msvcrt_def_in% || exit /B 1
 
 call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
 cd %ROOT%\windows\mingw
-dmd -run buildsdk.d x86 %w32api_lib% lib32mscoff %msvcrt_def_in% || exit /B 1
+dmd -run buildsdk.d x86 %w32api_lib% dmd2\windows\lib32mscoff %msvcrt_def_in% || exit /B 1
 
-7z a %ROOT%\mingw-libs-%MINGW_VER%.zip lib64\*.* lib32mscoff\*.*
+7z a %ROOT%\mingw-libs-%MINGW_VER%.zip dmd2\windows
