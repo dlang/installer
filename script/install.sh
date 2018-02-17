@@ -62,26 +62,54 @@ retry() {
         fi
     done
 }
-
-# url, path, [gpg signature url to verify]
+# path, verify (0/1), urls...
+# the gpg signature is assumed to be url+.sig
 download() {
-    local url path
-    url=$1
-    path=$2
+    local path do_verify mirrors
+    path="$1"
+    do_verify="$2"
+    mirrors=("${@:3}")
 
-    retry curl "$url" -o "$path"
-    if [ ! -z "${3:-}" ]; then
-        verify "$3" "$path"
+    try_all_mirrors() {
+        for i in "${!mirrors[@]}" ; do
+            if [ "$i" -gt 0 ] ; then
+                log "Falling back to mirror: ${mirrors[$i]}"
+            fi
+            if curl "${mirrors[$i]}" -o "$path" ; then
+                break
+            fi
+        done
+    }
+    retry try_all_mirrors
+    if [ "$do_verify" -eq 1 ]; then
+        verify "$path" "${mirrors[@]/%/.sig}"
     fi
 }
 
-# url
-fetch() {
-    local url path
-    url=$1
-    path=$(mktemp "$TMP_ROOT/XXXXXX")
+# path, urls...
+download_with_verify() {
+    download "$1" 1 "${@:2}"
+}
 
-    retry curl2 -sS "$url" -o "$path"
+# path, urls...
+download_without_verify() {
+    download "$1" 0 "${@:2}"
+}
+
+# urls...
+fetch() {
+    local mirrors path
+    path=$(mktemp "$TMP_ROOT/XXXXXX")
+    mirrors=("$@")
+
+    try_all_mirrors() {
+        for mirror in "${mirrors[@]}" ; do
+            if curl2 -sS "$mirror" -o "$path" ; then
+                break
+            fi
+        done
+    }
+    retry try_all_mirrors
     cat "$path"
     rm "$path"
 }
@@ -371,13 +399,16 @@ Run \`deactivate\` later on to restore your environment."
 }
 
 install_dlang_installer() {
-    local url tmp
-    url=https://dlang.org/install.sh
+    local tmp mirrors
     tmp=$(mkdtemp)
+    mirrors=(
+        "https://dlang.org/install.sh"
+        "https://nightlies.dlang.org/install.sh"
+    )
 
     mkdir -p "$ROOT"
-    log "Downloading $url"
-    download "$url" "$tmp/install.sh" "$url.sig"
+    log "Downloading ${mirrors[0]}"
+    download_with_verify "$tmp/install.sh" "${mirrors[@]}"
     mv "$tmp/install.sh" "$ROOT/install.sh"
     rmdir "$tmp"
     chmod +x "$ROOT/install.sh"
@@ -390,14 +421,20 @@ Run \`$ROOT/install.sh --help\` for usage information.
 resolve_latest() {
     case $COMPILER in
         dmd)
-            local url=http://downloads.dlang.org/releases/LATEST
-            logV "Determing latest dmd version ($url)."
-            COMPILER="dmd-$(fetch $url)"
+            local mirrors=(
+                "http://downloads.dlang.org/releases/LATEST"
+                "http://ftp.digitalmars.com/LATEST"
+            )
+            logV "Determing latest dmd version (${mirrors[0]})."
+            COMPILER="dmd-$(fetch "${mirrors[@]}")"
             ;;
         dmd-beta)
-            local url=http://downloads.dlang.org/pre-releases/LATEST
-            logV "Determing latest dmd-beta version ($url)."
-            COMPILER="dmd-$(fetch $url)"
+            local mirrors=(
+                "http://downloads.dlang.org/pre-releases/LATEST"
+                "http://ftp.digitalmars.com/LATEST_BETA"
+            )
+            logV "Determing latest dmd-beta version (${mirrors[0]})."
+            COMPILER="dmd-$(fetch "${mirrors[@]}")"
             ;;
         dmd-*) # nightly master or feature branch
             # dmd-nightly, dmd-master, dmd-branch
@@ -430,6 +467,7 @@ resolve_latest() {
 }
 
 install_compiler() {
+    local compiler="$1"
     # dmd-2.065, dmd-2.068.0, dmd-2.068.1-b1
     if [[ $1 =~ ^dmd-2\.([0-9]{3})(\.[0-9])?(-.*)?$ ]]; then
         local basename="dmd.2.${BASH_REMATCH[1]}${BASH_REMATCH[2]}${BASH_REMATCH[3]}"
@@ -449,13 +487,20 @@ install_compiler() {
             local arch="zip"
         fi
 
+        local mirrors
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
-            local url="http://downloads.dlang.org/pre-releases/2.x/$ver/$basename.$arch"
+            mirrors=(
+                "http://downloads.dlang.org/pre-releases/2.x/$ver/$basename.$arch"
+                "http://ftp.digitalmars.com/$basename.$arch"
+            )
         else
-            local url="http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
+            mirrors=(
+                "http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
+                "http://ftp.digitalmars.com/$basename.$arch"
+            )
         fi
 
-        download_and_unpack "$url" "$ROOT/$1" "$url.sig"
+        download_and_unpack_with_verify "$ROOT/$compiler" "${mirrors[@]}"
 
     # dmd-2015-11-20, dmd-feature_branch-2016-10-20
     elif [[ $1 =~ ^dmd(-(.*))?-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
@@ -466,7 +511,7 @@ install_compiler() {
         fi
         local url="http://nightlies.dlang.org/$1/$basename.tar.xz"
 
-        download_and_unpack "$url" "$ROOT/$1" "$url.sig"
+        download_and_unpack_with_verify "$ROOT/$compiler" "$url"
 
     # ldc-0.12.1 or ldc-0.15.0-alpha1
     elif [[ $1 =~ ^ldc-([0-9]+\.[0-9]+\.[0-9]+(-.*)?)$ ]]; then
@@ -476,7 +521,7 @@ install_compiler() {
             fatal "no ldc binaries available for $OS"
         fi
 
-        download_and_unpack "$url" "$ROOT/$1"
+        download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
     elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
@@ -490,15 +535,15 @@ install_compiler() {
         esac
         local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
 
-        download_and_unpack "$url" "$ROOT/$1"
+        download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
         url=https://raw.githubusercontent.com/D-Programming-GDC/GDMD/130f552ca43a77ee5c638fcc5a106f41dac607b9/dmd-script
         log "Downloading gdmd $url"
-        download "$url" "$ROOT/$1/bin/gdmd"
+        download_without_verify "$ROOT/$1/bin/gdmd" "$url"
         chmod +x "$ROOT/$1/bin/gdmd"
 
     else
-        fatal "Unknown compiler '$1'"
+        fatal "Unknown compiler '$compiler'"
     fi
 }
 
@@ -513,11 +558,16 @@ find_gpg() {
     fi
 }
 
-# url, path, [verify]
+# path, verify (0/1), urls...
+# the gpg signature is assumed to be url+.sig
 download_and_unpack() {
+    local path do_verify urls
+    path="$1"
+    do_verify="$2"
+    urls=("${@:3}")
     local tmp name
     tmp=$(mkdtemp)
-    name="$(basename "$1")"
+    name="$(basename "${urls[0]}")"
 
     check_tools curl
     if [[ $name =~ \.tar\.xz$ ]]; then
@@ -526,8 +576,8 @@ download_and_unpack() {
         check_tools unzip
     fi
 
-    log "Downloading and unpacking $1"
-    download "$1" "$tmp/$name" "${3:-}"
+    log "Downloading and unpacking ${urls[0]}"
+    download "$tmp/$name" "$do_verify" "${urls[@]}"
     if [[ $name =~ \.tar\.xz$ ]]; then
         tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
     else
@@ -536,20 +586,38 @@ download_and_unpack() {
         rmdir "$tmp/dmd2"
     fi
     rm "$tmp/$name"
-    mv "$tmp" "$2"
+    mv "$tmp" "$path"
 }
 
+# path, urls...
+download_and_unpack_with_verify() {
+    download_and_unpack "$1" 1 "${@:2}"
+}
+
+# path, urls...
+download_and_unpack_without_verify() {
+    download_and_unpack "$1" 0 "${@:2}"
+}
+
+# path, urls...
 verify() {
+    local path urls
+    path="$1"
+    urls=("${@:2}")
+    local keyring_mirrors=(
+        "https://dlang.org/d-keyring.gpg"
+        "https://nightlies.dlang.org/d-keyring.gpg"
+    )
     : "${GPG:=$(find_gpg)}"
     if [ "$GPG" = x ]; then
         return
     fi
     if [ ! -f "$ROOT/d-keyring.gpg" ]; then
         log "Downloading https://dlang.org/d-keyring.gpg"
-        download https://dlang.org/d-keyring.gpg "$ROOT/d-keyring.gpg"
+        download_without_verify "$ROOT/d-keyring.gpg" "${keyring_mirrors[@]}"
     fi
-    if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "$1") "$2" 2>/dev/null; then
-        fatal "Invalid signature $1"
+    if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>/dev/null; then
+        fatal "Invalid signature ${urls[0]}"
     fi
 }
 
@@ -707,7 +775,7 @@ install_dub() {
     url="http://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
 
     log "Downloading and unpacking $url"
-    download "$url" "$tmp/dub.tar.gz"
+    download_without_verify "$tmp/dub.tar.gz" "$url"
     tar -C "$tmp" -zxf "$tmp/dub.tar.gz"
     logV "Removing old dub versions"
     rm -rf "$ROOT/dub" "$ROOT/dub-*"
