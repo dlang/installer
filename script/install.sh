@@ -3,6 +3,7 @@
 # Copyright: Copyright Martin Nowak 2015 -.
 # License: Boost License 1.0 (www.boost.org/LICENSE_1_0.txt)
 # Authors: Martin Nowak
+# Documentation: https://dlang.org/install.html
 
 _() {
 set -ueo pipefail
@@ -91,6 +92,7 @@ COMMAND=
 COMPILER=dmd
 VERBOSITY=1
 ROOT=~/dlang
+DUB_BIN_PATH=
 case $(uname -s) in
     Darwin) OS=osx;;
     Linux) OS=linux;;
@@ -323,7 +325,19 @@ run_command() {
             else
                 install_compiler "$2"
             fi
-            install_dub
+
+            local -r binpath=$(binpath_for_compiler "$2")
+            if [ -f "$ROOT/$2/$binpath/dub" ]; then
+                if [[ $("$ROOT/$2/$binpath/dub" --version) =~ ([0-9]+\.[0-9]+\.[0-9]+(-[^, ]+)?) ]]; then
+                    log "Using dub ${BASH_REMATCH[1]} shipped with $2"
+                else
+                    log "Using dub shipped with $2"
+                fi
+            else
+                DUB_BIN_PATH="${ROOT}/dub"
+                install_dub
+            fi
+
             write_env_vars "$2"
 
             if [ "$(basename "$SHELL")" = fish ]; then
@@ -539,26 +553,43 @@ verify() {
     fi
 }
 
-write_env_vars() {
+binpath_for_compiler() {
     case $1 in
         dmd*)
             local suffix
             [ $OS = osx ] || suffix=$MODEL
-            local binpath=$OS/bin$suffix
+            local -r binpath=$OS/bin$suffix
+            ;;
+
+        ldc*)
+            local -r binpath=bin
+            ;;
+
+        gdc*)
+            local -r binpath=bin
+            ;;
+    esac
+    echo "$binpath"
+}
+
+write_env_vars() {
+    local -r binpath=$(binpath_for_compiler "$1")
+    case $1 in
+        dmd*)
+            local suffix
+            [ $OS = osx ] || suffix=$MODEL
             local libpath=$OS/lib$suffix
             local dc=dmd
             local dmd=dmd
             ;;
 
         ldc*)
-            local binpath=bin
             local libpath=lib
             local dc=ldc2
             local dmd=ldmd2
             ;;
 
         gdc*)
-            local binpath=bin
             if [ -d "$ROOT/$1/lib$MODEL" ]; then
                 local libpath=lib$MODEL
             else
@@ -592,9 +623,9 @@ _OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
 _OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
 _OLD_D_PS1="\${PS1:-}"
 
-export PATH="$ROOT/dub:$ROOT/$1/$binpath:\${PATH:-}"
-export LIBRARY_PATH="$ROOT/$1/$libpath:\${LIBRARY_PATH:-}"
-export LD_LIBRARY_PATH="$ROOT/$1/$libpath:\${LD_LIBRARY_PATH:-}"
+export PATH="${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT/$1/$binpath\${PATH:+:}\${PATH:-}"
+export LIBRARY_PATH="$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}"
+export LD_LIBRARY_PATH="$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
 export DC=$dc
 export PS1="($1)\${PS1:-}"
@@ -624,9 +655,9 @@ set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
 set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
 set -g _OLD_D_PS1 \$PS1
 
-set -gx PATH "$ROOT/dub" "$ROOT/$1/$binpath" \$PATH
-set -gx LIBRARY_PATH "$ROOT/$1/$libpath" \$LIBRARY_PATH
-set -gx LD_LIBRARY_PATH "$ROOT/$1/$libpath" \$LD_LIBRARY_PATH
+set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT/$1/$binpath' \$PATH
+set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH
+set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH
 set -gx DMD $dmd
 set -gx DC $dc
 functions -c fish_prompt _old_d_fish_prompt
@@ -665,7 +696,7 @@ install_dub() {
         return
     fi
     local url=http://code.dlang.org/download/LATEST
-    logV "Determing latest dub version ($url)."
+    logV "Determining latest dub version ($url)."
     dub="dub-$(fetch $url)"
     if [ -d "$ROOT/$dub" ]; then
         log "$dub already installed"

@@ -514,6 +514,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
                 run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
                 // put into docs/ folder which gets copied to all other platforms
                 copyFile("d-tags-release.json", origDir~"/docs/d-tags-release.json");
+                // copy generated man pages to docs/man which gets copied to all other platforms
+                copyDir(cloneDir~"/dmd/generated/docs/man", origDir~"/docs/man");
             }
         }
         else version (Windows)
@@ -591,6 +593,7 @@ void createRelease(string branch)
             !a.startsWith("images/original/") &&
             !a.startsWith("chm/") &&
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
+        // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
         version(Windows)
         {
@@ -598,8 +601,9 @@ void createRelease(string branch)
                 copyFile(cloneDir~"/dlang.org/d.chm", releaseBin32Dir~"/d.chm");
         }
         copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
-        copyDirVersioned(cloneDir~"/dmd/docs/man", releaseDir~"/dmd2/man");
         copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
+        // copy man pages from linux build
+        copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
         makeDir(releaseDir~"/dmd2/html/d/zlib");
         copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
         copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");
