@@ -512,21 +512,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             {
                 changeDir(cloneDir~"/dlang.org");
                 run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
-                // put into docs/ folder which gets copied to all other platforms
-                copyFile("d-tags-release.json", origDir~"/docs/d-tags-release.json");
                 // copy generated man pages to docs/man which gets copied to all other platforms
                 copyDir(cloneDir~"/dmd/generated/docs/man", origDir~"/docs/man");
-            }
-        }
-        else version (Windows)
-        {
-            if (bits == Bits.bits32)
-            {
-                // copy linux-generated docs into dlang.org
-                copyDir(origDir~"/docs", cloneDir~"/dlang.org");
-                // and build the d.chm file
-                changeDir(cloneDir~"/dlang.org");
-                run(makecmd~" chm");
             }
         }
     }
@@ -538,12 +525,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" rdmd");
         run(makecmd~" ddemangle");
         run(makecmd~" dustmite");
-        if (!skipDocs)
-        {
-            // use tags built with linux docs
-            copyFile(origDir~"/docs/d-tags-release.json", cloneDir~"/tools/d-tags.json");
-            run(makecmd~" dman");
-        }
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
 
@@ -595,11 +576,6 @@ void createRelease(string branch)
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-        version(Windows)
-        {
-            if(do32Bit)
-                copyFile(cloneDir~"/dlang.org/d.chm", releaseBin32Dir~"/d.chm");
-        }
         copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
         copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
         // copy man pages from linux build
