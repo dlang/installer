@@ -116,3 +116,19 @@ git checkout -- script/install.sh
 if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     shellcheck script/install.sh
 fi
+
+# Test user config
+mkdir -p ~/.config/dlang
+echo "ROOT=~/.dlang" > ~/.config/dlang/installer.cfg
+./script/install.sh dmd
+has_user_installed_dmd=0
+for file in ~/.dlang/dmd* ; do
+    if [ -e "$file" ] ; then
+        has_user_installed_dmd=1
+        break
+    fi
+done
+if [ ${has_user_installed_dmd} -eq 0 ] ; then
+    echo "Failed to install DMD in the user-specified directory."
+fi
+rm -rf ~/.dlang ~/.config
