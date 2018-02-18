@@ -177,7 +177,7 @@ else
 
 	# generate copyright file
 	mkdir -p usr/share/doc/$PHOBOSPKG
-	I="../$UNZIPDIR/src/druntime/LICENSE"
+	I="../$UNZIPDIR/src/druntime/LICENSE.txt"
 	sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
 	if [ $(sed -n '/====/=' $I"_tmp") ]
 	then
@@ -190,7 +190,7 @@ else
 	Files: usr/lib/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
 	License: Boost License 1.0' | sed 's/^\t//' > usr/share/doc/$PHOBOSPKG/copyright
-	cat ../$UNZIPDIR/src/druntime/LICENSE_tmp >> usr/share/doc/$PHOBOSPKG/copyright
+	cat ../$UNZIPDIR/src/druntime/LICENSE.txt_tmp >> usr/share/doc/$PHOBOSPKG/copyright
 
 
 	# create changelog
