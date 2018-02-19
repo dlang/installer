@@ -226,24 +226,12 @@ auto addPrefix(R)(R rng, string prefix)
 
 void prepareExtraBins(string workDir)
 {
-    auto winBins = [
-        "windbg.hlp", "ddemangle.exe", "lib.exe", "link.exe", "make.exe",
-        "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
-        "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll", "libcurl.dll",
-    ].addPrefix("bin/");
-    auto winBins64 = ["libcurl.dll"].addPrefix("bin64/");
-    auto winLibs = [
-        "advapi32.lib", "COMCTL32.LIB", "comdlg32.lib", "CTL3D32.LIB",
-        "gdi32.lib", "kernel32.lib", "ODBC32.LIB", "ole32.lib", "OLEAUT32.LIB",
-        "rpcrt4.lib", "shell32.lib", "snn.lib", "user32.lib", "uuid.lib",
-        "winmm.lib", "winspool.lib", "WS2_32.LIB", "wsock32.lib", "curl.lib",
-        "update_libs.bat",
-    ].addPrefix("lib/");
-    auto winLibs64 = ["curl.lib"].addPrefix("lib64/");
-    auto winFiles = chain(winBins, winBins64, winLibs, winLibs64).array();
-
     auto extraBins = [
-        windows_both : winFiles,
+        windows_both : [
+            "windbg.hlp", "lib.exe", "link.exe", "make.exe",
+            "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
+            "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll"
+        ].addPrefix("bin/").array,
         linux_both : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
         freebsd_32 : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
         freebsd_64 : [],
@@ -460,6 +448,8 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.52.1-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
+    enum mingwlibs = "mingw-libs-5.0.2.zip";
+    enum lld = "lld-link-5.0.1.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -470,6 +460,8 @@ int main(string[] args)
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
     fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, true);
+    fetchFile("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, true);
+    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, true);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
@@ -477,16 +469,12 @@ int main(string[] args)
 
     if (platforms.canFind!(p => p.os == OS.windows))
     {
-        // Use latest optlink
+        // Use latest optlink to build release
         remove(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe");
         extract(cacheDir~"/"~optlink, workDir~"/windows/old-dmd/dmd2/windows/bin/");
-        // Use latest libC (snn.lib)
+        // Use latest libC (snn.lib) to build release
         remove(workDir~"/windows/old-dmd/dmd2/windows/lib/snn.lib");
         copyFile(cacheDir~"/"~libC, workDir~"/windows/old-dmd/dmd2/windows/lib/"~libC);
-        // Get libcurl for windows
-        extract(cacheDir~"/"~libCurl, workDir~"/windows/old-dmd/");
-        // Get updated OMF import libraries
-        extract(cacheDir~"/"~omflibs, workDir~"/windows/old-dmd/dmd2/windows/lib/");
     }
 
     cloneSources(gitTag, dubTag, isBranch, skipDocs, workDir~"/clones");
@@ -503,7 +491,21 @@ int main(string[] args)
                 "Mismatch between dmd/VERSION: '"~dmdVer~"' and git tag: '"~gitTag~"'.");
     }
     applyPatches(gitTag, skipDocs, workDir~"/clones");
+
+    // copy weird custom binaries from the previous release
     prepareExtraBins(workDir);
+    // add latest optlink
+    extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
+    // add latest dmc libC (snn.lib)
+    copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
+    // add libcurl build for windows
+    extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
+    // add updated OMF import libraries
+    extract(cacheDir~"/"~omflibs, workDir~"/windows/extraBins/dmd2/windows/lib/");
+    // add mingw coff libraries
+    extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
+    // add lld linker
+    extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
 
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
