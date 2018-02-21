@@ -10,8 +10,10 @@ coverage:
 
   status:
     # Learn more at https://docs.codecov.io/docs/commit-status
-    project: true
-    patch: true
-    changes: true
+    project: off
+    patch:
+      default:
+        informational: true
+    changes: off
 
 comment: false
