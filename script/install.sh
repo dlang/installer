@@ -342,9 +342,7 @@ run_command() {
     case $1 in
         install)
             check_tools curl
-            if [ ! -f "$ROOT/install.sh" ]; then
-                install_dlang_installer
-            fi
+            install_dlang_installer || log "Updating the installer failed."
             if [ -z "${2:-}" ]; then
                 fatal "Missing compiler argument for $1 command.";
             fi
