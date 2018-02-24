@@ -3,6 +3,7 @@
 set ROOT=%CD%
 
 call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
+cd %ROOT%
 
 echo d5b36c0005824f07ab093616bdff247f3da817cae2c51371e1d1473af717d895 lld.src.tar.xz> sha256sums
 echo 5fa7489fc0225b11821cab0362f5813a05f2bcf2533e8a4ea9c9c860168807b0 llvm.src.tar.xz>> sha256sums
@@ -30,6 +31,9 @@ cd %lld_build_dir%
 set CMAKE_OPT=-G "Visual Studio 15"
 set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_BUILD_TYPE=Release
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_TARGETS_TO_BUILD=X86
+set CMAKE_OPT=%CMAKE_OPT% -DLLVM_USE_CRT_DEBUG=MTd
+set CMAKE_OPT=%CMAKE_OPT% -DLLVM_USE_CRT_RELEASE=MT
+set CMAKE_OPT=%CMAKE_OPT% -DLLVM_USE_CRT_MINSIZEREL=MT
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_INCLUDE_DIRS="c:/projects/llvm/include"
 
 cmake %CMAKE_OPT% ..\llvm || exit /B 1
