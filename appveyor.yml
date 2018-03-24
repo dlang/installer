@@ -1,0 +1,15 @@
+os: Visual Studio 2017
+
+environment:
+  matrix:
+    - ARCH:                x86
+      GMAKE_VER:           4.2
+
+artifacts:
+  - path: gmake-$(GMAKE_VER).zip
+    name: gmake
+
+build_script:
+  - call windows\build_gmake.bat
+
+test_script: true
