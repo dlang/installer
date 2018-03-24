@@ -616,7 +616,7 @@ verify() {
         log "Downloading https://dlang.org/d-keyring.gpg"
         download_without_verify "$ROOT/d-keyring.gpg" "${keyring_mirrors[@]}"
     fi
-    if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>/dev/null; then
+    if ! fetch "${urls[@]}" | $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring - "$path" 2>/dev/null ; then
         fatal "Invalid signature ${urls[0]}"
     fi
 }
