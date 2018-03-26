@@ -401,12 +401,23 @@ Run \`deactivate\` later on to restore your environment."
 install_dlang_installer() {
     local tmp mirrors
     tmp=$(mkdtemp)
-    mirrors=(
+    local mirrors=(
         "https://dlang.org/install.sh"
         "https://nightlies.dlang.org/install.sh"
     )
+    local keyring_mirrors=(
+        "https://dlang.org/d-keyring.gpg"
+        "https://nightlies.dlang.org/d-keyring.gpg"
+    )
 
     mkdir -p "$ROOT"
+    log "Downloading https://dlang.org/d-keyring.gpg"
+    if [ ! -f "$ROOT/d-keyring.gpg" ]; then
+        download_without_verify "$tmp/d-keyring.gpg" "${keyring_mirrors[@]}"
+    else
+        download_with_verify "$tmp/d-keyring.gpg" "${keyring_mirrors[@]}"
+    fi
+    mv "$tmp/d-keyring.gpg" "$ROOT/d-keyring.gpg"
     log "Downloading ${mirrors[0]}"
     download_with_verify "$tmp/install.sh" "${mirrors[@]}"
     mv "$tmp/install.sh" "$ROOT/install.sh"
@@ -604,17 +615,9 @@ verify() {
     local path urls
     path="$1"
     urls=("${@:2}")
-    local keyring_mirrors=(
-        "https://dlang.org/d-keyring.gpg"
-        "https://nightlies.dlang.org/d-keyring.gpg"
-    )
     : "${GPG:=$(find_gpg)}"
     if [ "$GPG" = x ]; then
         return
-    fi
-    if [ ! -f "$ROOT/d-keyring.gpg" ]; then
-        log "Downloading https://dlang.org/d-keyring.gpg"
-        download_without_verify "$ROOT/d-keyring.gpg" "${keyring_mirrors[@]}"
     fi
     if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>/dev/null; then
         fatal "Invalid signature ${urls[0]}"
