@@ -2,10 +2,10 @@
 Win32 files
 -----------
 
-dmd.exe		D compiler			http://www.digitalmars.com/d/2.0/dmd-windows.html
-sc.ini		D compiler configuration file	http://www.digitalmars.com/d/2.0/dmd-windows.html#sc_ini
+dmd.exe		D compiler			http://dlang.org/dmd-windows.html
+sc.ini		D compiler configuration file	http://dlang.org/dmd-windows.html#sc_ini
 shell.exe	Test script runner		http://www.digitalmars.com/ctg/shell.html
-rdmd.exe	Run D program as a script	http://www.digitalmars.com/d/2.0/rdmd.html
+rdmd.exe	Run D program as a script	http://dlang.org/rdmd.html
 lib.exe		Librarian			http://www.digitalmars.com/ctg/lib.html
 link.exe	Linker				http://www.digitalmars.com/ctg/optlink.html
 make.exe	Make program			http://www.digitalmars.com/ctg/make.html
