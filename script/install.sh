@@ -40,7 +40,7 @@ fatal() {
 curl2() {
     : "${CURL_USER_AGENT:="installer/install.sh $(command curl --version | head -n 1)"}"
     TIMEOUT_ARGS=(--connect-timeout 5 --speed-time 30 --speed-limit 1024)
-    command curl "${TIMEOUT_ARGS[@]}" -fL -A "$CURL_USER_AGENT" "$@"
+    command curl --fail "${TIMEOUT_ARGS[@]}" -fL -A "$CURL_USER_AGENT" "$@"
 }
 
 curl() {
@@ -62,6 +62,7 @@ retry() {
         fi
     done
 }
+
 # path, verify (0/1), urls...
 # the gpg signature is assumed to be url+.sig
 download() {
@@ -76,9 +77,10 @@ download() {
                 log "Falling back to mirror: ${mirrors[$i]}"
             fi
             if curl "${mirrors[$i]}" -o "$path" ; then
-                break
+                return
             fi
         done
+        return 1
     }
     retry try_all_mirrors
     if [ "$do_verify" -eq 1 ]; then
@@ -105,9 +107,10 @@ fetch() {
     try_all_mirrors() {
         for mirror in "${mirrors[@]}" ; do
             if curl2 -sS "$mirror" -o "$path" ; then
-                break
+                return
             fi
         done
+        return 1
     }
     retry try_all_mirrors
     cat "$path"
