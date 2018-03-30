@@ -203,7 +203,7 @@ else
 
 
 	# set deb package dependencies
-	DEPENDS="libc6, libcurl3"
+	DEPENDS="libc6, libcurl4 | libcurl3"
 
 
 	# create control file
