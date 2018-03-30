@@ -203,7 +203,8 @@ else
 
 
 	# set deb package dependencies
-	DEPENDS="libc6, libcurl3"
+	DEPENDS="libc6"
+	SUGGESTS="libcurl3, libcurl4-openssl-dev"
 
 
 	# create control file
@@ -214,6 +215,7 @@ else
 	Maintainer: '$MAINTAINER'
 	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
 	Depends: '$DEPENDS'
+	Suggests: '$SUGGESTS'
 	Conflicts: '$UNZIPDIR-$MINOR'
 	Replaces: '$UNZIPDIR-$MINOR'
 	Section: libs
