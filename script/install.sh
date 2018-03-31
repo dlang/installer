@@ -40,7 +40,7 @@ fatal() {
 curl2() {
     : "${CURL_USER_AGENT:="installer/install.sh $(command curl --version | head -n 1)"}"
     TIMEOUT_ARGS=(--connect-timeout 5 --speed-time 30 --speed-limit 1024)
-    command curl --fail "${TIMEOUT_ARGS[@]}" -fL -A "$CURL_USER_AGENT" "$@"
+    command curl --fail "${TIMEOUT_ARGS[@]}" -L -A "$CURL_USER_AGENT" "$@"
 }
 
 curl() {
