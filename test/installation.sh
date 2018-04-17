@@ -10,18 +10,21 @@ fi
 VERSION="$1"
 
 : ${BUILD_DIR:='../create_dmd_release/build'}
-DEB="dmd_$VERSION-0_amd64.deb"
+# dmd_2.079.1-0_amd64.deb, dmd_2.079.1~beta.1-0_amd64.deb
+DEB="dmd_${VERSION/-/\~}-0_amd64.deb"
 # TODO: test rpms
+# dmd-2.079.1-0.fedora.x86_64.rpm, dmd-2.079.1~beta.1-0.fedora.x86_64.rpm
 #RPM="$BUILD_DIR/dmd-$VERSION-0.fedora.x86_64.rpm"
+# dmd-2.079.1-0.openSUSE.x86_64.rpm, dmd-2.079.1~beta.1-0.openSUSE.x86_64.rpm
 #SUSE_RPM="$BUILD_DIR/dmd-$VERSION-0.openSUSE.x86_64.rpm"
 DEB_PLATFORMS=(ubuntu:precise ubuntu:trusty ubuntu:xenial ubuntu:bionic)
 DEB_PLATFORMS+=(debian:wheezy debian:jessie debian:stretch)
 
 # copy pkgs to test folder so that it's part of docker's build context
-cp "$BUILD_DIR/dmd_$VERSION-0_amd64.deb" .
+cp "$BUILD_DIR/$DEB" .
 # TODO: test rpms
-#cp "$BUILD_DIR/dmd-$VERSION-0.fedora.x86_64.rpm" .
-#cp "$BUILD_DIR/dmd-$VERSION-0.openSUSE.x86_64.rpm" .
+#cp "$BUILD_DIR/$RPM" .
+#cp "$BUILD_DIR/$SUSE_RPM" .
 
 trap 'echo -e "\e[1;31mOuter script failed at line $LINENO.\e[0m"' ERR
 
