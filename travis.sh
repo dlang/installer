@@ -20,6 +20,15 @@ versions=(
     'LDC - the LLVM D compiler (1.4.0):'
 )
 
+frontendVersions=(
+    '2069'
+    '2071'
+    '2077'
+    '2073'
+    '2073'
+    '2074'
+)
+
 if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     compilers+=(
         gdc-4.9.3
@@ -30,7 +39,14 @@ if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
         'gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3'
         'gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5'
     )
+    frontendVersions+=(
+        '2066'
+        '2068'
+    )
 fi
+
+testFile=/tmp/$(mktemp tmp_XXXXXXXX)
+echo "void main(){ import std.stdio; __VERSION__.writeln;}" > "${testFile}.d"
 
 for idx in "${!compilers[@]}"
 do
@@ -45,7 +61,12 @@ do
     test "$compilerVersion" = "${versions[$idx]}"
     deactivate
 
+    # Check whether the compilers have been successfully installed
+    touch "$testFile".d
     source $(./script/install.sh $compiler --activate)
+    ${DMD} "-of${testFile}" "${testFile}.d"
+    test "$(${testFile})" = "${frontendVersions[$idx]}"
+    rm ${testFile}
     deactivate
 
     source $(./script/install.sh $compiler -a)
