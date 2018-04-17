@@ -10,34 +10,54 @@ fi
 VERSION="$1"
 
 : ${BUILD_DIR:='../create_dmd_release/build'}
-DEB="dmd_$VERSION-0_amd64.deb"
-# TODO: test rpms
-#RPM="$BUILD_DIR/dmd-$VERSION-0.fedora.x86_64.rpm"
-#SUSE_RPM="$BUILD_DIR/dmd-$VERSION-0.openSUSE.x86_64.rpm"
+# dmd_2.079.1-0_amd64.deb, dmd_2.079.1~beta.1-0_amd64.deb
+DEB="dmd_${VERSION/-/\~}-0_amd64.deb"
+# dmd-2.079.1-0.fedora.x86_64.rpm, dmd-2.079.1~beta.1-0.fedora.x86_64.rpm
+RPM="dmd-$VERSION-0.fedora.x86_64.rpm"
+# dmd-2.079.1-0.openSUSE.x86_64.rpm, dmd-2.079.1~beta.1-0.openSUSE.x86_64.rpm
+SUSE_RPM="dmd-$VERSION-0.openSUSE.x86_64.rpm"
+
 DEB_PLATFORMS=(ubuntu:precise ubuntu:trusty ubuntu:xenial ubuntu:bionic)
 DEB_PLATFORMS+=(debian:wheezy debian:jessie debian:stretch)
+RPM_PLATFORMS=(fedora:26 fedora:27 fedora:28 centos:6 centos:7)
+SUSE_RPM_PLATFORMS=(opensuse:leap opensuse:tumbleweed)
 
 # copy pkgs to test folder so that it's part of docker's build context
-cp "$BUILD_DIR/dmd_$VERSION-0_amd64.deb" .
-# TODO: test rpms
-#cp "$BUILD_DIR/dmd-$VERSION-0.fedora.x86_64.rpm" .
-#cp "$BUILD_DIR/dmd-$VERSION-0.openSUSE.x86_64.rpm" .
+cp "$BUILD_DIR/$DEB" .
+cp "$BUILD_DIR/$RPM" .
+cp "$BUILD_DIR/$SUSE_RPM" .
 
 trap 'echo -e "\e[1;31mOuter script failed at line $LINENO.\e[0m"' ERR
 
-for platform in "${DEB_PLATFORMS[@]}"; do
-    echo -e "\e[1;33mTesting installation of $DEB on $platform.\e[0m"
+# platform, package (test script on stdin)
+test_platform() {
+    local platform="$1"
+    local pkg="$2"
+
+    echo -e "\e[1;33mTesting installation of $pkg on $platform.\e[0m"
     img_tag="test_${platform//:/_}"
     # build docker image containing package
     cat > Dockerfile <<EOF
 FROM $platform
 COPY test_curl.d .
-COPY $DEB .
+COPY $pkg .
 EOF
     docker build . --tag="$img_tag" >/dev/null
 
-    # test installation
-    docker run --rm -i "$img_tag" bash -s <<EOF
+    # test installation, using script from caller's stdin
+    docker run --rm -i "$img_tag" bash -s
+
+    # remove docker image
+    docker rmi "$img_tag" >/dev/null
+    rm Dockerfile
+}
+
+# ==============================================================================
+# DEB
+# ------------------------------------------------------------------------------
+
+for platform in "${DEB_PLATFORMS[@]}"; do
+    test_platform "$platform" "$DEB" <<EOF
 set -euo pipefail
 
 trap 'echo -e "\e[1;31mInner script failed at line \$LINENO.\e[0m"' ERR
@@ -54,8 +74,42 @@ curl --version >/dev/null
 # run a complex D hello world (using libcurl)
 dmd -run test_curl.d
 EOF
+done
 
-    # remove docker image
-    docker rmi "$img_tag" >/dev/null
-    rm Dockerfile
+# ==============================================================================
+# RPM
+# ------------------------------------------------------------------------------
+
+for platform in "${RPM_PLATFORMS[@]}"; do
+    test_platform "$platform" "$RPM" <<EOF
+set -euo pipefail
+
+trap 'echo -e "\e[1;31mInner script failed at line \$LINENO.\e[0m"' ERR
+set -x
+
+yum install curl --quiet --assumeyes
+yum localinstall $RPM --quiet --assumeyes
+curl --version >/dev/null
+# run a complex D hello world (using libcurl)
+dmd -run test_curl.d
+EOF
+done
+
+# ==============================================================================
+# SUSE
+# ------------------------------------------------------------------------------
+
+for platform in "${SUSE_RPM_PLATFORMS[@]}"; do
+    test_platform "$platform" "$SUSE_RPM" <<EOF
+set -euo pipefail
+
+trap 'echo -e "\e[1;31mInner script failed at line \$LINENO.\e[0m"' ERR
+set -x
+
+zypper --quiet --non-interactive install curl >/dev/null
+zypper --quiet --non-interactive --no-gpg-checks install $SUSE_RPM >/dev/null
+curl --version >/dev/null
+# run a complex D hello world (using libcurl)
+dmd -run test_curl.d
+EOF
 done
