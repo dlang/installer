@@ -15,7 +15,7 @@ matrix:
         - cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local .
         - make install -j$(nproc)
         - popd
-      script: kcov --exclude-pattern=travis.sh $PWD/coverage ./travis.sh
+      script: kcov --exclude-pattern=travis.sh $PWD/coverage ./test/all.sh
       after_success: bash <(curl -s https://codecov.io/bash) -s $PWD/coverage
     - os: osx
-      script: ./travis.sh
+      script: ./test/all.sh

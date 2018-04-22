@@ -556,6 +556,12 @@ install_compiler() {
         download_without_verify "$ROOT/$1/bin/gdmd" "$url"
         chmod +x "$ROOT/$1/bin/gdmd"
 
+        url=https://raw.githubusercontent.com/dlang/tools/e88c44d1818996b852bd0dfa0406f60e391f0687/rdmd.d
+        log "Downloading rdmd $url"
+        download_without_verify "$ROOT/$1/bin/rdmd.d" "$url"
+        log "Building rdmd"
+        "$ROOT/$1/bin/gdc" -O3 -o "$ROOT/$1/bin/rdmd" "$ROOT/$1/bin/rdmd.d"
+
     else
         fatal "Unknown compiler '$compiler'"
     fi
@@ -648,6 +654,7 @@ binpath_for_compiler() {
 
 write_env_vars() {
     local -r binpath=$(binpath_for_compiler "$1")
+    local rdmd=rdmd
     case $1 in
         dmd*)
             local suffix
@@ -689,6 +696,7 @@ deactivate() {
     unset _OLD_D_PS1
     unset DMD
     unset DC
+    unset RDMD
     unset -f deactivate
 }
 
@@ -702,6 +710,7 @@ export LIBRARY_PATH="$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}"
 export LD_LIBRARY_PATH="$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}"
 export DMD=$dmd
 export DC=$dc
+export RDMD=$rdmd
 export PS1="($1)\${PS1:-}"
 EOF
 
