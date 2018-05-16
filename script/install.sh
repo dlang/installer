@@ -770,8 +770,8 @@ install_dub() {
         return
     fi
     local latestMirrors=(
-        "http://code.dlang.org/download/LATEST"
         "http://dlang.github.io/dub/LATEST"
+        "http://code.dlang.org/download/LATEST"
     )
     logV "Determining latest dub version (${latestMirrors[0]})."
     dubVersion="$(fetch "${latestMirrors[@]}")"
@@ -783,8 +783,8 @@ install_dub() {
     local tmp url
     tmp=$(mkdtemp)
     local mirrors=(
-        "http://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
         "https://github.com/dlang/dub/releases/download/${dubVersion}/$dub-$OS-$ARCH.tar.gz"
+        "http://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
     )
     log "Downloading and unpacking ${mirrors[0]}"
     download_without_verify "$tmp/dub.tar.gz" "${mirrors[@]}"
