@@ -428,7 +428,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         enum dmdConf = "dmd.conf";
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD;
-    auto isRelease = " RELEASE=1";
+    auto isRelease = " ENABLE_RELEASE=1";
     auto latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
