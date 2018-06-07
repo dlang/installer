@@ -13,9 +13,9 @@ VERSION="$1"
 # dmd_2.079.1-0_amd64.deb, dmd_2.079.1~beta.1-0_amd64.deb
 DEB="dmd_${VERSION/-/\~}-0_amd64.deb"
 # dmd-2.079.1-0.fedora.x86_64.rpm, dmd-2.079.1~beta.1-0.fedora.x86_64.rpm
-RPM="dmd-$VERSION-0.fedora.x86_64.rpm"
+RPM="dmd-${VERSION/-/\~}-0.fedora.x86_64.rpm"
 # dmd-2.079.1-0.openSUSE.x86_64.rpm, dmd-2.079.1~beta.1-0.openSUSE.x86_64.rpm
-SUSE_RPM="dmd-$VERSION-0.openSUSE.x86_64.rpm"
+SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 
 DEB_PLATFORMS=(ubuntu:precise ubuntu:trusty ubuntu:xenial ubuntu:bionic)
 DEB_PLATFORMS+=(debian:wheezy debian:jessie debian:stretch)
