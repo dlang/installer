@@ -15,7 +15,7 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 /// Open Source OS boxes are from http://www.vagrantbox.es/
 /// For each box additional setup steps were performed, afterwards the boxes were repackaged.
 
-/// Name: create_dmd_release-freebsd-64
+/// Name: create_dmd_release-freebsd-32
 /// VagrantBox.es: FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
 /// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box
 /// Setup: sudo pkg_add -r curl git gmake rsync
