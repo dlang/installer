@@ -1,0 +1,15 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "opscode_debian-7.4_chef-provisionerless"
+
+  config.vm.box_check_update = false
+  config.vm.provision "shell", inline: <<-SHELL
+    echo 'deb http://deb.debian.org/debian wheezy-backports main' | sudo tee -a /etc/apt/sources.list
+    sudo dpkg --add-architecture i386
+    sudo apt-get -y update
+    sudo apt-get -y -t wheezy-backports install git g++-multilib dpkg-dev rpm rsync unzip libcurl3 libcurl3:i386 --no-install-recommends
+    sudo apt-get clean
+   SHELL
+end

@@ -1,3 +1,5 @@
 cached_downloads
 dmd*.zip
 dmd*.exe
+*.box
+/build/
