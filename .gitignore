@@ -3,3 +3,4 @@ osx/dmg
 *.dmg
 .DS_Store
 coverage/
+script/install.sh.sig
