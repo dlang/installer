@@ -31,7 +31,7 @@ directory structure of DMD. Extract that file, and if necessary, update any
 of the files to the latest versions, or add any new files as desired.
 
 2. On 64-bit multilib versions of each supported OS (Windows, OSX, Linux, and
-FreeBSD), genrate the platform-specific releases by running this (from
+FreeBSD), generate the platform-specific releases by running this (from
 whatever directory you want the resulting archives placed):
 
 $ [path-to]/create_dmd_release v2.064 --extras=[path-to]/localextras-[os]
