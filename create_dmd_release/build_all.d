@@ -6,7 +6,8 @@ A working dmd installation to compile this script (also requires libcurl).
 Install Vagrant (https://learnchef.opscode.com/screencasts/install-vagrant/)
 Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-box/)
 +/
-import std.algorithm, std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
+import std.algorithm, std.conv, std.exception, std.file, std.getopt, std.path, std.process, std.stdio, std.string, std.range;
+import std.parallelism : parallel;
 import common;
 
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
@@ -43,7 +44,7 @@ enum osx_both = Platform(OS.osx, Model._both);
 /// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
 enum windows_both = Platform(OS.windows, Model._both);
 
-enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
+auto platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
 
 enum OS { freebsd, linux, osx, windows, }
@@ -342,11 +343,11 @@ string getDubTag(bool preRelease)
     import std.net.curl : get;
     import std.json : parseJSON;
 
-    // github already sorts tags in descending semantic versioning order
-    foreach (tag; get("https://api.github.com/repos/dlang/dub/tags").parseJSON.array)
-        if (auto m = tag["name"].str.match(versionRE))
+    // tags are in descending semantic versioning order
+    foreach (tag; executeShell("git ls-remote --tags https://github.com/dlang/dub | awk -F/ '{ print $3 }' | grep -v '{}' | sed '/-/!{s/$/_/}' | sort -Vr | sed 's/_$//'").output.splitter("\n"))
+        if (auto m = tag.match(versionRE))
             if (preRelease || m.captures[4].empty)
-                return tag["name"].str;
+                return tag;
     throw new Exception("Failed to get dub tags");
 }
 
@@ -355,7 +356,7 @@ void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, st
     auto prefix = "https://github.com/dlang/";
     auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
     size_t nfallback;
-    foreach (proj; allProjects)
+    foreach (proj; allProjects.parallel(1))
     {
         if (skipDocs && proj == "dlang.org")
             continue;
@@ -425,10 +426,25 @@ int error(Args...)(string fmt, Args args)
 
 int main(string[] args)
 {
-    if (args.length < 3 || args.length == 4 && args[$-1] != "--skip-docs" || args.length > 4)
-        return error("Expected <old-dmd-version> <git-branch-or-tag> [--skip-docs] as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
-    immutable skipDocs = args[$-1] == "--skip-docs";
-
+    bool skipDocs;
+    string platformInput;
+    auto options = getopt(args,
+        "platforms", `Which platforms to built (default: linux,freebsd-32,freebsd-64,osx,windows)`, &platformInput,
+        "skip-docs", &skipDocs,
+    );
+    if (options.helpWanted || args.length < 3)
+    {
+        defaultGetoptPrinter("./build_all.d <old-dmd-version> <git-branch-or-tag>
+e.g. ./build_all v2.080.0 v2.080.1
+",
+      options.options);
+        return 0;
+    }
+    if (platformInput)
+    {
+        platforms = platforms.filter!(p => platformInput.canFind(p.toString)).array;
+        writeln("Selected platforms: ", platforms.map!(p => p.toString));
+    }
     auto workDir = mkdtemp();
     scope (success) if (workDir.exists) rmdirRecurse(workDir);
     // Cache huge downloads
@@ -442,7 +458,7 @@ int main(string[] args)
     immutable gitTag = args[2];
     auto verMatch = gitTag.match(versionRE);
     immutable isBranch = !verMatch;
-    immutable isPreRelease = !verMatch.captures[4].empty;
+    immutable isPreRelease = !verMatch.empty &&!verMatch.captures[4].empty;
     immutable dubTag = getDubTag(isPreRelease);
 
     enum optlink = "optlink.zip";
@@ -457,12 +473,19 @@ int main(string[] args)
 
     foreach (url; oldCompilers.map!(s => "http://downloads.dlang.org/releases/2.x/"~oldVer~"/"~s))
         fetchFile(url, cacheDir~"/"~baseName(url), true);
-    fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
-    fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
-    fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, true);
-    fetchFile("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, true);
-    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, true);
+
+    import std.typecons : Tuple;
+    alias File = Tuple!(string, "url", string, "path", bool, "verify");
+    auto files = [
+        File("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink, false),
+        File("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC, false),
+        File("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true),
+        File("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, true),
+        File("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, true),
+        File("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, true),
+    ];
+    foreach (file; files.parallel(1))
+        fetchFile(file.url, file.path, file.verify);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
