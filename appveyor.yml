@@ -3,7 +3,7 @@ os: Visual Studio 2017
 environment:
   matrix:
     - ARCH:                x86
-      MINGW_VER:           5.0.2
+      MINGW_VER:           5.0.4
       D_VERSION:           2.077.1
 
 artifacts:
