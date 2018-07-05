@@ -54,6 +54,20 @@ bool def2implib(bool x64, string f, string dir, string linkopt = null)
     if (pos < 0)
         return false;
 
+    string base = stripExtension(baseName(f));
+    if (x64 && base == "user32")
+    {
+        // missing definitions in mingw def files
+        content ~= "GetClassLongPtrA\n";
+        content ~= "GetClassLongPtrW\n";
+        content ~= "SetClassLongPtrA\n";
+        content ~= "SetClassLongPtrW\n";
+        content ~= "GetWindowLongPtrA\n";
+        content ~= "GetWindowLongPtrW\n";
+        content ~= "SetWindowLongPtrA\n";
+        content ~= "SetWindowLongPtrW\n";
+    }
+
     char[] def = content[0..pos];
     char[] csrc;
     bool[string] written;
@@ -99,7 +113,6 @@ bool def2implib(bool x64, string f, string dir, string linkopt = null)
             written[sym.idup] = true;
         }
     }
-    string base = stripExtension(baseName(f));
     string dirbase = dir ~ base;
     std.file.write(dirbase ~ ".def", def);
     std.file.write(dirbase ~ ".c", csrc);
