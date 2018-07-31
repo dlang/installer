@@ -630,7 +630,7 @@ verify() {
 binpath_for_compiler() {
     case $1 in
         dmd*)
-            local suffix
+            local suffix=
             [ $OS = osx ] || suffix=$MODEL
             local -r binpath=$OS/bin$suffix
             ;;
@@ -650,7 +650,7 @@ write_env_vars() {
     local -r binpath=$(binpath_for_compiler "$1")
     case $1 in
         dmd*)
-            local suffix
+            local suffix=
             [ $OS = osx ] || suffix=$MODEL
             local libpath=$OS/lib$suffix
             local dc=dmd
