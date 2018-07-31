@@ -18,4 +18,8 @@ matrix:
       script: kcov --exclude-pattern=travis.sh $PWD/coverage ./travis.sh
       after_success: bash <(curl -s https://codecov.io/bash) -s $PWD/coverage
     - os: osx
-      script: ./travis.sh
+      script:
+        - find --version
+        - brew uninstall --force findutils
+        - find --version
+        - ./travis.sh
