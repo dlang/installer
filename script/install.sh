@@ -759,7 +759,7 @@ list_compilers() {
              -not -name install.sh \
              -not -name d-keyring.gpg \
              -not -name '.*' \
-             -printf "%f\n" | \
+             -exec basename {} \; | \
             grep . # fail if none found
     fi
 }
