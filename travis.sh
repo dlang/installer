@@ -100,6 +100,16 @@ done
 ./script/install.sh remove --help | tr -d '\n' | grep "Usage\s*install.sh uninstall" >/dev/null
 ./script/install.sh remove -h | tr -d '\n' | grep "Usage\s*install.sh uninstall" >/dev/null
 
+# test that a missing keyring gets restored - https://issues.dlang.org/show_bug.cgi?id=19100
+rm ~/dlang/d-keyring.gpg
+./script/install.sh dmd-2.081.2
+if [ ! $(find ~/dlang/d-keyring.gpg -type f -size +8096c 2>/dev/null) ]; then
+    ls -l ~/dlang/d-keyring.gpg
+    echo "Invalid keyring got installed."
+    exit 1
+fi
+./script/install.sh remove dmd-2.081.2
+
 # check whether all installations have been uninstalled successfully
 if bash script/install.sh list
 then

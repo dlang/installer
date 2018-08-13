@@ -345,7 +345,7 @@ run_command() {
     case $1 in
         install)
             check_tools curl
-            if [ ! -f "$ROOT/install.sh" ]; then
+            if [ ! -f "$ROOT/install.sh" ] || [ ! -f "$ROOT/d-keyring.gpg" ] ; then
                 install_dlang_installer
             fi
             if [ -z "${2:-}" ]; then
