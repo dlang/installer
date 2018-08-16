@@ -345,7 +345,7 @@ run_command() {
     case $1 in
         install)
             check_tools curl
-            if [ ! -f "$ROOT/install.sh" ]; then
+            if [ ! -f "$ROOT/install.sh" ] || [ ! -f "$ROOT/d-keyring.gpg" ] ; then
                 install_dlang_installer
             fi
             if [ -z "${2:-}" ]; then
@@ -630,7 +630,7 @@ verify() {
 binpath_for_compiler() {
     case $1 in
         dmd*)
-            local suffix
+            local suffix=
             [ $OS = osx ] || suffix=$MODEL
             local -r binpath=$OS/bin$suffix
             ;;
@@ -650,7 +650,7 @@ write_env_vars() {
     local -r binpath=$(binpath_for_compiler "$1")
     case $1 in
         dmd*)
-            local suffix
+            local suffix=
             [ $OS = osx ] || suffix=$MODEL
             local libpath=$OS/lib$suffix
             local dc=dmd
@@ -759,7 +759,7 @@ list_compilers() {
              -not -name install.sh \
              -not -name d-keyring.gpg \
              -not -name '.*' \
-             -printf "%f\n" | \
+             -exec basename {} \; | \
             grep . # fail if none found
     fi
 }

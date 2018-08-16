@@ -162,6 +162,7 @@ string toString(Bits bits)
 bool skipDocs;
 bool do32Bit;
 bool do64Bit;
+bool codesign;
 
 version(Windows)
 {
@@ -202,6 +203,7 @@ int main(string[] args)
         "host-dmd",     &hostDMD,
         "only-32",      &do32Bit,
         "only-64",      &do64Bit,
+        "codesign",     &codesign,
     );
 
     if(args.length < 2)
@@ -637,6 +639,8 @@ void createRelease(string branch)
             copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/32/dmd"~exe, releaseBin32Dir~"/dmd"~exe);
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/32", releaseBin32Dir, file => !file.endsWith(obj));
             copyFile(cloneDir~"/dub/bin/dub32"~exe, releaseBin32Dir~"/dub"~exe);
+            if (codesign)
+                signBinaries(releaseBin32Dir);
         }
     }
 
@@ -648,6 +652,8 @@ void createRelease(string branch)
             copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
             copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
+            if (codesign)
+                signBinaries(releaseBin32Dir);
         }
     }
 }
@@ -656,6 +662,25 @@ void createZip(string branch)
 {
     auto archiveName = baseName(releaseDir)~".zip";
     archiveZip(releaseDir~"/dmd2", archiveName);
+}
+
+void signBinaries(string folder)
+{
+    version (Windows)
+    {
+        auto script = origDir~"/codesign/sign.ps1";
+        auto cert = origDir~"/codesign/win.pfx";
+        auto pass = origDir~"/codesign/win.pass";
+        auto fingerprint = origDir~"/codesign/win.fingerprint";
+        auto cmd = "PowerShell.exe -ExecutionPolicy Bypass -File " ~ quote(script) ~ " " ~ quote(cert) ~ " " ~ quote(fingerprint) ~ " " ~ quote(pass) ~ " ";
+        foreach (DirEntry de; dirEntries(folder, SpanMode.breadth))
+        {
+            if (de.name.extension != exe)
+                continue;
+            info("Signing "~de.name);
+            run(cmd ~ quote(de.name));
+        }
+    }
 }
 
 // Utils -----------------------

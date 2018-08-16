@@ -98,8 +98,6 @@ struct Box
 
         // save the ssh config file
         run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
-        if (os == OS.windows)
-            run("cd "~_tmpdir~"; echo '     HostKeyAlgorithms ssh-dss' >> ssh.cfg;");
     }
 
     Shell shell()
@@ -284,6 +282,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
             build ~= " --skip-docs";
+        if (!isBranch)
+            build ~= " --codesign";
         build ~= " " ~ ver;
 
         cmd(build);
@@ -292,7 +292,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
     // copy out created zip files
     box.scp("default:dmd."~ver~"."~box.platform~".zip", "build/");
 
-    // Build package installers
+    // Build package installers (TODO: move to create_dmd_release.d)
     if (!isBranch && !skipDocs) final switch (box.os)
     {
     case OS.freebsd:
@@ -316,7 +316,9 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             cmd(`&'C:\Program Files (x86)\NSIS\makensis'`~
                 ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~ver~`.windows\dmd2'`~
                 ` '/DVersion2=`~ver~`' d2-installer.nsi`);
-            cmd(`copy dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
+            cmd(`move dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
+            // sign installer
+            cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
         }
         box.scp("default:dmd-"~ver~".exe", "build/");
         break;
@@ -347,6 +349,42 @@ string getDubTag(bool preRelease)
             if (preRelease || m.captures[4].empty)
                 return tag["name"].str;
     throw new Exception("Failed to get dub tags");
+}
+
+void getCodesignCerts(string tgtDir)
+{
+    import std.base64;
+
+    mkdirRecurse(tgtDir);
+
+    foreach (entry; runCapture("pass ls dlang/codesign/")
+        .lineSplitter
+        .map!(ln => ln.findSplitAfter("── ")) // tree(1) entries
+        .filter!(parts => !parts[0].empty)
+        .map!(parts => parts[1]))
+    {
+        writeln("Copying codesign cert " ~ entry ~ " from passwordstore to " ~ tgtDir);
+        auto content = runCapture("pass show dlang/codesign/"~entry);
+        if (entry.endsWith(".b64"))
+            std.file.write(tgtDir ~ "/" ~ entry[0 .. $ - ".b64".length], Base64.decode(content));
+        else
+            std.file.write(tgtDir ~ "/" ~ entry, content);
+    }
+
+    foreach (de; dirEntries(tgtDir, "*.pfx", SpanMode.shallow))
+    {
+        writeln("Getting fingerprint for codesign cert " ~ de.name);
+        auto content = runCapture(
+            "openssl pkcs12 -in "~escapeShellFileName(de.name)~" -nodes"~
+              " -password file:"~escapeShellFileName(de.name.setExtension(".pass"))~
+            "| openssl x509 -noout -fingerprint"
+        );
+        // SHA1 Fingerprint=BD:E0:0F:CA:EF:6A:FA:37:15:DB:D4:AA:1A:43:2E:78:27:54:E6:60 =>
+        // BDE00FCAEF6AFA3715DBD4AA1A432E782754E660
+        enforce(content.startsWith("SHA1 Fingerprint="), "Unexpected openssl fingerprint output:\n"~content);
+        std.file.write(de.name.setExtension(".fingerprint"),
+            content["SHA1 Fingerprint=".length .. $].replace(":", ""));
+    }
 }
 
 void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, string tgtDir)
@@ -448,12 +486,14 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.52.1-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
-    enum mingwlibs = "mingw-libs-5.0.2.zip";
+    enum mingwlibs = "mingw-libs-5.0.2-1.zip";
     enum lld = "lld-link-5.0.1.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
 
+    if (!isBranch)
+        getCodesignCerts(workDir~"/codesign");
     foreach (url; oldCompilers.map!(s => "http://downloads.dlang.org/releases/2.x/"~oldVer~"/"~s))
         fetchFile(url, cacheDir~"/"~baseName(url), true);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
@@ -519,6 +559,8 @@ int main(string[] args)
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
             scp("create_dmd_release.d common.d", "default:");
+            if (!isBranch)
+                scp(workDir~"/codesign codesign", "default:");
 
             build(ver, isBranch, skipDocs);
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
