@@ -1,0 +1,16 @@
+Windows installer and binaries are now code-signed
+
+All released executables on Windows will now be code-signed by the following certificate.
+
+$(PRE
+    Issuer: C = US, O = DigiCert Inc, OU = www.digicert.com, CN = DigiCert SHA2 Assured ID Code Signing CA
+    Serial Number: 04:e7:49:06:78:3a:e6:5f:54:37:fd:55:45:66:5f:e5
+    Validity
+        Not Before: Aug  7 00:00:00 2018 GMT
+        Not After : Aug 11 12:00:00 2021 GMT
+    Subject: C = US, ST = Washington, L = Kirkland, O = D Language Foundation, CN = D Language Foundation
+    SHA1 Fingerprint: BD:E0:0F:CA:EF:6A:FA:37:15:DB:D4:AA:1A:43:2E:78:27:54:E6:60
+    SHA256 Fingerprint: AA:B0:6F:7B:A8:26:52:51:C4:24:44:1B:34:8E:30:68:F4:34:DB:35:38:6A:17:A7:45:C3:27:77:11:24:C4:E5
+)
+
+Nightly builds and branch/feature previews will not be code-signed for now.
