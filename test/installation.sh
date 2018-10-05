@@ -8,6 +8,7 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 VERSION="$1"
+: ${DOCKER:=docker}
 
 : ${BUILD_DIR:='../create_dmd_release/build'}
 # dmd_2.079.1-0_amd64.deb, dmd_2.079.1~beta.1-0_amd64.deb
@@ -42,13 +43,13 @@ FROM $platform
 COPY test_curl.d .
 COPY $pkg .
 EOF
-    docker build . --tag="$img_tag" >/dev/null
+    "$DOCKER" build --tag="$img_tag" . >/dev/null
 
     # test installation, using script from caller's stdin
-    docker run --rm -i "$img_tag" bash -s
+    "$DOCKER" run --rm -i "$img_tag" bash -s
 
     # remove docker image
-    docker rmi "$img_tag" >/dev/null
+    "$DOCKER" rmi "$img_tag" >/dev/null
     rm Dockerfile
 }
 
