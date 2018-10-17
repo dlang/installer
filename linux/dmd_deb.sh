@@ -239,7 +239,7 @@ else
 	Type=Application
 	Name=dmd/phobos documentation v'$VERSION1'
 	Comment=dmd compiler and phobos library documentation v'$VERSION1'
-	Exec=xdg-open /usr/share/dmd/html/d/language-reference.html
+	Exec=xdg-open /usr/share/dmd/html/d/spec/spec.html
 	Icon=dmd-doc
 	Categories=Development;' | sed 's/^\t//' > usr/share/applications/dmd-doc.desktop
 
