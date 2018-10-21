@@ -45,14 +45,36 @@ void generateDef(bool x64, string inFile, string outFile)
     runShell(`cl /EP /D` ~ archDefine ~ `=1 "/I` ~ includeDir ~ `" "` ~ inFile ~ `" > "` ~ outFile ~ `"`);
 }
 
-// The MinGW-w64 .def files specify renamings as 'exportedName == realName'.
-// The MS format is 'exportedName=realName'.
 void sanitizeDef(string defFile)
 {
-    const data = std.file.readText(defFile);
-    const newData = data.replace(" == ", "=");
-    if (newData !is data)
-        std.file.write(defFile, newData);
+    const lines = std.file.readText(defFile).splitLines;
+
+    bool touched = false;
+    const newLines = lines.map!((const string line)
+    {
+        string l = line;
+
+        // The MinGW-w64 .def files specify renamings as 'exportedName == realName'.
+        // The MS format is 'exportedName=realName'.
+        l = l.replace(" == ", "=");
+
+        // Don't export function 'atexit'; we have our own in msvc_atexit.c.
+        if (l == "atexit" /* 120 */ || l == "atexit DATA" /* < 120 */)
+            l = "";
+
+        // Do export function '__chkstk' (ntdll.dll).
+        // LLVM emits calls to it to detect stack overflows with '_alloca'.
+        if (l == ";__chkstk")
+            l = "__chkstk";
+
+        if (l !is line)
+            touched = true;
+
+        return l;
+    }).array;
+
+    if (touched)
+        std.file.write(defFile, newLines.join("\n"));
 }
 
 void copyDefs(bool x64, string inDir, string outDir)
