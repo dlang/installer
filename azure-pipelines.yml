@@ -16,7 +16,7 @@ jobs:
       vmImage: 'vs2017-win2016'
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
-      MINGW_VER: 5.0.2
+      MINGW_VER: 6.0.0
       D_VERSION: 2.077.1
     steps:
       - template: .azure-pipelines/build-mingw-libs.yml
