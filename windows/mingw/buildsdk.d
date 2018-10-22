@@ -58,6 +58,9 @@ void sanitizeDef(string defFile)
     {
         string l = line;
 
+        if (l == "LIBRARY vcruntime140_app")
+            l = `LIBRARY "VCRUNTIME140.dll"`;
+
         // The MinGW-w64 .def files specify weak external symbols as 'alias == realName'.
         if (l.length > 1 && l[0] != ';')
         {
@@ -103,12 +106,16 @@ void copyDefs(string inDir, string outDir)
 
         if (lowerPath.endsWith(".def.in"))
         {
-            outFile = buildPath(outDir, baseName(f.name)[0 .. $-7] ~ ".def");
+            auto base = baseName(path)[0 .. $-7];
+            if (base == "vcruntime140_app")
+                base = "vcruntime140";
+
+            outFile = buildPath(outDir, base ~ ".def");
             generateDef(path, outFile);
         }
         else if (lowerPath.endsWith(".def"))
         {
-            outFile = buildPath(outDir, baseName(f.name));
+            outFile = buildPath(outDir, baseName(path));
             std.file.copy(path, outFile);
         }
 
