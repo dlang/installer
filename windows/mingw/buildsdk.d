@@ -163,8 +163,12 @@ void buildMsvcrt(string outDir)
 
     // merge into libs
     const additionalMsvcrtObjs = objs.map!(a => `"` ~ outDir ~ a ~ `"`).join(" ");
-    foreach (f; std.file.dirEntries(outDir[0 .. $-1], "msvcr*.lib", SpanMode.shallow))
-        runShell(lib ~ `"` ~ f.name ~ `" ` ~ additionalMsvcrtObjs);
+    foreach (f; std.file.dirEntries(outDir[0 .. $-1], "*.lib", SpanMode.shallow))
+    {
+        const lowerBase = toLower(baseName(f.name));
+        if (lowerBase.startsWith("msvcr") || lowerBase.startsWith("ucrtbase"))
+            runShell(lib ~ `"` ~ f.name ~ `" ` ~ additionalMsvcrtObjs);
+    }
 
     // create empty uuid.lib (expected by dmd, but UUIDs already in druntime)
     std.file.write(outDir ~ "empty.c", "");
