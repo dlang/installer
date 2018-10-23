@@ -68,9 +68,17 @@ string patchLines(string inFile, string outFile, LineTransformer lineTransformer
 // Preprocesses a 'foo.def.in' file to 'foo.def'.
 void generateDef(string inFile, string outFile)
 {
-    const includeDir = buildPath(dirName(dirName(inFile)), "def-include");
+    const patchedInFile = outFile ~ ".in";
+    const realInFile = patchLines(inFile, patchedInFile, (line)
+    {
+        // The MinGW-w64 .def.in files use 'F_X86_ANY(DATA)' to hide functions
+        // overridden by the MinGW runtime, primarily math functions.
+        return line.replace(" F_X86_ANY(DATA)", "");
+    });
+
+    const includeDir = buildPath(inFile.dirName.dirName, "def-include");
     const archDefine = x64 ? "DEF_X64" : "DEF_I386";
-    runShell(`cl /EP /D` ~ archDefine ~ `=1 "/I` ~ includeDir ~ `" "` ~ inFile ~ `" > "` ~ outFile ~ `"`);
+    runShell(`cl /EP /D` ~ archDefine ~ `=1 "/I` ~ includeDir ~ `" "` ~ realInFile ~ `" > "` ~ outFile ~ `"`);
 }
 
 void sanitizeDef(string defFile)
@@ -96,6 +104,15 @@ void sanitizeDef(string defFile)
                 }
             }
         }
+
+        // The MinGW runtime apparently replaces ceil(f)/floor(f) and hides the original functions via DATA.
+        if (line == "ceil DATA" || line == "ceilf DATA" ||
+            line == "floor DATA" || line == "floorf DATA")
+            return line[0 .. $-5];
+
+        // MinGW apparently also replaces ucrtbase.dll's '_tzset'.
+        if (line == "_tzset DATA")
+            return "_tzset";
 
         // Don't export function 'atexit'; we have our own in msvc_atexit.c.
         if (line == "atexit")
@@ -259,6 +276,6 @@ void main(string[] args)
     buildUuid(outDir);
 
     //version (verbose) {} else
-        foreach (f; std.file.dirEntries(outDir, "*.def", SpanMode.shallow))
+        foreach (f; std.file.dirEntries(outDir, "*.def*", SpanMode.shallow))
             std.file.remove(f.name);
 }
