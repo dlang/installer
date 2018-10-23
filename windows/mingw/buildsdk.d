@@ -142,18 +142,35 @@ void defs2implibs(string dir)
     }
 }
 
+void cl(string outObj, string args)
+{
+    runShell(`cl /c /Zl "/Fo` ~ outObj ~ `" ` ~ args);
+}
+
+string quote(string arg)
+{
+    return `"` ~ arg ~ `"`;
+}
+
+void c2lib(string outDir, string cFile)
+{
+    const obj = buildPath(outDir, baseName(cFile).setExtension(".obj"));
+    const lib = setExtension(obj, ".lib");
+    cl(obj, quote(cFile));
+    runShell(`lib /MACHINE:` ~ (x64 ? "X64" : "X86") ~ ` "/OUT:` ~ lib ~ `" "` ~ obj ~ `"`);
+    std.file.remove(obj);
+}
+
 void buildMsvcrt(string outDir)
 {
     outDir ~= "/";
-    const cl = "cl /c /Zl ";
-    const lib = "lib /MACHINE:" ~ (x64 ? "X64" : "X86") ~ " ";
 
     // compile some additional objects to be merged into the msvcr*.lib files
-    runShell(cl ~ `"/Fo` ~ outDir ~ `msvcrt_stub0.obj" /D_APPTYPE=0 msvcrt_stub.c`);
-    runShell(cl ~ `"/Fo` ~ outDir ~ `msvcrt_stub1.obj" /D_APPTYPE=1 msvcrt_stub.c`);
-    runShell(cl ~ `"/Fo` ~ outDir ~ `msvcrt_stub2.obj" /D_APPTYPE=2 msvcrt_stub.c`);
-    runShell(cl ~ `"/Fo` ~ outDir ~ `msvcrt_data.obj" msvcrt_data.c`);
-    runShell(cl ~ `"/Fo` ~ outDir ~ `msvcrt_atexit.obj" msvcrt_atexit.c`);
+    cl(outDir ~ "msvcrt_stub0.obj", "/D_APPTYPE=0 msvcrt_stub.c");
+    cl(outDir ~ "msvcrt_stub1.obj", "/D_APPTYPE=1 msvcrt_stub.c");
+    cl(outDir ~ "msvcrt_stub2.obj", "/D_APPTYPE=2 msvcrt_stub.c");
+    cl(outDir ~ "msvcrt_data.obj", "msvcrt_data.c");
+    cl(outDir ~ "msvcrt_atexit.obj", "msvcrt_atexit.c");
     auto objs = [ "msvcrt_stub0.obj", "msvcrt_stub1.obj", "msvcrt_stub2.obj", "msvcrt_data.obj", "msvcrt_atexit.obj" ];
     if (!x64)
     {
@@ -162,20 +179,13 @@ void buildMsvcrt(string outDir)
     }
 
     // merge into libs
-    const additionalMsvcrtObjs = objs.map!(a => `"` ~ outDir ~ a ~ `"`).join(" ");
+    const additionalMsvcrtObjs = objs.map!(a => quote(outDir ~ a)).join(" ");
     foreach (f; std.file.dirEntries(outDir[0 .. $-1], "*.lib", SpanMode.shallow))
     {
         const lowerBase = toLower(baseName(f.name));
         if (lowerBase.startsWith("msvcr") || lowerBase.startsWith("ucrtbase"))
-            runShell(lib ~ `"` ~ f.name ~ `" ` ~ additionalMsvcrtObjs);
+            runShell(`lib /MACHINE:` ~ (x64 ? "X64" : "X86") ~ ` "` ~ f.name ~ `" ` ~ additionalMsvcrtObjs);
     }
-
-    // create empty uuid.lib (expected by dmd, but UUIDs already in druntime)
-    std.file.write(outDir ~ "empty.c", "");
-    runShell(cl ~ `"/Fo` ~ outDir ~ `uuid.obj" "` ~ outDir ~ `empty.c"`);
-    runShell(lib ~ `"/OUT:` ~ outDir ~ `uuid.lib" "` ~ outDir ~ `uuid.obj"`);
-    objs ~= "uuid.obj";
-    std.file.remove(outDir ~ "empty.c");
 
     foreach (f; objs)
         std.file.remove(outDir ~ f);
@@ -196,15 +206,22 @@ void buildOldnames(string outDir)
 
     const src = buildPath(outDir, "oldnames.c");
     std.file.write(src, oldnames_c);
-
-    const obj = setExtension(src, ".obj");
-    runShell(`cl /c /Zl "/Fo` ~ obj ~ `" "` ~ src ~ `"`);
-
-    const lib = setExtension(src, ".lib");
-    runShell(`lib /MACHINE:` ~ (x64 ? "X64" : "X86") ~ ` "/OUT:` ~ lib ~ `" "` ~ obj ~ `"`);
-
+    c2lib(outDir, src);
     std.file.remove(src);
-    std.file.remove(obj);
+}
+
+void buildLegacyStdioDefinitions(string outDir)
+{
+    c2lib(outDir, "legacy_stdio_definitions.c");
+}
+
+// create empty uuid.lib (expected by dmd, but UUIDs already in druntime)
+void buildUuid(string outDir)
+{
+    const src = buildPath(outDir, "uuid.c");
+    std.file.write(src, "");
+    c2lib(outDir, src);
+    std.file.remove(src);
 }
 
 void main(string[] args)
@@ -222,6 +239,8 @@ void main(string[] args)
 
     buildMsvcrt(outDir);
     buildOldnames(outDir);
+    buildLegacyStdioDefinitions(outDir);
+    buildUuid(outDir);
 
     //version (verbose) {} else
         foreach (f; std.file.dirEntries(outDir, "*.def", SpanMode.shallow))
