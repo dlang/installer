@@ -41,6 +41,30 @@ void runShell(string cmd)
     }
 }
 
+alias LineTransformer = string delegate(const string line);
+string patchLines(string inFile, string outFile, LineTransformer lineTransformer)
+{
+    const lines = std.file.readText(inFile).splitLines;
+
+    bool transformed = false;
+    const newLines = lines.map!((const string line)
+    {
+        const newLine = lineTransformer(line);
+        if (newLine !is line)
+            transformed = true;
+        return newLine;
+    }).array;
+
+    if (!transformed)
+        return inFile;
+
+    version (verbose)
+        writeln(`Patching file "` ~ inFile ~ `" to "` ~ outFile ~ `"`);
+
+    std.file.write(outFile, newLines.join("\n"));
+    return outFile;
+}
+
 // Preprocesses a 'foo.def.in' file to 'foo.def'.
 void generateDef(string inFile, string outFile)
 {
@@ -51,47 +75,39 @@ void generateDef(string inFile, string outFile)
 
 void sanitizeDef(string defFile)
 {
-    const lines = std.file.readText(defFile).splitLines;
-
-    bool touched = false;
-    const newLines = lines.map!((const string line)
+    patchLines(defFile, defFile, (line)
     {
-        string l = line;
-
-        if (l == "LIBRARY vcruntime140_app")
-            l = `LIBRARY "VCRUNTIME140.dll"`;
+        if (line == "LIBRARY vcruntime140_app")
+            return `LIBRARY "vcruntime140.dll"`;
 
         // The MinGW-w64 .def files specify weak external symbols as 'alias == realName'.
-        if (l.length > 1 && l[0] != ';')
+        if (line.length > 1 && line[0] != ';')
         {
-            const i = l.indexOf(" == ");
+            const i = line.indexOf(" == ");
             if (i > 0)
             {
-                const weakName = l[0 .. i];
-                const realName = l[i+4 .. $];
-                weakSymbols[weakName] = realName;
+                const weakName = line[0 .. i];
+                const realName = line[i+4 .. $];
 
-                l = ";" ~ l;
+                if (weakName.indexOf(' ') < 0 && realName.indexOf(' ') < 0)
+                {
+                    weakSymbols[weakName] = realName;
+                    return ";" ~ line;
+                }
             }
         }
 
         // Don't export function 'atexit'; we have our own in msvc_atexit.c.
-        if (l == "atexit" /* msvcr120 */ || l == "atexit DATA" /* < 120 */)
-            l = "";
+        if (line == "atexit")
+            return "";
 
         // Do export function '__chkstk' (ntdll.dll).
         // LLVM emits calls to it to detect stack overflows with '_alloca'.
-        if (l == ";__chkstk")
-            l = "__chkstk";
+        if (line == ";__chkstk")
+            return "__chkstk";
 
-        if (l !is line)
-            touched = true;
-
-        return l;
-    }).array;
-
-    if (touched)
-        std.file.write(defFile, newLines.join("\n"));
+        return line;
+    });
 }
 
 void copyDefs(string inDir, string outDir)
