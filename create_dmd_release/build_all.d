@@ -114,7 +114,7 @@ struct Box
         {
             // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
             auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
-            if (runStatus(cmd) || runStatus(cmd))
+            if (runStatus(cmd) && runStatus(cmd))
                 run(cmd);
         }
         else
