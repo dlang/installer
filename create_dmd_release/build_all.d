@@ -111,7 +111,12 @@ struct Box
     void scp(string src, string tgt)
     {
         if (os == OS.windows)
-            run("scp -rq -F "~sshcfg~" "~src~" "~tgt);
+        {
+            // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
+            auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            if (runStatus(cmd) || runStatus(cmd))
+                run(cmd);
+        }
         else
             run("rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt);
     }
