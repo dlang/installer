@@ -1,5 +1,9 @@
 // VS 2015+ defines the printf/scanf function families inline.
 
+#if _MSC_VER < 1900
+#error Requires Visual C++ 2015 or newer
+#endif
+
 #include <stdio.h>
 
 void __legacy_stdio_definitions()
