@@ -120,11 +120,6 @@ void sanitizeDef(string defFile)
         if (line == "atexit")
             return "";
 
-        // Do export function '__chkstk' (ntdll.dll).
-        // LLVM emits calls to it to detect stack overflows with '_alloca'.
-        if (line == ";__chkstk")
-            return "__chkstk";
-
         return line;
     });
 }
