@@ -16,7 +16,9 @@
 
 import std.algorithm;
 import std.array;
+import std.ascii : isDigit;
 import std.file;
+import std.format : format;
 import std.path;
 import std.process;
 import std.stdio;
@@ -196,32 +198,44 @@ void c2lib(string outDir, string cFile)
 
 void buildMsvcrt(string outDir)
 {
-    outDir ~= "/";
-
-    // compile some additional objects to be merged into the msvcr*.lib files
-    cl(outDir ~ "msvcrt_stub0.obj", "/D_APPTYPE=0 msvcrt_stub.c");
-    cl(outDir ~ "msvcrt_stub1.obj", "/D_APPTYPE=1 msvcrt_stub.c");
-    cl(outDir ~ "msvcrt_stub2.obj", "/D_APPTYPE=2 msvcrt_stub.c");
-    cl(outDir ~ "msvcrt_data.obj", "msvcrt_data.c");
-    cl(outDir ~ "msvcrt_atexit.obj", "msvcrt_atexit.c");
-    auto objs = [ "msvcrt_stub0.obj", "msvcrt_stub1.obj", "msvcrt_stub2.obj", "msvcrt_data.obj", "msvcrt_atexit.obj" ];
-    if (!x64)
+    const arch = x64 ? "X64" : "X86";
+    foreach (lib; std.file.dirEntries(outDir, "*.lib", SpanMode.shallow))
     {
-        runShell(`ml /c "/Fo` ~ outDir ~ `msvcrt_abs.obj" msvcrt_abs.asm`);
-        objs ~= "msvcrt_abs.obj";
-    }
+        const lowerBase = toLower(baseName(lib.name));
+        if (!(lowerBase.startsWith("msvcr") || lowerBase.startsWith("vcruntime")))
+            continue;
 
-    // merge into libs
-    const additionalMsvcrtObjs = objs.map!(a => quote(outDir ~ a)).join(" ");
-    foreach (f; std.file.dirEntries(outDir[0 .. $-1], "*.lib", SpanMode.shallow))
-    {
-        const lowerBase = toLower(baseName(f.name));
-        if (lowerBase.startsWith("msvcr") || lowerBase.startsWith("ucrtbase"))
-            runShell(`lib /MACHINE:` ~ (x64 ? "X64" : "X86") ~ ` "` ~ f.name ~ `" ` ~ additionalMsvcrtObjs);
-    }
+        // parse version from filename (e.g., 140 for VC++ 2015)
+        const versionStart = lowerBase[0] == 'm' ? 5 : 9;
+        const versionLength = lowerBase[versionStart .. $].countUntil!(c => !isDigit(c));
+        const msvcrtVersion = versionLength == 0 ? "0" : lowerBase[versionStart .. versionStart+versionLength];
 
-    foreach (f; objs)
-        std.file.remove(outDir ~ f);
+        string[] objs;
+        void addObj(string objFilename, string args)
+        {
+            const obj = buildPath(outDir, objFilename);
+            cl(obj, "/DMSVCRT_VERSION=" ~ msvcrtVersion ~ " " ~ args);
+            objs ~= obj;
+        }
+
+        // compile some additional objects
+        foreach (i; 0 .. 3)
+            addObj(format!"msvcrt_stub%d.obj"(i), format!"/D_APPTYPE=%d msvcrt_stub.c"(i));
+        addObj("msvcrt_data.obj", "msvcrt_data.c");
+        addObj("msvcrt_atexit.obj", "msvcrt_atexit.c");
+        if (!x64)
+        {
+            const obj = buildPath(outDir, "msvcrt_abs.obj");
+            runShell(`ml /c "/Fo` ~ obj ~ `" msvcrt_abs.asm`);
+            objs ~= obj;
+        }
+
+        // merge them into the library
+        runShell(`lib /MACHINE:` ~ arch ~ ` "` ~ lib.name ~ `" ` ~ objs.map!quote.join(" "));
+
+        foreach (obj; objs)
+            std.file.remove(obj);
+    }
 }
 
 void buildOldnames(string outDir)
