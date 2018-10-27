@@ -10,7 +10,7 @@
 // source files extracted from MinGW-w64:
 // https://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v6.0.0.tar.bz2
 //
-// assumes VC tools cl, lib and ml installed and found through path
+// assumes dmd & VC tools cl, lib, link and ml installed and found through path
 //  and configured to the appropriate architecture
 //
 
@@ -87,23 +87,23 @@ void sanitizeDef(string defFile)
 {
     patchLines(defFile, defFile, (line)
     {
+        if (line.length == 0 || line[0] == ';')
+            return line;
+
         if (line == "LIBRARY vcruntime140_app")
             return `LIBRARY "vcruntime140.dll"`;
 
         // The MinGW-w64 .def files specify weak external symbols as 'alias == realName'.
-        if (line.length > 1 && line[0] != ';')
+        const i = line.indexOf("==");
+        if (i > 0)
         {
-            const i = line.indexOf(" == ");
-            if (i > 0)
-            {
-                const weakName = line[0 .. i];
-                const realName = line[i+4 .. $];
+            const weakName = strip(line[0 .. i]);
+            const realName = strip(line[i+2 .. $]);
 
-                if (weakName.indexOf(' ') < 0 && realName.indexOf(' ') < 0)
-                {
-                    weakSymbols[weakName] = realName;
-                    return ";" ~ line;
-                }
+            if (weakName.indexOf(' ') < 0 && realName.indexOf(' ') < 0)
+            {
+                weakSymbols[weakName] = realName;
+                return ";" ~ line;
             }
         }
 
@@ -118,7 +118,11 @@ void sanitizeDef(string defFile)
 
         // Don't export function 'atexit'; we have our own in msvc_atexit.c.
         if (line == "atexit")
-            return "";
+            return ";atexit";
+
+        // An apparent bug in lib32/shell32.def (there's 'ExtractIconW@12' too).
+        if (line == "ExtractIconW@")
+            return ";ExtractIconW@";
 
         return line;
     });
@@ -156,6 +160,12 @@ void copyDefs(string inDir, string outDir)
 
 void def2implib(string defFile)
 {
+    if (!x64)
+    {
+        if (defWithStdcallMangling2implib(defFile))
+            return;
+    }
+
     const libFile = setExtension(defFile, ".lib");
     const arch = x64 ? "X64" : "X86";
     runShell(`lib /MACHINE:` ~ arch ~ ` "/DEF:` ~ defFile ~ `" "/OUT:` ~ libFile ~ `"`);
@@ -180,6 +190,118 @@ void cl(string outObj, string args)
 string quote(string arg)
 {
     return `"` ~ arg ~ `"`;
+}
+
+/**
+ * x86: the WinAPI symbol names in the .def files are stdcall-mangled
+ * (trailing `@<N>`). These mangled names are required in the import
+ * library, but the names of the DLL exports don't feature the stdcall
+ * suffix.
+ * `lib /DEF` doesn't support the required renaming functionality, so
+ * we have to go through compiling a D file with the symbols and
+ * building a DLL with renamed exports to get the appropriate import
+ * library.
+ */
+bool defWithStdcallMangling2implib(string defFile)
+{
+    import std.regex : ctRegex, matchFirst;
+
+    string[] functions;
+    string[] fields;
+    bool hasRenamedStdcall = false;
+
+    patchLines(defFile, defFile, (line)
+    {
+        if (line.length == 0 || line[0] == ';' ||
+            line.startsWith("LIBRARY ") || line.startsWith("EXPORTS"))
+            return line;
+
+        if (line.endsWith(" DATA"))
+        {
+            fields ~= line[0 .. $-5];
+            return line;
+        }
+
+        // include fastcall mangle (like stdcall, with additional leading '@')
+        enum re = ctRegex!r"^@?([a-zA-Z0-9_]+)(@[0-9]+)";
+        if (const m = matchFirst(line, re))
+        {
+            string lineSuffix = line[m[0].length .. $];
+            if (lineSuffix.startsWith(m[2])) // e.g., 'JetAddColumnA@28@28'
+            {
+                /**
+                 * Actually not to be renamed, symbol is exported in mangled form.
+                 * Treat it like 'JetAddColumnA@28' though, because some libraries
+                 * export the same function as both 'JetAddColumnA' and 'JetAddColumnA@28',
+                 * and I don't know how to replicate that with our approach.
+                 */
+                lineSuffix = lineSuffix[m[2].length .. $];
+            }
+
+            assert(!lineSuffix.startsWith("=")); // renamings not supported
+
+            hasRenamedStdcall = true;
+            functions ~= m[1];
+            // keep the line suffix (e.g., ' @100' => ordinal 100)
+            return m[0] ~ "=" ~ m[1] ~ lineSuffix;
+        }
+
+        const firstSpaceIndex = line.indexOf(' ');
+        const strippedLine = firstSpaceIndex < 0 ? line : line[0 .. firstSpaceIndex];
+        const equalsIndex = strippedLine.indexOf('=');
+        const functionName = equalsIndex > 0 ? strippedLine[equalsIndex+1 .. $] : strippedLine;
+        functions ~= functionName;
+        return line;
+    });
+
+    if (!hasRenamedStdcall)
+        return false;
+
+    string src = "module dummy;\n";
+    alias Emitter = string delegate();
+    void emitOnce(ref bool[string] emittedSymbols, string symbolName, Emitter emitter)
+    {
+        if (symbolName !in emittedSymbols)
+        {
+            src ~= emitter() ~ "\n";
+            emittedSymbols[symbolName] = true;
+        }
+    }
+
+    bool[string] emittedFunctions;
+    foreach (i, name; functions)
+    {
+        emitOnce(emittedFunctions, name, ()
+        {
+            const linkage = name[0] == '?' ? "C++" : "C";
+            return `pragma(mangle, "%s") extern(%s) void func%d() {}`.format(name, linkage, i);
+        });
+    }
+
+    bool[string] emittedFields;
+    foreach (i, name; fields)
+    {
+        emitOnce(emittedFields, name, ()
+        {
+            const linkage = name[0] == '_' ? "C" : "C++";
+            return `pragma(mangle, "%s") extern(%s) __gshared int field%d;`.format(name, linkage, i);
+        });
+    }
+
+    const dFile = setExtension(defFile, ".d");
+    const objFile = setExtension(defFile, ".obj");
+    const dllFile = setExtension(defFile, ".dll");
+
+    std.file.write(dFile, src);
+    runShell(`dmd -c -betterC -m32mscoff "-of=` ~ objFile ~ `" ` ~ quote(dFile));
+    runShell("link /NOD /NOENTRY /DLL " ~ quote(objFile) ~ ` "/OUT:` ~ dllFile ~ `" "/DEF:` ~ defFile ~ `"`);
+
+    std.file.remove(dFile);
+    std.file.remove(objFile);
+    std.file.remove(dllFile);
+    std.file.remove(setExtension(dllFile, ".exp"));
+
+    return true;
 }
 
 void c2lib(string outDir, string cFile)
