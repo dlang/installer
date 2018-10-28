@@ -78,3 +78,44 @@ _CRTALLOC(".CRT$XTA") _PVFV __xt_a[] = { NULL };
 _CRTALLOC(".CRT$XTZ") _PVFV __xt_z[] = { NULL };
 
 int _fltused = 0x9875;
+
+#ifdef _M_IX86
+// magic linker symbols available if the binary has a safe exception table
+// (implicit if all object files are safe-EH compatible)
+extern PVOID __safe_se_handler_table[];
+extern BYTE  __safe_se_handler_count;
+#endif
+
+const DECLSPEC_SELECTANY IMAGE_LOAD_CONFIG_DIRECTORY _load_config_used =
+{
+  sizeof(_load_config_used),
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+#ifdef _M_IX86
+  (SIZE_T) __safe_se_handler_table,
+  (SIZE_T) &__safe_se_handler_count,
+#else
+  0,
+  0,
+#endif
+  0,
+  0,
+  0,
+  0,
+  0,
+};
