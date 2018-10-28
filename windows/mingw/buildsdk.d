@@ -343,7 +343,7 @@ void buildMsvcrt(string outDir)
         if (!x64)
         {
             const obj = buildPath(outDir, "msvcrt_abs.obj");
-            runShell(`ml /c "/Fo` ~ obj ~ `" msvcrt_abs.asm`);
+            runShell(`ml /c /safeseh "/Fo` ~ obj ~ `" msvcrt_abs.asm`);
             objs ~= obj;
         }
 
