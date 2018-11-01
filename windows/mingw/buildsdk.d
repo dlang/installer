@@ -85,9 +85,47 @@ void generateDef(string inFile, string outFile)
 
 void sanitizeDef(string defFile)
 {
+    // The MinGW runtime overrides some functions and hides the original
+    // functions by appending a ' DATA' suffix in the .def files.
+    static __gshared const overriddenMinGWFunctions =
+    [
+        // ucrtbase.def:
+        "_assert", "_cabs", "_fpreset", "_tzset",
+        "ceil", "ceilf", "coshf", "fabs",
+        "floor", "floorf", "modf", "modff",
+        "sinhf", "sqrt", "sqrtf", "wcsnlen",
+        // additional ones in msvcr100.def:
+        "__report_gsfailure",
+        "_byteswap_uint64", "_byteswap_ulong", "_byteswap_ushort",
+        "_difftime32", "_difftime64",
+        "_fseeki64", "_ftelli64",
+        "_get_errno",
+        "_rotl64", "_rotr64",
+        "_set_errno",
+        "_wassert",
+        "acosf", "asinf", "atan2", "atan2f", "atanf",
+        "btowc",
+        "cos", "cosf", "exp", "expf", "fmod", "fmodf", "ldexp",
+        "longjmp",
+        "llabs", "lldiv",
+        "log", "log10f", "logf",
+        "mbrlen", "mbrtowc", "mbsrtowcs",
+        "pow", "powf",
+        "sin", "sinf",
+        "strnlen",
+        "tanf", "tanhf",
+        "wcrtomb", "wcsrtombs", "wctob",
+    ];
+
     patchLines(defFile, defFile, (line)
     {
-        if (line.length == 0 || line[0] == ';')
+        if (line.length == 0)
+            return line;
+
+        if (line == "; strnlen replaced by emu")
+            return "strnlen";
+
+        if (line[0] == ';')
             return line;
 
         if (line == "LIBRARY vcruntime140_app")
@@ -107,14 +145,12 @@ void sanitizeDef(string defFile)
             }
         }
 
-        // The MinGW runtime apparently replaces ceil(f)/floor(f) and hides the original functions via DATA.
-        if (line == "ceil DATA" || line == "ceilf DATA" ||
-            line == "floor DATA" || line == "floorf DATA")
-            return line[0 .. $-5];
-
-        // MinGW apparently also replaces ucrtbase.dll's '_tzset'.
-        if (line == "_tzset DATA")
-            return "_tzset";
+        // Un-hide functions overridden by the MinGW runtime.
+        foreach (name; overriddenMinGWFunctions)
+        {
+            if (line.length == name.length + 5 && line.startsWith(name) && line.endsWith(" DATA"))
+                return name;
+        }
 
         // Don't export function 'atexit'; we have our own in msvc_atexit.c.
         if (line == "atexit")
