@@ -1,5 +1,5 @@
 //
-// Convert MingGW-w64 definition files to COFF import librries
+// Convert MingGW-w64 definition files to COFF import libraries
 //
 // Distributed under the Boost Software License, Version 1.0.
 //   (See accompanying file LICENSE_1_0.txt or copy at
@@ -167,8 +167,7 @@ void def2implib(string defFile)
     }
 
     const libFile = setExtension(defFile, ".lib");
-    const arch = x64 ? "X64" : "X86";
-    runShell(`lib /MACHINE:` ~ arch ~ ` "/DEF:` ~ defFile ~ `" "/OUT:` ~ libFile ~ `"`);
+    runShell(`lib "/DEF:` ~ defFile ~ `" "/OUT:` ~ libFile ~ `"`);
     std.file.remove(setExtension(defFile, ".exp"));
 }
 
@@ -309,13 +308,12 @@ void c2lib(string outDir, string cFile)
     const obj = buildPath(outDir, baseName(cFile).setExtension(".obj"));
     const lib = setExtension(obj, ".lib");
     cl(obj, quote(cFile));
-    runShell(`lib /MACHINE:` ~ (x64 ? "X64" : "X86") ~ ` "/OUT:` ~ lib ~ `" "` ~ obj ~ `"`);
+    runShell(`lib "/OUT:` ~ lib ~ `" ` ~ quote(obj));
     std.file.remove(obj);
 }
 
 void buildMsvcrt(string outDir)
 {
-    const arch = x64 ? "X64" : "X86";
     foreach (lib; std.file.dirEntries(outDir, "*.lib", SpanMode.shallow))
     {
         const lowerBase = toLower(baseName(lib.name));
@@ -348,7 +346,7 @@ void buildMsvcrt(string outDir)
         }
 
         // merge them into the library
-        runShell(`lib /MACHINE:` ~ arch ~ ` "` ~ lib.name ~ `" ` ~ objs.map!quote.join(" "));
+        runShell("lib " ~ quote(lib.name) ~ " " ~ objs.map!quote.join(" "));
 
         foreach (obj; objs)
             std.file.remove(obj);
@@ -388,6 +386,14 @@ void buildUuid(string outDir)
     std.file.remove(src);
 }
 
+// vfw32.lib is a merge of 3 other libs
+void buildVfw32(string outDir)
+{
+    auto srcLibs = [ "msvfw32", "avicap32", "avifil32" ].map!(name => buildPath(outDir, name ~ ".lib"));
+    const outLib = buildPath(outDir, "vfw32.lib");
+    runShell(`lib "/OUT:` ~ outLib ~ `" ` ~ srcLibs.map!quote.join(" "));
+}
+
 void main(string[] args)
 {
     x64 = (args.length > 1 && args[1] == "x64");
@@ -405,6 +411,7 @@ void main(string[] args)
     buildOldnames(outDir);
     buildLegacyStdioDefinitions(outDir);
     buildUuid(outDir);
+    buildVfw32(outDir);
 
     //version (verbose) {} else
         foreach (f; std.file.dirEntries(outDir, "*.def*", SpanMode.shallow))
