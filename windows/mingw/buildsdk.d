@@ -323,7 +323,9 @@ void buildMsvcrt(string outDir)
         // parse version from filename (e.g., 140 for VC++ 2015)
         const versionStart = lowerBase[0] == 'm' ? 5 : 9;
         const versionLength = lowerBase[versionStart .. $].countUntil!(c => !isDigit(c));
-        const msvcrtVersion = versionLength == 0 ? "0" : lowerBase[versionStart .. versionStart+versionLength];
+        const msvcrtVersion = versionLength == 0
+            ? "70" // msvcrt.lib
+            : lowerBase[versionStart .. versionStart+versionLength];
 
         string[] objs;
         void addObj(string objFilename, string args)
@@ -412,6 +414,18 @@ void main(string[] args)
     buildLegacyStdioDefinitions(outDir);
     buildUuid(outDir);
     buildVfw32(outDir);
+
+    // rename msvcr<N>.lib to msvcrt<N>.lib as expected by DMD
+    foreach (lib; std.file.dirEntries(outDir, "msvcr*.lib", SpanMode.shallow))
+    {
+        const base = baseName(lib.name);
+        if (!isDigit(base[5])) // msvcrt.lib
+            continue;
+        const newName = buildPath(outDir, "msvcrt" ~ base[5 .. $]);
+        version (verbose)
+            writefln("Renaming '%s' to '%s'", lib.name, newName);
+        std.file.rename(lib.name, newName);
+    }
 
     //version (verbose) {} else
         foreach (f; std.file.dirEntries(outDir, "*.def*", SpanMode.shallow))
