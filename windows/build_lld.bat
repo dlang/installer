@@ -5,8 +5,8 @@ set ROOT=%CD%
 call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
 cd %ROOT%
 
-echo d5b36c0005824f07ab093616bdff247f3da817cae2c51371e1d1473af717d895 lld.src.tar.xz> sha256sums
-echo 5fa7489fc0225b11821cab0362f5813a05f2bcf2533e8a4ea9c9c860168807b0 llvm.src.tar.xz>> sha256sums
+echo fbcf47c5e543f4cdac6bb9bbbc6327ff24217cd7eafc5571549ad6d237287f9c lld.src.tar.xz> sha256sums
+echo 8bc1f844e6cbde1b652c19c1edebc1864456fd9c78b8c1bea038e51b363fe222 llvm.src.tar.xz>> sha256sums
 
 set LLVM_URL=http://releases.llvm.org/%LLVM_VER%
 appveyor DownloadFile %LLVM_URL%/lld-%LLVM_VER%.src.tar.xz  -FileName lld.src.tar.xz  || exit /B 1
