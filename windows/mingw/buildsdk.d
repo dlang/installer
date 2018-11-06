@@ -393,12 +393,47 @@ void buildMsvcrt(string outDir)
 
 void buildOldnames(string outDir)
 {
-    const cPrefix = x64 ? "" : "_";
+    static string prependUnderscore(string symbolName)
+    {
+        return symbolName.startsWith("__imp_")
+            ? symbolName[0 .. 6] ~ "_" ~ symbolName[6 .. $] // __imp_name => __imp__name
+            : "_" ~ symbolName;                             // name => _name
+    }
+
+    const lines = std.file.readText("oldnames.list").splitLines;
+    foreach (line; lines)
+    {
+        if (line.length == 0)
+            continue;
+
+        string weakName;
+        string realName;
+
+        const equalsIndex = line.indexOf('=');
+        if (equalsIndex > 0)
+        {
+            weakName = line[0 .. equalsIndex];
+            realName = line[equalsIndex+1 .. $];
+        }
+        else // most real names just feature an additional leading underscore
+        {
+            weakName = line;
+            realName = prependUnderscore(weakName);
+        }
+
+        weakSymbols[weakName] = realName;
+    }
+
+    static string getMangledName(string symbolName)
+    {
+        return x64 ? symbolName : prependUnderscore(symbolName);
+    }
+
     const oldnames_c =
         // access this __ref_oldnames symbol to drag in the generated linker directives (msvcrt_stub.c)
         "int __ref_oldnames;\n" ~
         weakSymbols.byKeyValue.map!(pair =>
-            `__pragma(comment(linker, "/alternatename:` ~ cPrefix ~ pair.key ~ `=` ~ cPrefix ~ pair.value ~ `"));`
+            `__pragma(comment(linker, "/alternatename:` ~ getMangledName(pair.key) ~ `=` ~ getMangledName(pair.value) ~ `"));`
         ).join("\n");
 
     version (verbose)
