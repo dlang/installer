@@ -68,6 +68,12 @@ extern char **__argv;
 
 #if MSVCRT_VERSION >= 140 // UCRT
 
+#ifdef _M_X64
+__pragma(comment(linker, "/alternatename:__set_app_type=_set_app_type"));
+#else
+__pragma(comment(linker, "/alternatename:___set_app_type=__set_app_type"));
+#endif
+
 enum _crt_argv_mode
 {
     _crt_argv_no_arguments,

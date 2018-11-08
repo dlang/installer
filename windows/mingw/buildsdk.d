@@ -27,7 +27,6 @@ import std.string;
 version = verbose;
 
 bool x64;
-string[string] weakSymbols; // weak name => real name
 
 
 void runShell(string cmd)
@@ -132,6 +131,7 @@ void sanitizeDef(string defFile)
             return `LIBRARY "vcruntime140.dll"`;
 
         // The MinGW-w64 .def files specify weak external symbols as 'alias == realName'.
+        // Just ignore them; they are incomplete and sometimes wrong.
         const i = line.indexOf("==");
         if (i > 0)
         {
@@ -139,10 +139,7 @@ void sanitizeDef(string defFile)
             const realName = strip(line[i+2 .. $]);
 
             if (weakName.indexOf(' ') < 0 && realName.indexOf(' ') < 0)
-            {
-                weakSymbols[weakName] = realName;
                 return ";" ~ line;
-            }
         }
 
         // Un-hide functions overridden by the MinGW runtime.
@@ -393,47 +390,34 @@ void buildMsvcrt(string outDir)
 
 void buildOldnames(string outDir)
 {
-    static string prependUnderscore(string symbolName)
+    static struct WeakSymbol { string name; string targetName; }
+    WeakSymbol[] weakSymbols;
+
+    void processAliasesFile(string path)
     {
-        return symbolName.startsWith("__imp_")
-            ? symbolName[0 .. 6] ~ "_" ~ symbolName[6 .. $] // __imp_name => __imp__name
-            : "_" ~ symbolName;                             // name => _name
-    }
-
-    const lines = std.file.readText("oldnames.list").splitLines;
-    foreach (line; lines)
-    {
-        if (line.length == 0)
-            continue;
-
-        string weakName;
-        string realName;
-
-        const equalsIndex = line.indexOf('=');
-        if (equalsIndex > 0)
+        foreach (line; std.file.readText(path).splitLines)
         {
-            weakName = line[0 .. equalsIndex];
-            realName = line[equalsIndex+1 .. $];
-        }
-        else // most real names just feature an additional leading underscore
-        {
-            weakName = line;
-            realName = prependUnderscore(weakName);
-        }
+            if (line.length == 0 || line[0] == ';')
+                continue;
 
-        weakSymbols[weakName] = realName;
+            const equalsIndex = line.indexOf('=');
+            const weakName = line[0 .. equalsIndex];
+            const realName = line[equalsIndex+1 .. $];
+
+            weakSymbols ~= WeakSymbol(weakName, realName);
+        }
     }
 
-    static string getMangledName(string symbolName)
-    {
-        return x64 ? symbolName : prependUnderscore(symbolName);
-    }
+    const suffix = x64 ? "64" : "32";
+    processAliasesFile("oldnames.aliases" ~ suffix);
+    // include the weak symbols from msvcrt.lib too
+    processAliasesFile("msvcrt140.aliases" ~ suffix);
 
     const oldnames_c =
-        // access this __ref_oldnames symbol to drag in the generated linker directives (msvcrt_stub.c)
+        // access this __ref_oldnames symbol (in msvcrt_stub.c) to drag in the generated linker directives
         "int __ref_oldnames;\n" ~
-        weakSymbols.byKeyValue.map!(pair =>
-            `__pragma(comment(linker, "/alternatename:` ~ getMangledName(pair.key) ~ `=` ~ getMangledName(pair.value) ~ `"));`
+        weakSymbols.map!(sym =>
+            `__pragma(comment(linker, "/alternatename:` ~ sym.name ~ `=` ~ sym.targetName ~ `"));`
         ).join("\n");
 
     version (verbose)
