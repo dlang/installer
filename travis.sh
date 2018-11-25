@@ -42,7 +42,7 @@ if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     )
 fi
 
-testFile=/tmp/$(mktemp tmp_XXXXXXXX)
+testFile=$(mktemp /tmp/tmp_XXXXXXXX)
 echo "void main(){ import std.stdio; __VERSION__.writeln;}" > "${testFile}.d"
 
 for idx in "${!compilers[@]}"
