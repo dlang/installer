@@ -624,6 +624,9 @@ verify() {
     if [ "$GPG" = x ]; then
         return
     fi
+    if ! $GPG --list-keys >/dev/null; then
+        fatal "Broken GPG installation"
+    fi
     if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>/dev/null; then
         rm "$path" # delete invalid files
         fatal "Invalid signature ${urls[0]}"
