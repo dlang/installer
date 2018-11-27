@@ -42,7 +42,12 @@ if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     )
 fi
 
-testFile=/tmp/$(mktemp tmp_XXXXXXXX)
+testDir=/tmp/dlang-installer-test-$UID
+rm -rf "$testDir"
+mkdir -m 700 "$testDir"
+export HOME=$testDir
+
+testFile="$testDir"/test
 echo "void main(){ import std.stdio; __VERSION__.writeln;}" > "${testFile}.d"
 
 for idx in "${!compilers[@]}"
