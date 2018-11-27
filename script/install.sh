@@ -475,11 +475,11 @@ resolve_latest() {
             COMPILER="ldc-$(fetch $url)"
             ;;
         ldc-nightly)
-            local ci_url=https://github.com/ldc-developers/ldc/releases/tag/CI
-            logV "Finding latest ldc-nightly binary package (at $ci_url)."
+            local url=http://thecybershadow.net/d/github-ldc
+            logV "Finding latest ldc-nightly binary package (at $url)."
             local package
-            package="$(fetch $ci_url | grep -o "ldc2-[0-9a-f]*-$OS-$ARCH-[0-9]*.tar.xz" | head -n 1)"
-            if [[ $package =~ ^ldc2-([0-9a-f]*)-$OS-$ARCH-([0-9]*)\.tar\.xz$ ]]; then
+            package="$(fetch $url)"
+            if [[ $package =~ ^([0-9a-f]*)[[:space:]]([0-9]*)$ ]]; then
                 COMPILER="ldc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
             else
                 fatal "Could not find ldc-nightly binaries (OS: $OS, arch: $ARCH)"
@@ -557,7 +557,7 @@ install_compiler() {
         local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH-$package_date.tar.xz"
 
         # Install into 'ldc-8c0abd52-20171222' directory.
-        download_and_unpack "$url" "$ROOT/$1"
+        download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
     elif [[ $1 =~ ^gdc-([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
