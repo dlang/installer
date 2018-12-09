@@ -134,6 +134,7 @@ case $(uname -s) in
 esac
 case $(uname -m) in
     x86_64|amd64) ARCH=x86_64; MODEL=64;;
+    aarch64) ARCH=aarch64; MODEL=64;;
     i*86) ARCH=x86; MODEL=32;;
     *)
         fatal "Unsupported Arch $(uname -m)"
@@ -503,6 +504,10 @@ install_compiler() {
             local arch="zip"
         fi
 
+        if [[ $ARCH != x86* ]]; then
+            fatal "no DMD binaries available for $ARCH"
+        fi
+
         local mirrors
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
             mirrors=(
@@ -524,6 +529,9 @@ install_compiler() {
         local basename="dmd.$branch.$OS"
         if [ $OS = freebsd ]; then
             basename="$basename-$MODEL"
+        fi
+        if [[ $ARCH != x86* ]]; then
+            fatal "no DMD binaries available for $ARCH"
         fi
         local url="http://downloads.dlang.org/nightlies/$1/$basename.tar.xz"
 
