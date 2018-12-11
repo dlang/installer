@@ -205,7 +205,8 @@ command_help() {
   dmd|gdc|ldc           latest version of a compiler
   dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.071.1, ldc-1.1.0-beta2)
   dmd|ldc-beta          latest beta version of a compiler
-  dmd|ldc-nightly       latest nightly version of a compiler
+  dmd-nightly           latest dmd nightly
+  ldc-latest-ci         latest ldc CI build (with assertions enabled)
   dmd-2016-08-08        specific dmd nightly
 '
 
@@ -474,15 +475,15 @@ resolve_latest() {
             logV "Determining latest ldc-beta version ($url)."
             COMPILER="ldc-$(fetch $url)"
             ;;
-        ldc-nightly)
+        ldc-latest-ci)
             local url=http://thecybershadow.net/d/github-ldc
-            logV "Finding latest ldc-nightly binary package (at $url)."
+            logV "Finding latest ldc CI binary package (at $url)."
             local package
             package="$(fetch $url)"
             if [[ $package =~ ldc2-([0-9a-f]*)-$OS-$ARCH. ]]; then
                 COMPILER="ldc-${BASH_REMATCH[1]}"
             else
-                fatal "Could not find ldc-nightly binaries (OS: $OS, arch: $ARCH)"
+                fatal "Could not find ldc CI binaries (OS: $OS, arch: $ARCH)"
             fi
             ;;
         gdc)
@@ -550,7 +551,7 @@ install_compiler() {
 
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
-    # ldc-nightly: ldc-8c0abd52-20171222
+    # ldc-latest-ci: ldc-8c0abd52
     elif [[ $1 =~ ^ldc-([0-9a-f]+) ]]; then
         local package_hash=${BASH_REMATCH[1]}
         local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH.tar.xz"
