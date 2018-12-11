@@ -479,8 +479,8 @@ resolve_latest() {
             logV "Finding latest ldc-nightly binary package (at $url)."
             local package
             package="$(fetch $url)"
-            if [[ $package =~ ^([0-9a-f]*)[[:space:]]([0-9]*)$ ]]; then
-                COMPILER="ldc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+            if [[ $package =~ ldc2-([0-9a-f]*)-$OS-$ARCH. ]]; then
+                COMPILER="ldc-${BASH_REMATCH[1]}"
             else
                 fatal "Could not find ldc-nightly binaries (OS: $OS, arch: $ARCH)"
             fi
@@ -551,10 +551,9 @@ install_compiler() {
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
     # ldc-nightly: ldc-8c0abd52-20171222
-    elif [[ $1 =~ ^ldc-([0-9a-f]+)-([0-9]+) ]]; then
+    elif [[ $1 =~ ^ldc-([0-9a-f]+) ]]; then
         local package_hash=${BASH_REMATCH[1]}
-        local package_date=${BASH_REMATCH[2]}
-        local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH-$package_date.tar.xz"
+        local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH.tar.xz"
 
         # Install into 'ldc-8c0abd52-20171222' directory.
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
