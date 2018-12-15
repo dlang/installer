@@ -6,8 +6,7 @@ compilers=(
     dmd-2.069.2
     dmd-2.071.2
     dmd-2.077.1
-    dmd-2016-10-19
-    dmd-master-2016-10-24
+    dmd-master-2018-10-14
     ldc-1.4.0
 )
 
@@ -15,8 +14,7 @@ versions=(
     'DMD64 D Compiler v2.069.2'
     'DMD64 D Compiler v2.071.2'
     'DMD64 D Compiler v2.077.1'
-    'DMD64 D Compiler v2.073.0-master-878b882'
-    'DMD64 D Compiler v2.073.0-master-ab9d712'
+    'DMD64 D Compiler v2.082.1-master-54b676b'
     'LDC - the LLVM D compiler (1.4.0):'
 )
 
@@ -24,8 +22,7 @@ frontendVersions=(
     '2069'
     '2071'
     '2077'
-    '2073'
-    '2073'
+    '2082'
     '2074'
 )
 
@@ -45,7 +42,12 @@ if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     )
 fi
 
-testFile=/tmp/$(mktemp tmp_XXXXXXXX)
+testDir=/tmp/dlang-installer-test-$UID
+rm -rf "$testDir"
+mkdir -m 700 "$testDir"
+export HOME=$testDir
+
+testFile="$testDir"/test
 echo "void main(){ import std.stdio; __VERSION__.writeln;}" > "${testFile}.d"
 
 for idx in "${!compilers[@]}"
@@ -77,7 +79,7 @@ do
 done
 
 # test resolution of latest using the remove error message
-latest=(dmd dmd-beta dmd-master dmd-nightly ldc ldc-beta gdc)
+latest=(dmd dmd-beta dmd-master dmd-nightly ldc ldc-beta gdc dmd-2018-10-14)
 for compiler in "${latest[@]}"
 do
     set +e

@@ -134,6 +134,7 @@ case $(uname -s) in
 esac
 case $(uname -m) in
     x86_64|amd64) ARCH=x86_64; MODEL=64;;
+    aarch64) ARCH=aarch64; MODEL=64;;
     i*86) ARCH=x86; MODEL=32;;
     *)
         fatal "Unsupported Arch $(uname -m)"
@@ -406,11 +407,11 @@ install_dlang_installer() {
     tmp=$(mkdtemp)
     local mirrors=(
         "https://dlang.org/install.sh"
-        "https://nightlies.dlang.org/install.sh"
+        "https://s3-us-west-2.amazonaws.com/downloads.dlang.org/other/install.sh"
     )
     local keyring_mirrors=(
         "https://dlang.org/d-keyring.gpg"
-        "https://nightlies.dlang.org/d-keyring.gpg"
+        "https://s3-us-west-2.amazonaws.com/downloads.dlang.org/other/d-keyring.gpg"
     )
 
     mkdir -p "$ROOT"
@@ -455,11 +456,13 @@ resolve_latest() {
             # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
             #          dmd-2.068.0 or dmd-2.068.2-5
             if [[ ! $COMPILER =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
-               [[ ! $COMPILER =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]
-            then
-                local url=http://nightlies.dlang.org/$COMPILER/LATEST
+               [[ ! $COMPILER =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]; then
+                local url=http://downloads.dlang.org/nightlies/$COMPILER/LATEST
                 logV "Determing latest $COMPILER version ($url)."
                 COMPILER="dmd-$(fetch "$url")"
+            # rewrite dmd-2016-10-19 -> dmd-master-2016-10-19 (default branch for nightlies)
+            elif [[ $COMPILER =~ ^dmd-([0-9]{4}-[0-9]{2}-[0-9]{2})$ ]]; then
+                COMPILER="dmd-master-${BASH_REMATCH[1]}"
             fi
             ;;
         ldc)
@@ -501,6 +504,10 @@ install_compiler() {
             local arch="zip"
         fi
 
+        if [[ $ARCH != x86* ]]; then
+            fatal "no DMD binaries available for $ARCH"
+        fi
+
         local mirrors
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
             mirrors=(
@@ -523,7 +530,10 @@ install_compiler() {
         if [ $OS = freebsd ]; then
             basename="$basename-$MODEL"
         fi
-        local url="http://nightlies.dlang.org/$1/$basename.tar.xz"
+        if [[ $ARCH != x86* ]]; then
+            fatal "no DMD binaries available for $ARCH"
+        fi
+        local url="http://downloads.dlang.org/nightlies/$1/$basename.tar.xz"
 
         download_and_unpack_with_verify "$ROOT/$compiler" "$url"
 
@@ -622,7 +632,11 @@ verify() {
     if [ "$GPG" = x ]; then
         return
     fi
+    if ! $GPG --list-keys >/dev/null; then
+        fatal "Broken GPG installation"
+    fi
     if ! $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>/dev/null; then
+        rm "$path" # delete invalid files
         fatal "Invalid signature ${urls[0]}"
     fi
 }
