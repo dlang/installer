@@ -207,6 +207,7 @@ command_help() {
   dmd|gdc|ldc-<version> specific version of a compiler (e.g. dmd-2.071.1, ldc-1.1.0-beta2)
   dmd|ldc-beta          latest beta version of a compiler
   dmd-nightly           latest dmd nightly
+  ldc-latest-ci         latest ldc CI build (with assertions enabled)
   dmd-2016-08-08        specific dmd nightly
 '
 
@@ -475,6 +476,17 @@ resolve_latest() {
             logV "Determining latest ldc-beta version ($url)."
             COMPILER="ldc-$(fetch $url)"
             ;;
+        ldc-latest-ci)
+            local url=http://thecybershadow.net/d/github-ldc
+            logV "Finding latest ldc CI binary package (at $url)."
+            local package
+            package="$(fetch $url)"
+            if [[ $package =~ ldc2-([0-9a-f]*)-$OS-$ARCH. ]]; then
+                COMPILER="ldc-${BASH_REMATCH[1]}"
+            else
+                fatal "Could not find ldc CI binaries (OS: $OS, arch: $ARCH)"
+            fi
+            ;;
         gdc)
             local url=http://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
@@ -545,6 +557,14 @@ install_compiler() {
             fatal "no ldc binaries available for $OS"
         fi
 
+        download_and_unpack_without_verify "$ROOT/$compiler" "$url"
+
+    # ldc-latest-ci: ldc-8c0abd52
+    elif [[ $1 =~ ^ldc-([0-9a-f]+) ]]; then
+        local package_hash=${BASH_REMATCH[1]}
+        local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH.tar.xz"
+
+        # Install into 'ldc-8c0abd52-20171222' directory.
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
     # gdc-4.8.2, gdc-4.9.0-alpha1, gdc-5.2, or gdc-5.2-alpha1
