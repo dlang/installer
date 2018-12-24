@@ -1,7 +1,7 @@
 os: Visual Studio 2015
 
 environment:
-  CURL_VER: 7.57.0
+  CURL_VER: 7.63.0
   ZLIB_VER: 1.2.11
   PEXPORTS_VER: 0.47
 
