@@ -10,10 +10,10 @@ SET MINGW64_PATH=C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin
 :: --------------------------------------------------------------------
 :: Download and Unpack
 
-echo 4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066 zlib.tar.xz> sha256sums
-echo f5f6fd3c72b7b8389969f4fb671ed8532fa9b5bb7a5cae7ca89bc1cea45c7878 curl.tar.xz>> sha256sums
+echo %ZLIB_SHA256% zlib.tar.xz> sha256sums
+echo %CURL_SHA256% curl.tar.xz>> sha256sums
+echo %PEXPORTS_SHA256% pexports.tar.xz>> sha256sums
 echo 52329e960a0278fa7f228057260d577847ae2f1844ee449f9d7acbf73cbb3ca4 bup.zip>> sha256sums
-echo 51f4d90d0dac3beb6fb5f8a4193ee0fae45b60eecc2dfdb9012f89eedce95a7c pexports.tar.xz>> sha256sums
 
 appveyor DownloadFile https://zlib.net/zlib-%ZLIB_VER%.tar.xz -FileName zlib.tar.xz || exit /B 1
 appveyor DownloadFile https://curl.haxx.se/download/curl-%CURL_VER%.tar.xz -FileName curl.tar.xz || exit /B 1

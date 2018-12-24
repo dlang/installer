@@ -2,8 +2,11 @@ os: Visual Studio 2015
 
 environment:
   CURL_VER: 7.63.0
+  CURL_SHA256: 9600234c794bfb8a0d3f138e9294d60a20e7a5f10e35ece8cf518e2112d968c4
   ZLIB_VER: 1.2.11
+  ZLIB_SHA256: 4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e19bf066
   PEXPORTS_VER: 0.47
+  PEXPORTS_SHA256: 51f4d90d0dac3beb6fb5f8a4193ee0fae45b60eecc2dfdb9012f89eedce95a7c
 
 artifacts:
   - name: libcurl
