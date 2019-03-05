@@ -748,6 +748,7 @@ export PS1="($1)\${PS1:-}"
 END_ACTIVATE
 
     logV "Writing environment variables to $ROOT/$1/activate.fish"
+    # shellcheck disable=SC2016
     cat > "$ROOT/$1/activate.fish" <<END_ACTIVATEFISH
 function deactivate
     set -gx PATH \$_OLD_D_PATH
