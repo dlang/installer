@@ -75,6 +75,13 @@ do
     command -v dub >/dev/null 2>&1 || { echo >&2 "DUB hasn't been installed."; exit 1; }
     deactivate
 
+    # Check man pages do not destroy system man pages availability
+    if [[ $compiler = dmd* ]]; then
+        . ~/dlang/$compiler/activate
+        man dmd >/dev/null 2>&1
+        deactivate
+    fi
+
     ./script/install.sh uninstall $compiler
 done
 

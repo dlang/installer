@@ -371,6 +371,10 @@ run_command() {
                 install_dub
             fi
 
+	    if [[ $2 = dmd* ]]; then
+	        manpath=man
+	    fi
+
             write_env_vars "$2"
 
             if [ "$(basename "$SHELL")" = fish ]; then
@@ -381,7 +385,7 @@ run_command() {
             else
                 log "
 Run \`source $ROOT/$2/activate${suffix:-}\` in your shell to use $2.
-This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1.
+This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, ${manpath+MANPATH, }DMD, DC, and PS1.
 Run \`deactivate\` later on to restore your environment."
             fi
             ;;
@@ -710,17 +714,19 @@ write_env_vars() {
     esac
 
     logV "Writing environment variables to $ROOT/$1/activate"
-    cat > "$ROOT/$1/activate" <<EOF
+    cat > "$ROOT/$1/activate" <<END_ACTIVATE
 deactivate() {
     export PATH="\$_OLD_D_PATH"
     export LIBRARY_PATH="\$_OLD_D_LIBRARY_PATH"
     export LD_LIBRARY_PATH="\$_OLD_D_LD_LIBRARY_PATH"
-    export PS1="\$_OLD_D_PS1"
+${manpath+    export MANPATH="\$_OLD_D_MANPATH"
+}    export PS1="\$_OLD_D_PS1"
 
     unset _OLD_D_PATH
     unset _OLD_D_LIBRARY_PATH
     unset _OLD_D_LD_LIBRARY_PATH
-    unset _OLD_D_PS1
+${manpath+    unset _OLD_D_MANPATH
+}    unset _OLD_D_PS1
     unset DMD
     unset DC
     unset -f deactivate
@@ -729,23 +735,27 @@ deactivate() {
 _OLD_D_PATH="\${PATH:-}"
 _OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
 _OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
-_OLD_D_PS1="\${PS1:-}"
+${manpath+_OLD_D_MANPATH="\${MANPATH:-}"
+}_OLD_D_PS1="\${PS1:-}"
 
 export PATH="${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT/$1/$binpath\${PATH:+:}\${PATH:-}"
 export LIBRARY_PATH="$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}"
 export LD_LIBRARY_PATH="$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}"
-export DMD=$dmd
+${manpath+export MANPATH="$ROOT/$1/$manpath:\${MANPATH:-}"
+}export DMD=$dmd
 export DC=$dc
 export PS1="($1)\${PS1:-}"
-EOF
+END_ACTIVATE
 
     logV "Writing environment variables to $ROOT/$1/activate.fish"
-    cat > "$ROOT/$1/activate.fish" <<EOF
+    # shellcheck disable=SC2016
+    cat > "$ROOT/$1/activate.fish" <<END_ACTIVATEFISH
 function deactivate
     set -gx PATH \$_OLD_D_PATH
     set -gx LIBRARY_PATH \$_OLD_D_LIBRARY_PATH
     set -gx LD_LIBRARY_PATH \$_OLD_D_LD_LIBRARY_PATH
-
+${manpath+    set -gx MANPATH \$_OLD_D_MANPATH
+}
     functions -e fish_prompt
     functions -c _old_d_fish_prompt fish_prompt
     functions -e _old_d_fish_prompt
@@ -753,7 +763,8 @@ function deactivate
     set -e _OLD_D_PATH
     set -e _OLD_D_LIBRARY_PATH
     set -e _OLD_D_LD_LIBRARY_PATH
-    set -e DMD
+${manpath+    set -e _OLD_D_MANPATH
+}    set -e DMD
     set -e DC
     functions -e deactivate
 end
@@ -761,18 +772,21 @@ end
 set -g _OLD_D_PATH \$PATH
 set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
 set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
-set -g _OLD_D_PS1 \$PS1
+${manpath+set -g _OLD_D_MANPATH \$MANPATH
+}set -g _OLD_D_PS1 \$PS1
 
 set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT/$1/$binpath' \$PATH
 set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH
 set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH
-set -gx DMD $dmd
+${manpath+set -q MANPATH; or set MANPATH ''
+set -gx MANPATH '$ROOT/$1/$manpath' \$MANPATH
+}set -gx DMD $dmd
 set -gx DC $dc
 functions -c fish_prompt _old_d_fish_prompt
 function fish_prompt
     printf '($1)%s' (_old_d_fish_prompt)
 end
-EOF
+END_ACTIVATEFISH
 }
 
 uninstall_compiler() {
