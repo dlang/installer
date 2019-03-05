@@ -76,14 +76,11 @@ do
     deactivate
 
     # Check man pages do not destroy system man pages availability
-    if man ls >/dev/null 2>&1; then man_ls_exit_status=0; else man_ls_exit_status=$?; fi
-    if man dmd >/dev/null 2>&1; then man_dmd_exit_status=0; else man_dmd_exit_status=$?; fi
-    . ~/dlang/$compiler/activate
-    if man ls >/dev/null 2>&1; test $? -ne $man_ls_exit_status; then false; fi
-    if man dmd >/dev/null 2>&1; test $? -ne 0; then false; fi
-    deactivate
-    if man ls >/dev/null 2>&1; test $? -ne $man_ls_exit_status; then false; fi
-    if man dmd >/dev/null 2>&1; test $? -ne $man_dmd_exit_status; then false; fi
+    if [[ $compiler = dmd* ]]; then
+        . ~/dlang/$compiler/activate
+        man dmd >/dev/null 2>&1
+        deactivate
+    fi
 
     ./script/install.sh uninstall $compiler
 done
