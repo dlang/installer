@@ -404,12 +404,12 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         if(bits == Bits.bits64)
         {
             msvcEnv =
-                " VCDIR="  ~ quote(win64vcDir) ~
-                " SDKDIR=" ~ quote(win64sdkDir) ~
-                " CC="     ~ quote(`\"` ~ msvcBinDir~"/cl"   ~`\"`) ~
-                " LD="     ~ quote(`\"` ~ msvcBinDir~"/link" ~`\"`) ~
-                " AR="     ~ quote(`\"` ~ msvcBinDir~"/lib"  ~`\"`);
-            }
+                " " ~ quote("VCDIR="  ~ win64vcDir) ~
+                " " ~ quote("SDKDIR=" ~ win64sdkDir) ~
+                " " ~ quote("CC="     ~ msvcBinDir~"/cl") ~
+                " " ~ quote("LD="     ~ msvcBinDir~"/link") ~
+                " " ~ quote("AR="     ~ msvcBinDir~"/lib");
+        }
     }
 
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
