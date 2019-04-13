@@ -4,22 +4,21 @@ set ROOT=%CD%
 
 set DMD_URL=http://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
 echo DMD_URL=%DMD_URL%
-appveyor DownloadFile %DMD_URL% -FileName dmd2.7z || exit /B 1
+powershell -Command "Invoke-WebRequest %DMD_URL% -OutFile dmd2.7z" || exit /B 1
 7z x dmd2.7z || exit /B 1
 set PATH=%ROOT%\dmd2\windows\bin;%PATH%
-
-echo b80b0c9d0158f9125e482b50fe00b70dde11d7a015ee687ca455fe2ea2ec8733 *w32api.src.tar.xz> sha256sums
-echo 77233333f5440287840d134804bcecf3144ec3efc7fd7f7c6dce318e4e7146ee *mingwrt.src.tar.xz>> sha256sums
 
 set MINGW_BASEURL=https://netix.dl.sourceforge.net/project/mingw/MinGW/Base/
 set W32API_URL=%MINGW_BASEURL%/w32api/w32api-%MINGW_VER%/w32api-%MINGW_VER%-mingw32-src.tar.xz
 set MINGWRT_URL=%MINGW_BASEURL%/mingwrt/mingwrt-%MINGW_VER%/mingwrt-%MINGW_VER%-mingw32-src.tar.xz
+set USER_AGENT=[Microsoft.PowerShell.Commands.PSUserAgent]::FireFox
 
-appveyor DownloadFile %W32API_URL%  -FileName w32api.src.tar.xz  || exit /B 1
-appveyor DownloadFile %MINGWRT_URL%  -FileName mingwrt.src.tar.xz  || exit /B 1
+powershell -Command "Invoke-WebRequest %W32API_URL% -OutFile w32api.src.tar.xz -UserAgent %User_Agent%"  || exit /B 1
+powershell -Command "Invoke-WebRequest %MINGWRT_URL% -OutFile mingwrt.src.tar.xz -UserAgent %User_Agent%"  || exit /B 1
 
 :: e.g. from git installation
-sha256sum -c sha256sums || exit /B 1
+dos2unix "%ROOT%\windows\build_mingw.sha256sums"
+sha256sum -c "%ROOT%\windows\build_mingw.sha256sums" || exit /B 1
 
 7z x w32api.src.tar.xz || exit /B 1
 7z x w32api.src.tar || exit /B 1
@@ -34,13 +33,14 @@ cd windows\mingw
 set w32api_lib=../../w32api/lib
 set msvcrt_def_in=../../mingwrt/msvcrt-xref/msvcrt.def.in
 
-call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
 rem CWD might be changed by vcvars64.bat
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x64 %w32api_lib% dmd2\windows\lib64\mingw %msvcrt_def_in% || exit /B 1
 
-call "c:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
+call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x86 %w32api_lib% dmd2\windows\lib32mscoff\mingw %msvcrt_def_in% || exit /B 1
 
-7z a %ROOT%\mingw-libs-%MINGW_VER%.zip dmd2\windows
+mkdir "%ROOT%\artifacts"
+7z a %ROOT%\artifacts\mingw-libs-%MINGW_VER%.zip dmd2\windows
