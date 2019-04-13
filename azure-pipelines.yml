@@ -20,3 +20,15 @@ jobs:
       D_VERSION: 2.077.1
     steps:
       - template: .azure-pipelines/build-mingw-libs.yml
+  - job: Build_Curl
+    timeoutInMinutes: 120
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      CURL_VER: 7.64.0
+      ZLIB_VER: 1.2.11
+      PEXPORTS_VER: 0.47
+      ARCH: x86
+    steps:
+      - template: .azure-pipelines/build-curl.yml

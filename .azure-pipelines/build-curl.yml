@@ -1,0 +1,16 @@
+steps:
+  - script: |
+      :: Use Windows CRLF line endings for checked-out text files
+      git config --global core.autocrlf true
+      set
+    displayName: Print environment variables
+  - checkout: self
+    fetchDepth: 1
+  - script: |
+      call windows/build_curl.bat
+    displayName: Build Curl
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: libcurl
+      targetPath: artifacts
+    displayName: Publish artifacts
