@@ -1,0 +1,15 @@
+os: Visual Studio 2017
+
+environment:
+  matrix:
+    - ARCH:                x86
+      LLVM_VER:            7.0.0
+
+artifacts:
+  - path: lld-link-$(LLVM_VER).zip
+    name: lld
+
+build_script:
+  - call windows\build_lld.bat
+
+test_script: true
