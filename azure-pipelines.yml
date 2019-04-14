@@ -1,12 +1,12 @@
 # Learn more: https://aka.ms/yaml
 jobs:
-  - job: Build LLD
+  - job: Build_LLD
     timeoutInMinutes: 120
     pool:
       vmImage: 'vs2017-win2016'
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
-      LLVM_VAR: 7.0.0
+      LLVM_VER: 7.0.0
       ARCH: x86
     steps:
       - template: .azure-pipelines/build-lld.yml
