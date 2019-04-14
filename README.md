@@ -15,15 +15,28 @@ To learn more about the install script, please visit the
 To report a problem or browse the list of open bugs, please visit the
 [bug tracker](http://issues.dlang.org/).
 
-AppVeyor Windows build
-----------------------
+Prebuilt Windows libaries
+-------------------------
 
-[![Build status](https://ci.appveyor.com/api/projects/status/415wrv2m0av1b62w?svg=true)](https://ci.appveyor.com/project/4wil/installer)
+The following binaries are pre-built:
+- LLD (`windows/build_lld.bat`) - the LLVM linker
+- MinGW (`windows/build_mingw.bat`)
+- Curl (`windows/build_curl.bat`) - built on its own [branch](https://github.com/dlang/installer/tree/build-curl)
 
-All pre-built Windows binaries are built on AppVeyor.
-However, due to their heavy build time, these Windows binary builds have been moved to their own branch.
-To bump the version, make a pull request against the respective branch:
+Upgrading these libraries requires three steps:
 
-- [MinGW libs](https://github.com/dlang/installer/tree/build-mingw-libs)
-- [LLD](https://github.com/dlang/installer/tree/build-lld) - the LLVM linker
-- [Curl](https://github.com/dlang/installer/tree/build-curl)
+### 1) Build the new application/library
+
+- bump the version of the library/application in [`azure-pipelines.yml`](azure-pipelines.yml)
+- update the `sha256sums` file in the respective in `windows` (e.g. `windows/build_lld.sha256sums`)
+- submit a PR
+
+### 2) Upload the artifact to downloads.dlang.org
+
+- upload the artifact to downloads.dlang.org
+- rebuilt the site index of downloads.dlang.org
+- ping a maintainer if you don't have the rights)
+
+### 3) Bump the used application/library version
+
+Typically this requires a PR against [`create_dmd_release/build_all.d`](create_dmd_release/build_all.d).
