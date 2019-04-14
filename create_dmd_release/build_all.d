@@ -491,7 +491,7 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.64.0-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
-    enum mingwlibs = "mingw-libs-5.0.2-1.zip";
+    enum mingwlibs = "mingw-libs-7.0.0.zip";
     enum lld = "lld-link-8.0.0.zip";
 
     auto oldCompilers = platforms
