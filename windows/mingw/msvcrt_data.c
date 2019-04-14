@@ -5,8 +5,11 @@
 
 ULONG _tls_index = 0;
 
+#if MSVCRT_VERSION < 140
 #pragma section(".tls$AAA")
 #pragma section(".tls$ZZZ")
+#endif
+
 #pragma section(".CRT$XLA", long, read)
 #pragma section(".CRT$XLZ", long, read)
 #pragma section(".CRT$XIA", long, read)
@@ -21,9 +24,29 @@ ULONG _tls_index = 0;
 
 #pragma comment(linker, "/merge:.CRT=.rdata")
 
+#if MSVCRT_VERSION >= 140 // UCRT
+
+#pragma data_seg(".tls")
+#ifdef _M_X64
+_CRTALLOC(".tls")
+#endif
+char _tls_start = 0;
+
+#pragma data_seg(".tls$ZZZ")
+#ifdef _M_X64
+_CRTALLOC(".tls$ZZZ")
+#endif  /* defined (_M_X64) */
+char _tls_end = 0;
+
+#pragma data_seg()
+
+#else // MSVCRT_VERSION < 140
+
 /* TLS raw template data start and end. */
 _CRTALLOC(".tls$AAA") int _tls_start = 0;
 _CRTALLOC(".tls$ZZZ") int _tls_end = 0;
+
+#endif
 
 // TLS init/exit callbacks
 _CRTALLOC(".CRT$XLA") PIMAGE_TLS_CALLBACK __xl_a = 0;
@@ -54,8 +77,45 @@ _CRTALLOC(".CRT$XPZ") _PVFV __xp_z[] = { NULL };
 _CRTALLOC(".CRT$XTA") _PVFV __xt_a[] = { NULL };
 _CRTALLOC(".CRT$XTZ") _PVFV __xt_z[] = { NULL };
 
-char _fltused;
+int _fltused = 0x9875;
 
-int    _argc = 0;
-char **_argv = NULL;
+#ifdef _M_IX86
+// magic linker symbols available if the binary has a safe exception table
+// (implicit if all object files are safe-EH compatible)
+extern PVOID __safe_se_handler_table[];
+extern BYTE  __safe_se_handler_count;
+#endif
 
+const DECLSPEC_SELECTANY IMAGE_LOAD_CONFIG_DIRECTORY _load_config_used =
+{
+  sizeof(_load_config_used),
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+#ifdef _M_IX86
+  (SIZE_T) __safe_se_handler_table,
+  (SIZE_T) &__safe_se_handler_count,
+#else
+  0,
+  0,
+#endif
+  0,
+  0,
+  0,
+  0,
+  0,
+};

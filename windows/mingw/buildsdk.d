@@ -1,36 +1,39 @@
 //
-// Convert MingGW definition files to COFF import librries
+// Convert MingGW-w64 definition files to COFF import libraries
 //
 // Distributed under the Boost Software License, Version 1.0.
 //   (See accompanying file LICENSE_1_0.txt or copy at
 //         http://www.boost.org/LICENSE_1_0.txt)
 //
-// usage: buildsdk [x86|x64] [def-folder] [output-folder] [msvcrt.def.in]
+// usage: buildsdk [x86|x64] [mingw-w64-folder] [output-folder]
 //
-// Source files extracted from the MinGW reositories
+// source files extracted from MinGW-w64:
+// https://sourceforge.net/projects/mingw-w64/files/mingw-w64/mingw-w64-release/mingw-w64-v6.0.0.tar.bz2
 //
-// def-folder:    https://sourceforge.net/p/mingw/mingw-org-wsl/ci/5.0-active/tree/w32api/lib/
-// msvcrt.def.in: https://sourceforge.net/p/mingw/mingw-org-wsl/ci/5.0-active/tree/mingwrt/msvcrt-xref/msvcrt.def.in
-//
-// assumes VC tools cl,link,lib and ml installed and found through path
+// assumes dmd & VC tools cl, lib, link and ml installed and found through path
 //  and configured to the appropriate architecture
 //
 
+import std.algorithm;
+import std.array;
+import std.ascii : isDigit;
 import std.file;
-import std.regex;
-import std.string;
-import std.stdio;
+import std.format : format;
 import std.path;
 import std.process;
-import std.algorithm;
+import std.stdio;
+import std.string;
 
 version = verbose;
 
+bool x64;
+
+
 void runShell(string cmd)
 {
-    version(verbose)
+    version (verbose)
         writeln(cmd);
-    auto rc = executeShell(cmd);
+    const rc = executeShell(cmd);
     if (rc.status)
     {
         writeln("'", cmd, "' failed with status ", rc.status);
@@ -39,167 +42,447 @@ void runShell(string cmd)
     }
 }
 
-// x86: the exported symbols have stdcall mangling (including trailing @n)
-// but the internal names of the platform DLLs have names with @n stripped off
-// lib /DEF doesn't support renaming symbols so we have to go through compiling
-// a C file with the symbols and building a DLL with renamed exports to get
-// the appropriate import library
-//
-// x64: strip any @ from the symbol names
-bool def2implib(bool x64, string f, string dir, string linkopt = null)
+alias LineTransformer = string delegate(const string line);
+string patchLines(string inFile, string outFile, LineTransformer lineTransformer)
 {
-    static auto re = regex(r"@?([a-zA-Z0-9_]+)(@[0-9]*)");
-    char[] content = cast(char[])std.file.read(f);
-    auto pos = content.indexOf("EXPORTS");
-    if (pos < 0)
+    const lines = std.file.readText(inFile).splitLines;
+
+    bool transformed = false;
+    const newLines = lines.map!((const string line)
+    {
+        const newLine = lineTransformer(line);
+        if (newLine !is line)
+            transformed = true;
+        return newLine;
+    }).array;
+
+    if (!transformed)
+        return inFile;
+
+    version (verbose)
+        writeln(`Patching file "` ~ inFile ~ `" to "` ~ outFile ~ `"`);
+
+    std.file.write(outFile, newLines.join("\n"));
+    return outFile;
+}
+
+// Preprocesses a 'foo.def.in' file to 'foo.def'.
+void generateDef(string inFile, string outFile)
+{
+    const patchedInFile = outFile ~ ".in";
+    const realInFile = patchLines(inFile, patchedInFile, (line)
+    {
+        // The MinGW-w64 .def.in files use 'F_X86_ANY(DATA)' to hide functions
+        // overridden by the MinGW runtime, primarily math functions.
+        return line.replace(" F_X86_ANY(DATA)", "");
+    });
+
+    const includeDir = buildPath(inFile.dirName.dirName, "def-include");
+    const archDefine = x64 ? "DEF_X64" : "DEF_I386";
+    runShell(`cl /EP /D` ~ archDefine ~ `=1 "/I` ~ includeDir ~ `" "` ~ realInFile ~ `" > "` ~ outFile ~ `"`);
+}
+
+void sanitizeDef(string defFile)
+{
+    // The MinGW runtime overrides some functions and hides the original
+    // functions by appending a ' DATA' suffix in the .def files.
+    static __gshared const overriddenMinGWFunctions =
+    [
+        // ucrtbase.def:
+        "_assert", "_cabs", "_fpreset", "_tzset",
+        "ceil", "ceilf", "coshf", "fabs",
+        "floor", "floorf", "modf", "modff",
+        "sinhf", "sqrt", "sqrtf", "wcsnlen",
+        // additional ones in msvcr100.def:
+        "__report_gsfailure",
+        "_byteswap_uint64", "_byteswap_ulong", "_byteswap_ushort",
+        "_difftime32", "_difftime64",
+        "_fseeki64", "_ftelli64",
+        "_get_errno",
+        "_rotl64", "_rotr64",
+        "_set_errno",
+        "_wassert",
+        "acosf", "asinf", "atan2", "atan2f", "atanf",
+        "btowc",
+        "cos", "cosf", "exp", "expf", "fmod", "fmodf", "ldexp",
+        "longjmp",
+        "llabs", "lldiv",
+        "log", "log10f", "logf",
+        "mbrlen", "mbrtowc", "mbsrtowcs",
+        "pow", "powf",
+        "sin", "sinf",
+        "strnlen",
+        "tanf", "tanhf",
+        "wcrtomb", "wcsrtombs", "wctob",
+    ];
+
+    patchLines(defFile, defFile, (line)
+    {
+        if (line.length == 0)
+            return line;
+
+        if (line == "; strnlen replaced by emu")
+            return "strnlen";
+
+        if (line[0] == ';')
+            return line;
+
+        if (line == "LIBRARY vcruntime140_app")
+            return `LIBRARY "vcruntime140.dll"`;
+
+        // The MinGW-w64 .def files specify weak external symbols as 'alias == realName'.
+        // Just ignore them; they are incomplete and sometimes wrong.
+        const i = line.indexOf("==");
+        if (i > 0)
+        {
+            const weakName = strip(line[0 .. i]);
+            const realName = strip(line[i+2 .. $]);
+
+            if (weakName.indexOf(' ') < 0 && realName.indexOf(' ') < 0)
+                return ";" ~ line;
+        }
+
+        // Un-hide functions overridden by the MinGW runtime.
+        foreach (name; overriddenMinGWFunctions)
+        {
+            if (line.length == name.length + 5 && line.startsWith(name) && line.endsWith(" DATA"))
+                return name;
+        }
+
+        // Don't export function 'atexit'; we have our own in msvc_atexit.c.
+        if (line == "atexit")
+            return ";atexit";
+
+        // An apparent bug in lib32/shell32.def (there's 'ExtractIconW@12' too).
+        if (line == "ExtractIconW@")
+            return ";ExtractIconW@";
+
+        return line;
+    });
+}
+
+void copyDefs(string inDir, string outDir)
+{
+    mkdirRecurse(outDir);
+
+    foreach (f; std.file.dirEntries(inDir, SpanMode.shallow))
+    {
+        const path = f.name;
+        const lowerPath = toLower(path);
+        string outFile;
+
+        if (lowerPath.endsWith(".def.in"))
+        {
+            auto base = baseName(path)[0 .. $-7];
+            if (base == "vcruntime140_app")
+                base = "vcruntime140";
+
+            outFile = buildPath(outDir, base ~ ".def");
+            generateDef(path, outFile);
+        }
+        else if (lowerPath.endsWith(".def"))
+        {
+            outFile = buildPath(outDir, baseName(path));
+            std.file.copy(path, outFile);
+        }
+
+        if (outFile !is null)
+            sanitizeDef(outFile);
+    }
+}
+
+void def2implib(string defFile)
+{
+    if (!x64)
+    {
+        if (defWithStdcallMangling2implib(defFile))
+            return;
+    }
+
+    const libFile = setExtension(defFile, ".lib");
+    runShell(`lib "/DEF:` ~ defFile ~ `" "/OUT:` ~ libFile ~ `"`);
+    std.file.remove(setExtension(defFile, ".exp"));
+}
+
+void defs2implibs(string dir)
+{
+    foreach (f; std.file.dirEntries(dir, SpanMode.shallow))
+    {
+        const path = f.name;
+        if (toLower(path).endsWith(".def"))
+            def2implib(path);
+    }
+}
+
+void cl(string outObj, string args)
+{
+    runShell(`cl /c /Zl "/Fo` ~ outObj ~ `" ` ~ args);
+}
+
+string quote(string arg)
+{
+    return `"` ~ arg ~ `"`;
+}
+
+/**
+ * x86: the WinAPI symbol names in the .def files are stdcall-mangled
+ * (trailing `@<N>`). These mangled names are required in the import
+ * library, but the names of the DLL exports don't feature the stdcall
+ * suffix.
+ * `lib /DEF` doesn't support the required renaming functionality, so
+ * we have to go through compiling a D file with the symbols and
+ * building a DLL with renamed exports to get the appropriate import
+ * library.
+ */
+bool defWithStdcallMangling2implib(string defFile)
+{
+    import std.regex : ctRegex, matchFirst;
+
+    string[] functions;
+    string[] fields;
+    bool hasRenamedStdcall = false;
+
+    patchLines(defFile, defFile, (line)
+    {
+        if (line.length == 0 || line[0] == ';' ||
+            line.startsWith("LIBRARY ") || line.startsWith("EXPORTS"))
+            return line;
+
+        if (line.endsWith(" DATA"))
+        {
+            fields ~= line[0 .. $-5];
+            return line;
+        }
+
+        // include fastcall mangle (like stdcall, with additional leading '@')
+        enum re = ctRegex!r"^@?([a-zA-Z0-9_]+)(@[0-9]+)";
+        if (const m = matchFirst(line, re))
+        {
+            string lineSuffix = line[m[0].length .. $];
+            if (lineSuffix.startsWith(m[2])) // e.g., 'JetAddColumnA@28@28'
+            {
+                /**
+                 * Actually not to be renamed, symbol is exported in mangled form.
+                 * Treat it like 'JetAddColumnA@28' though, because some libraries
+                 * export the same function as both 'JetAddColumnA' and 'JetAddColumnA@28',
+                 * and I don't know how to replicate that with our approach.
+                 */
+                lineSuffix = lineSuffix[m[2].length .. $];
+            }
+
+            assert(!lineSuffix.startsWith("=")); // renamings not supported
+
+            hasRenamedStdcall = true;
+            functions ~= m[1];
+            // keep the line suffix (e.g., ' @100' => ordinal 100)
+            return m[0] ~ "=" ~ m[1] ~ lineSuffix;
+        }
+
+        const firstSpaceIndex = line.indexOf(' ');
+        const strippedLine = firstSpaceIndex < 0 ? line : line[0 .. firstSpaceIndex];
+        const equalsIndex = strippedLine.indexOf('=');
+        const functionName = equalsIndex > 0 ? strippedLine[equalsIndex+1 .. $] : strippedLine;
+        functions ~= functionName;
+        return line;
+    });
+
+    if (!hasRenamedStdcall)
         return false;
 
-    string base = stripExtension(baseName(f));
-    if (x64 && base == "user32")
+    string src = "module dummy;\n";
+    alias Emitter = string delegate();
+    void emitOnce(ref bool[string] emittedSymbols, string symbolName, Emitter emitter)
     {
-        // missing definitions in mingw def files
-        content ~= "GetClassLongPtrA\n";
-        content ~= "GetClassLongPtrW\n";
-        content ~= "SetClassLongPtrA\n";
-        content ~= "SetClassLongPtrW\n";
-        content ~= "GetWindowLongPtrA\n";
-        content ~= "GetWindowLongPtrW\n";
-        content ~= "SetWindowLongPtrA\n";
-        content ~= "SetWindowLongPtrW\n";
+        if (symbolName !in emittedSymbols)
+        {
+            src ~= emitter() ~ "\n";
+            emittedSymbols[symbolName] = true;
+        }
     }
 
-    char[] def = content[0..pos];
-    char[] csrc;
-    bool[string] written;
-    auto lines = content[pos..$].splitLines;
-    foreach(line; lines)
+    bool[string] emittedFunctions;
+    foreach (i, name; functions)
     {
-        line = line.strip;
-        if (line.length == 0 || line[0] == ';')
-            continue;
-        const(char)[] sym;
-        char[] cline;
-        auto m = matchFirst(line, re);
-        if (m)
+        emitOnce(emittedFunctions, name, ()
         {
-            if (x64)
-                def ~= m[1] ~ "\n";
-            else
-                def ~= m[0] ~ "=" ~  m[1] ~ "\n";
-            sym = m[1];
-            cline = "void " ~ m[1] ~ "() {}\n";
-        }
-        else
-        {
-            def ~= line ~ "\n";
-            if (line.endsWith(" DATA"))
-            {
-                sym = strip(line[0..$-5]);
-                cline = "int " ~ sym ~ ";\n";
-            }
-            else
-            {
-                auto idx = line.indexOf('=');
-                if (idx > 0)
-                    sym = line[idx+1 .. $].strip;
-                else
-                    sym = line;
-                cline = "void " ~ sym ~ "() {}\n";
-            }
-        }
-        if(sym.length && sym !in written)
-        {
-            csrc ~= cline;
-            written[sym.idup] = true;
-        }
+            const linkage = name[0] == '?' ? "C++" : "C";
+            return `pragma(mangle, "%s") extern(%s) void func%d() {}`.format(name, linkage, i);
+        });
     }
-    string dirbase = dir ~ base;
-    std.file.write(dirbase ~ ".def", def);
-    std.file.write(dirbase ~ ".c", csrc);
 
-    runShell("cl /c /Fo" ~ dirbase ~ ".obj " ~ dirbase ~ ".c");
-    runShell("link /NOD /NOENTRY /DLL " ~ dirbase ~ ".obj /out:" ~ dirbase ~ ".dll /def:" ~ dirbase ~ ".def" ~ linkopt);
+    bool[string] emittedFields;
+    foreach (i, name; fields)
+    {
+        emitOnce(emittedFields, name, ()
+        {
+            const linkage = name[0] == '_' ? "C" : "C++";
+            return `pragma(mangle, "%s") extern(%s) __gshared int field%d;`.format(name, linkage, i);
+        });
+    }
 
-    // cleanup
-    std.file.remove(dirbase ~ ".def");
-    std.file.remove(dirbase ~ ".c");
-    std.file.remove(dirbase ~ ".obj");
-    std.file.remove(dirbase ~ ".dll");
-    std.file.remove(dirbase ~ ".exp");
+    const dFile = setExtension(defFile, ".d");
+    const objFile = setExtension(defFile, ".obj");
+    const dllFile = setExtension(defFile, ".dll");
+
+    std.file.write(dFile, src);
+    runShell(`dmd -c -betterC -m32mscoff "-of=` ~ objFile ~ `" ` ~ quote(dFile));
+    runShell("link /NOD /NOENTRY /DLL " ~ quote(objFile) ~ ` "/OUT:` ~ dllFile ~ `" "/DEF:` ~ defFile ~ `"`);
+
+    std.file.remove(dFile);
+    std.file.remove(objFile);
+    std.file.remove(dllFile);
+    std.file.remove(setExtension(dllFile, ".exp"));
+
     return true;
 }
 
-void buildLibs(bool x64, string defdir, string dir)
+void c2lib(string outDir, string cFile)
 {
-    mkdirRecurse(dir);
+    const obj = buildPath(outDir, baseName(cFile).setExtension(".obj"));
+    const lib = setExtension(obj, ".lib");
+    cl(obj, quote(cFile));
+    runShell(`lib "/OUT:` ~ lib ~ `" ` ~ quote(obj));
+    std.file.remove(obj);
+}
 
-    //goto LnoDef;
-    foreach(f; std.file.dirEntries(defdir, SpanMode.shallow))
-        if (extension(f).toLower == ".def")
-            def2implib(x64, f, dir);
-    foreach(f; std.file.dirEntries(defdir ~ "/directx", SpanMode.shallow))
-        if (extension(f).toLower == ".def")
-            def2implib(x64, f, dir);
-
-    version(DDK) // disable for now
+void buildMsvcrt(string outDir)
+{
+    foreach (lib; std.file.dirEntries(outDir, "*.lib", SpanMode.shallow))
     {
-        mkdirRecurse(dir ~ ddk);
-        foreach(f; std.file.dirEntries(defdir ~ "/ddk", SpanMode.shallow))
-            if (extension(f).toLower == ".def")
-                def2implib(x64, f, dir ~ "ddk/");
+        const lowerBase = toLower(baseName(lib.name));
+        if (!(lowerBase.startsWith("msvcr") || lowerBase.startsWith("vcruntime")))
+            continue;
+
+        // parse version from filename (e.g., 140 for VC++ 2015)
+        const versionStart = lowerBase[0] == 'm' ? 5 : 9;
+        const versionLength = lowerBase[versionStart .. $].countUntil!(c => !isDigit(c));
+        const msvcrtVersion = versionLength == 0
+            ? "70" // msvcrt.lib
+            : lowerBase[versionStart .. versionStart+versionLength];
+
+        string[] objs;
+        void addObj(string objFilename, string args)
+        {
+            const obj = buildPath(outDir, objFilename);
+            cl(obj, "/DMSVCRT_VERSION=" ~ msvcrtVersion ~ " " ~ args);
+            objs ~= obj;
+        }
+
+        // compile some additional objects
+        foreach (i; 0 .. 3)
+            addObj(format!"msvcrt_stub%d.obj"(i), format!"/D_APPTYPE=%d msvcrt_stub.c"(i));
+        addObj("msvcrt_data.obj", "msvcrt_data.c");
+        addObj("msvcrt_atexit.obj", "msvcrt_atexit.c");
+        if (!x64)
+        {
+            const obj = buildPath(outDir, "msvcrt_abs.obj");
+            runShell(`ml /c /safeseh "/Fo` ~ obj ~ `" msvcrt_abs.asm`);
+            objs ~= obj;
+        }
+
+        // merge them into the library
+        runShell("lib " ~ quote(lib.name) ~ " " ~ objs.map!quote.join(" "));
+
+        foreach (obj; objs)
+            std.file.remove(obj);
     }
 }
 
-void buildMsvcrt(bool x64, string dir, string msvcdef)
+void buildOldnames(string outDir)
 {
-    string arch = x64 ? "x64" : "x86";
-    string lib = "lib /MACHINE:" ~ arch ~ " ";
-    string msvcrtlib = "msvcrt100.lib";
+    static struct WeakSymbol { string name; string targetName; }
+    WeakSymbol[] weakSymbols;
 
-    // build msvcrt.lib for VS2010
-    runShell("cl /EP -D__MSVCRT_VERSION__=0x10000000UL -D__DLLNAME__=msvcr100 " ~ msvcdef ~ " >" ~ dir ~ "msvcrt.def");
-    runShell(lib ~ "/OUT:" ~ dir ~ msvcrtlib ~ " /DEF:" ~ dir ~ "msvcrt.def"); // no translation necessary
-    runShell("cl /c /Zl /Fo" ~ dir ~ "msvcrt_stub0.obj /D_APPTYPE=0 msvcrt_stub.c");
-    runShell("cl /c /Zl /Fo" ~ dir ~ "msvcrt_stub1.obj /D_APPTYPE=1 msvcrt_stub.c");
-    runShell("cl /c /Zl /Fo" ~ dir ~ "msvcrt_stub2.obj /D_APPTYPE=2 msvcrt_stub.c");
-    runShell("cl /c /Zl /Fo" ~ dir ~ "msvcrt_data.obj msvcrt_data.c");
-    runShell("cl /c /Zl /Fo" ~ dir ~ "msvcrt_atexit.obj msvcrt_atexit.c");
-    auto files = ["msvcrt_stub0.obj", "msvcrt_stub1.obj", "msvcrt_stub2.obj", "msvcrt_data.obj", "msvcrt_atexit.obj" ];
-    if (!x64)
+    void processAliasesFile(string path)
     {
-        runShell("ml /c /Fo" ~ dir ~ "msvcrt_abs.obj msvcrt_abs.asm");
-        files ~= "msvcrt_abs.obj";
+        foreach (line; std.file.readText(path).splitLines)
+        {
+            if (line.length == 0 || line[0] == ';')
+                continue;
+
+            const equalsIndex = line.indexOf('=');
+            const weakName = line[0 .. equalsIndex];
+            const realName = line[equalsIndex+1 .. $];
+
+            weakSymbols ~= WeakSymbol(weakName, realName);
+        }
     }
-    auto objs = files.map!(a => dir ~ a).join(" ");
-    runShell(lib ~ dir ~ msvcrtlib ~ " " ~ objs);
 
-    // create oldnames.lib (expected by dmd)
-    runShell("cl /c /Zl /Fo" ~ dir ~ "oldnames.obj oldnames.c");
-    runShell(lib ~ "/OUT:" ~ dir ~ "oldnames.lib " ~ dir ~ "oldnames.obj");
+    const suffix = x64 ? "64" : "32";
+    processAliasesFile("oldnames.aliases" ~ suffix);
+    // include the weak symbols from msvcrt.lib too
+    processAliasesFile("msvcrt140.aliases" ~ suffix);
 
-    // create empty uuid.lib (expected by dmd, but UUIDs already in druntime)
-    std.file.write(dir ~ "empty.c", "");
-    runShell("cl /c /Zl /Fo" ~ dir ~ "uuid.obj " ~ dir ~ "empty.c");
-    runShell(lib ~ "/OUT:" ~ dir ~ "uuid.lib " ~ dir ~ "uuid.obj");
+    const oldnames_c =
+        // access this __ref_oldnames symbol (in msvcrt_stub.c) to drag in the generated linker directives
+        "int __ref_oldnames;\n" ~
+        weakSymbols.map!(sym =>
+            `__pragma(comment(linker, "/alternatename:` ~ sym.name ~ `=` ~ sym.targetName ~ `"));`
+        ).join("\n");
 
-    foreach(f; files)
-        std.file.remove(dir ~ f);
-    std.file.remove(dir ~ stripExtension(msvcrtlib) ~ ".exp");
-    std.file.remove(dir ~ "msvcrt.def");
-    std.file.remove(dir ~ "oldnames.obj");
-    std.file.remove(dir ~ "uuid.obj");
-    std.file.remove(dir ~ "empty.c");
+    version (verbose)
+        writeln("\nAuto-generated oldnames.c:\n----------\n", oldnames_c, "\n----------\n");
+
+    const src = buildPath(outDir, "oldnames.c");
+    std.file.write(src, oldnames_c);
+    c2lib(outDir, src);
+    std.file.remove(src);
+}
+
+void buildLegacyStdioDefinitions(string outDir)
+{
+    c2lib(outDir, "legacy_stdio_definitions.c");
+}
+
+// create empty uuid.lib (expected by dmd, but UUIDs already in druntime)
+void buildUuid(string outDir)
+{
+    const src = buildPath(outDir, "uuid.c");
+    std.file.write(src, "");
+    c2lib(outDir, src);
+    std.file.remove(src);
+}
+
+// vfw32.lib is a merge of 3 other libs
+void buildVfw32(string outDir)
+{
+    auto srcLibs = [ "msvfw32", "avicap32", "avifil32" ].map!(name => buildPath(outDir, name ~ ".lib"));
+    const outLib = buildPath(outDir, "vfw32.lib");
+    runShell(`lib "/OUT:` ~ outLib ~ `" ` ~ srcLibs.map!quote.join(" "));
 }
 
 void main(string[] args)
 {
-    bool x64 = (args.length > 1 && args[1] == "x64");
-    string defdir = (args.length > 2 ? args[2] : "def");
-    string outdir = x64 ? "lib64/" : "lib32mscoff/";
+    x64 = (args.length > 1 && args[1] == "x64");
+    const mingwDir = (args.length > 2 ? args[2] : "mingw-w64");
+    string outDir = x64 ? "lib64" : "lib32";
     if (args.length > 3)
-        outdir = args[3] ~ "/";
-    string msvcdef = (args.length > 4 ? args[4] : "msvcrt.def.in");
+        outDir = args[3];
 
-    buildLibs(x64, defdir, outdir);
-    buildMsvcrt(x64, outdir, msvcdef);
+    copyDefs(buildPath(mingwDir, "mingw-w64-crt", "lib-common"), outDir);
+    copyDefs(buildPath(mingwDir, "mingw-w64-crt", "lib" ~ (x64 ? "64" : "32")), outDir);
+
+    defs2implibs(outDir);
+
+    buildMsvcrt(outDir);
+    buildOldnames(outDir);
+    buildLegacyStdioDefinitions(outDir);
+    buildUuid(outDir);
+    buildVfw32(outDir);
+
+    // rename msvcr<N>.lib to msvcrt<N>.lib as expected by DMD
+    foreach (lib; std.file.dirEntries(outDir, "msvcr*.lib", SpanMode.shallow))
+    {
+        const base = baseName(lib.name);
+        if (!isDigit(base[5])) // msvcrt.lib
+            continue;
+        const newName = buildPath(outDir, "msvcrt" ~ base[5 .. $]);
+        version (verbose)
+            writefln("Renaming '%s' to '%s'", lib.name, newName);
+        std.file.rename(lib.name, newName);
+    }
+
+    //version (verbose) {} else
+        foreach (f; std.file.dirEntries(outDir, "*.def*", SpanMode.shallow))
+            std.file.remove(f.name);
 }
