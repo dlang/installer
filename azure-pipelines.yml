@@ -6,7 +6,7 @@ jobs:
       vmImage: 'vs2017-win2016'
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
-      LLVM_VER: 7.0.0
+      LLVM_VER: 8.0.0
       ARCH: x86
     steps:
       - template: .azure-pipelines/build-lld.yml
