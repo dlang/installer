@@ -11,7 +11,7 @@ set PATH=%ROOT%\dmd2\windows\bin;%PATH%
 set MINGW_URL=https://netix.dl.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v%MINGW_VER%.tar.bz2
 set USER_AGENT=[Microsoft.PowerShell.Commands.PSUserAgent]::FireFox
 
-powershell -Command "Invoke-WebRequest %MINGW_URL% -FileName mingw-w64.tar.bz2 -UserAgent %User_Agent%"  || exit /B 1
+powershell -Command "Invoke-WebRequest %MINGW_URL% -OutFile mingw-w64.tar.bz2 -UserAgent %User_Agent%"  || exit /B 1
 
 :: e.g. from git installation
 dos2unix "%ROOT%\windows\build_mingw.sha256sums"
