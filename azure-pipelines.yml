@@ -1,0 +1,22 @@
+# Learn more: https://aka.ms/yaml
+jobs:
+  - job: Build_LLD
+    timeoutInMinutes: 120
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      LLVM_VER: 8.0.0
+      ARCH: x86
+    steps:
+      - template: .azure-pipelines/build-lld.yml
+  - job: Build_Mingw_libs
+    timeoutInMinutes: 120
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      MINGW_VER: 6.0.0
+      D_VERSION: 2.077.1
+    steps:
+      - template: .azure-pipelines/build-mingw-libs.yml
