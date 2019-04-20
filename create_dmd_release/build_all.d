@@ -14,16 +14,16 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 /// Open Source OS boxes are from http://www.vagrantbox.es/
 /// For each box additional setup steps were performed, afterwards the boxes were repackaged.
 
-/// Name: create_dmd_release-freebsd-64
-/// VagrantBox.es: FreeBSD 8.4 i386 (minimal, No Guest Additions, UFS)
-/// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-i386.box
-/// Setup: sudo pkg_add -r curl git gmake rsync
+/// Name: create_dmd_release-freebsd-32
+/// https://vagrantcloud.com/bento/freebsd-11.2-i386
+/// URL: https://app.vagrantup.com/bento/boxes/freebsd-11.2-i386/versions/201807.12.0/providers/virtualbox.box
+/// Setup: sudo pkg install bash curl git gmake rsync
 enum freebsd_32 = Platform(OS.freebsd, Model._32);
 
 /// Name: create_dmd_release-freebsd-64
-/// VagrantBox.es: FreeBSD 8.4 amd64 (minimal, No Guest Additions, UFS)
-/// URL: http://dlang.dawg.eu/vagrant/FreeBSD-8.4-amd64.box
-/// Setup: sudo pkg_add -r curl git gmake rsync
+/// https://vagrantcloud.com/bento/freebsd-11.2
+/// URL: https://vagrantcloud.com/bento/boxes/freebsd-11.2/versions/201812.27.0/providers/virtualbox.box
+/// Setup: sudo pkg install bash curl git gmake rsync
 enum freebsd_64 = Platform(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
