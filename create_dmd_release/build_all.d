@@ -92,8 +92,17 @@ struct Box
         _tmpdir = mkdtemp();
         std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
 
-        // bring up the virtual box (downloads missing images)
-        run("cd "~_tmpdir~"; vagrant up");
+        // bring up the virtual box
+        if (platform.os != OS.osx)
+            run("cd "~_tmpdir~"; vagrant up");
+        else
+        {
+            // retry to workaround infrequent OSX boot failure
+            auto i = 0;
+            for (; i < 3 && runStatus("cd "~_tmpdir~"; vagrant up"); ++i)
+                run("cd "~_tmpdir~"; vagrant destroy -f");
+            enforce(i < 3, "Repeatedly failed to boot OSX box.");
+        }
         _isUp = true;
 
         // save the ssh config file
