@@ -19,9 +19,9 @@ RPM="dmd-${VERSION/-/\~}-0.fedora.x86_64.rpm"
 SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 
 DEB_PLATFORMS=(ubuntu:precise ubuntu:trusty ubuntu:xenial ubuntu:bionic)
-DEB_PLATFORMS+=(debian:wheezy debian:jessie debian:stretch)
+DEB_PLATFORMS+=(debian:jessie debian:stretch debian:buster)
 RPM_PLATFORMS=(fedora:27 fedora:28 fedora:29 centos:6 centos:7)
-SUSE_RPM_PLATFORMS=(opensuse:leap opensuse:tumbleweed)
+SUSE_RPM_PLATFORMS=(opensuse:leap opensuse/tumbleweed)
 
 # copy pkgs to test folder so that it's part of docker's build context
 cp "$BUILD_DIR/$DEB" .
@@ -36,7 +36,7 @@ test_platform() {
     local pkg="$2"
 
     echo -e "\e[1;33mTesting installation of $pkg on $platform.\e[0m"
-    img_tag="test_${platform//:/_}"
+    img_tag="test_$(tr ':/' '__' <<<$platform)"
     # build docker image containing package
     cat > Dockerfile <<EOF
 FROM $platform
@@ -64,7 +64,7 @@ set -euo pipefail
 trap 'echo -e "\e[1;31mInner script failed at line \$LINENO.\e[0m"' ERR
 set -x
 
-apt-get update -q=2 >/dev/null
+apt-get update -q=2 || grep -qF jessie /etc/os-release >/dev/null
 apt-get install curl -q=2 >/dev/null
 dpkg -i $DEB || true
 apt-get --fix-broken install -q=2 >/dev/null
