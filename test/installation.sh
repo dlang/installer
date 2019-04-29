@@ -21,7 +21,7 @@ SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 DEB_PLATFORMS=(ubuntu:precise ubuntu:trusty ubuntu:xenial ubuntu:bionic)
 DEB_PLATFORMS+=(debian:jessie debian:stretch debian:buster)
 RPM_PLATFORMS=(fedora:27 fedora:28 fedora:29 centos:6 centos:7)
-SUSE_RPM_PLATFORMS=(opensuse:leap opensuse:tumbleweed)
+SUSE_RPM_PLATFORMS=(opensuse:leap opensuse/tumbleweed)
 
 # copy pkgs to test folder so that it's part of docker's build context
 cp "$BUILD_DIR/$DEB" .
@@ -36,7 +36,7 @@ test_platform() {
     local pkg="$2"
 
     echo -e "\e[1;33mTesting installation of $pkg on $platform.\e[0m"
-    img_tag="test_${platform//:/_}"
+    img_tag="test_$(tr ':/' '__' <<<$platform)"
     # build docker image containing package
     cat > Dockerfile <<EOF
 FROM $platform
