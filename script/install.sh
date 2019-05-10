@@ -123,6 +123,7 @@ COMMAND=
 COMPILER=dmd
 VERBOSITY=1
 ROOT=~/dlang
+DUB_VERSION=
 DUB_BIN_PATH=
 case $(uname -s) in
     Darwin) OS=osx;;
@@ -314,7 +315,8 @@ parse_args() {
                 COMMAND=uninstall
                 ;;
 
-            dmd | dmd-* | gdc | gdc-* | ldc | ldc-*)
+            dmd | dmd-* | gdc | gdc-* | ldc | ldc-* | dub | dub-* | \
+            dmd,* | ldc,* | gdc,* )
                 COMPILER=$1
                 ;;
 
@@ -338,6 +340,11 @@ parse_args() {
            exit 1
        fi
     fi
+    IFS="," read -r _compiler _dub <<< "$COMPILER"
+    if [ -n "${_dub:-}" ] ; then
+        COMPILER="$_compiler"
+        DUB="$_dub"
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -359,16 +366,28 @@ run_command() {
                 install_compiler "$2"
             fi
 
-            local -r binpath=$(binpath_for_compiler "$2")
-            if [ -f "$ROOT/$2/$binpath/dub" ]; then
-                if [[ $("$ROOT/$2/$binpath/dub" --version) =~ ([0-9]+\.[0-9]+\.[0-9]+(-[^, ]+)?) ]]; then
-                    log "Using dub ${BASH_REMATCH[1]} shipped with $2"
+            # Only try to install dub if it wasn't the main compiler
+            if ! [[ $COMPILER =~ ^dub ]] ; then
+                if [ -n "${DUB:-}" ] ; then
+                    # A dub version was explicitly specified with +dub-1.8.0
+                    DUB_BIN_PATH="${ROOT}/${DUB}"
+                    install_dub "$DUB"
                 else
-                    log "Using dub shipped with $2"
+                    # compiler was installed without requesting dub
+                    local -r binpath=$(binpath_for_compiler "$2")
+                    if [ -f "$ROOT/$2/$binpath/dub" ]; then
+                        if [[ $("$ROOT/$2/$binpath/dub" --version) =~ ([0-9]+\.[0-9]+\.[0-9]+(-[^, ]+)?) ]]; then
+                            log "Using dub ${BASH_REMATCH[1]} shipped with $2"
+                        else
+                            log "Using dub shipped with $2"
+                        fi
+                    else
+                        # no dub bundled - manually installing
+                        DUB_BIN_PATH="${ROOT}/dub"
+                        resolve_latest dub
+                        install_dub "dub-$DUB_VERSION"
+                    fi
                 fi
-            else
-                DUB_BIN_PATH="${ROOT}/dub"
-                install_dub
             fi
 
             write_env_vars "$2"
@@ -435,7 +454,8 @@ Run \`$ROOT/install.sh --help\` for usage information.
 }
 
 resolve_latest() {
-    case $COMPILER in
+    local input_compiler=${1:-$COMPILER}
+    case $input_compiler in
         dmd)
             local mirrors=(
                 "http://downloads.dlang.org/releases/LATEST"
@@ -456,10 +476,10 @@ resolve_latest() {
             # dmd-nightly, dmd-master, dmd-branch
             # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
             #          dmd-2.068.0 or dmd-2.068.2-5
-            if [[ ! $COMPILER =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
-               [[ ! $COMPILER =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]; then
-                local url=http://downloads.dlang.org/nightlies/$COMPILER/LATEST
-                logV "Determing latest $COMPILER version ($url)."
+            if [[ ! $input_compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
+               [[ ! $input_compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]; then
+                local url=http://downloads.dlang.org/nightlies/$input_compiler/LATEST
+                logV "Determing latest $compiler version ($url)."
                 COMPILER="dmd-$(fetch "$url")"
             # rewrite dmd-2016-10-19 -> dmd-master-2016-10-19 (default branch for nightlies)
             elif [[ $COMPILER =~ ^dmd-([0-9]{4}-[0-9]{2}-[0-9]{2})$ ]]; then
@@ -487,11 +507,31 @@ resolve_latest() {
                 fatal "Could not find ldc CI binaries (OS: $OS, arch: $ARCH)"
             fi
             ;;
+        ldc-*)
+            ;;
         gdc)
             local url=http://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
             COMPILER="gdc-$(fetch $url)"
             ;;
+        gdc-*)
+            ;;
+        dub)
+            local mirrors=(
+                "https://dlang.github.io/dub/LATEST"
+                "https://code.dlang.org/download/LATEST"
+            )
+            logV "Determining latest dub version (${mirrors[0]})."
+            DUB_VERSION="$(fetch "${mirrors[@]}" | sed 's/^v//')"
+            local DUB="dub-${DUB_VERSION}"
+            if [ "$COMPILER" == "dub" ] ; then
+                COMPILER="$DUB"
+            fi
+            ;;
+        dub-*)
+            ;;
+        *)
+            fatal "Invalid compiler: $COMPILER"
     esac
 }
 
@@ -586,6 +626,13 @@ install_compiler() {
         download_without_verify "$ROOT/$1/bin/gdmd" "$url"
         chmod +x "$ROOT/$1/bin/gdmd"
 
+    elif [[ $1 =~ ^dub-v?([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
+        local ver=${BASH_REMATCH[1]}
+        local mirrors=(
+            "https://github.com/dlang/dub/releases/download/v$ver/dub-v$ver-$OS-$ARCH.tar.gz"
+            "http://code.dlang.org/files/dub-$ver-$OS-$ARCH.tar.gz"
+        )
+        download_and_unpack_without_verify "$ROOT/$compiler" "${mirrors[@]}"
     else
         fatal "Unknown compiler '$compiler'"
     fi
@@ -598,7 +645,6 @@ find_gpg() {
         echo gpg
     else
         echo "Warning: No gpg tool found to verify downloads." >&2
-        echo x
     fi
 }
 
@@ -624,6 +670,8 @@ download_and_unpack() {
     download "$tmp/$name" "$do_verify" "${urls[@]}"
     if [[ $name =~ \.tar\.xz$ ]]; then
         tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
+    elif [[ $name =~ \.tar\.gz$ ]]; then
+        tar -C "$tmp" -xf "$tmp/$name"
     else
         unzip -q -d "$tmp" "$tmp/$name"
         mv "$tmp/dmd2"/* "$tmp/"
@@ -676,6 +724,9 @@ binpath_for_compiler() {
         gdc*)
             local -r binpath=bin
             ;;
+        dub*)
+            local -r binpath=
+            ;;
     esac
     echo "$binpath"
 }
@@ -707,72 +758,102 @@ write_env_vars() {
             local dc=gdc
             local dmd=gdmd
             ;;
+        dub*)
+            local libpath=
+            local dc=
+            local dmd=
+            ;;
     esac
 
     logV "Writing environment variables to $ROOT/$1/activate"
-    cat > "$ROOT/$1/activate" <<EOF
-deactivate() {
-    export PATH="\$_OLD_D_PATH"
-    export LIBRARY_PATH="\$_OLD_D_LIBRARY_PATH"
-    export LD_LIBRARY_PATH="\$_OLD_D_LD_LIBRARY_PATH"
-    export PS1="\$_OLD_D_PS1"
+{
+    echo "deactivate() {"
+    echo "    export PATH=\"\$_OLD_D_PATH\""
+    if [ -n "$libpath" ] ; then
+    echo "    export LIBRARY_PATH=\"\$_OLD_D_LIBRARY_PATH\""
+    echo "    export LD_LIBRARY_PATH=\"\$_OLD_D_LD_LIBRARY_PATH\""
+    echo "    unset _OLD_D_LIBRARY_PATH"
+    echo "    unset _OLD_D_LD_LIBRARY_PATH"
+    fi
+    if [ -n "$dmd" ] ; then
+        echo "    unset DMD"
+        echo "    unset DC"
+    fi
 
-    unset _OLD_D_PATH
-    unset _OLD_D_LIBRARY_PATH
-    unset _OLD_D_LD_LIBRARY_PATH
-    unset _OLD_D_PS1
-    unset DMD
-    unset DC
-    unset -f deactivate
-}
+    echo "    export PS1=\"\$_OLD_D_PS1\""
+    echo "    unset _OLD_D_PATH"
+    echo "    unset _OLD_D_PS1"
+    echo "    unset -f deactivate"
+    echo "}"
+    echo
+    echo "_OLD_D_PATH=\"\${PATH:-}\""
 
-_OLD_D_PATH="\${PATH:-}"
-_OLD_D_LIBRARY_PATH="\${LIBRARY_PATH:-}"
-_OLD_D_LD_LIBRARY_PATH="\${LD_LIBRARY_PATH:-}"
-_OLD_D_PS1="\${PS1:-}"
+    if [ -n "$libpath" ] ; then
+        echo "_OLD_D_LIBRARY_PATH=\"\${LIBRARY_PATH:-}\""
+        echo "_OLD_D_LD_LIBRARY_PATH=\"\${LD_LIBRARY_PATH:-}\""
+        echo "export LIBRARY_PATH=\"$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}\""
+        echo "export LD_LIBRARY_PATH=\"$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}\""
+    fi
 
-export PATH="${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT/$1/$binpath\${PATH:+:}\${PATH:-}"
-export LIBRARY_PATH="$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}"
-export LD_LIBRARY_PATH="$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}"
-export DMD=$dmd
-export DC=$dc
-export PS1="($1)\${PS1:-}"
-EOF
+    echo "_OLD_D_PATH=\"\${PATH:-}\""
+    echo "_OLD_D_PS1=\"\${PS1:-}\""
+    echo "export PS1=\"($1)\${PS1:-}\""
+    echo "export PATH=\"${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT/$1/$binpath\${PATH:+:}\${PATH:-}\""
+
+    if [ -n "$dmd" ] ; then
+        echo "export DMD=$dmd"
+        echo "export DC=$dc"
+    fi
+} > "$ROOT/$1/activate"
 
     logV "Writing environment variables to $ROOT/$1/activate.fish"
-    cat > "$ROOT/$1/activate.fish" <<EOF
-function deactivate
-    set -gx PATH \$_OLD_D_PATH
-    set -gx LIBRARY_PATH \$_OLD_D_LIBRARY_PATH
-    set -gx LD_LIBRARY_PATH \$_OLD_D_LD_LIBRARY_PATH
+{
+    echo "function deactivate"
+    echo "    set -gx PATH \$_OLD_D_PATH"
 
-    functions -e fish_prompt
-    functions -c _old_d_fish_prompt fish_prompt
-    functions -e _old_d_fish_prompt
+    if [ -n "$libpath" ] ; then
+        echo "    set -gx LIBRARY_PATH \$_OLD_D_LIBRARY_PATH"
+        echo "    set -gx LD_LIBRARY_PATH \$_OLD_D_LD_LIBRARY_PATH"
+        echo "    set -e _OLD_D_LIBRARY_PATH"
+        echo "    set -e _OLD_D_LD_LIBRARY_PATH"
+    fi
 
-    set -e _OLD_D_PATH
-    set -e _OLD_D_LIBRARY_PATH
-    set -e _OLD_D_LD_LIBRARY_PATH
-    set -e DMD
-    set -e DC
-    functions -e deactivate
-end
+    echo "    functions -e fish_prompt"
+    echo "    functions -c _old_d_fish_prompt fish_prompt"
+    echo "    functions -e _old_d_fish_prompt"
+    echo
+    echo "    set -e _OLD_D_PATH"
 
-set -g _OLD_D_PATH \$PATH
-set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH
-set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH
-set -g _OLD_D_PS1 \$PS1
+    if [ -n "$dmd" ] ; then
+        echo "    set -e DMD"
+        echo "    set -e DC"
+    fi
+    echo "    functions -e deactivate"
+    echo "end"
+    echo
 
-set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT/$1/$binpath' \$PATH
-set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH
-set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH
-set -gx DMD $dmd
-set -gx DC $dc
-functions -c fish_prompt _old_d_fish_prompt
-function fish_prompt
-    printf '($1)%s' (_old_d_fish_prompt)
-end
-EOF
+    echo "set -g _OLD_D_PATH \$PATH"
+    echo "set -g _OLD_D_PS1 \$PS1"
+    echo
+    echo "set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT/$1/$binpath' \$PATH"
+
+    if [ -n "$libpath" ] ; then
+        echo "set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH"
+        echo "set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH"
+        echo "set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH"
+        echo "set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH"
+    fi
+
+    if [ -n "$dmd" ] ; then
+        echo "set -gx DMD $dmd"
+        echo "set -gx DC $dc"
+    fi
+
+    echo "functions -c fish_prompt _old_d_fish_prompt"
+    echo "function fish_prompt"
+    echo "    printf '($1)%s' (_old_d_fish_prompt)"
+    echo "end"
+} > "$ROOT/$1/activate.fish"
 }
 
 uninstall_compiler() {
@@ -803,28 +884,23 @@ install_dub() {
         log "no dub binaries available for $OS"
         return
     fi
-    local latestMirrors=(
-        "http://dlang.github.io/dub/LATEST"
-        "http://code.dlang.org/download/LATEST"
-    )
-    logV "Determining latest dub version (${latestMirrors[0]})."
-    dubVersion="$(fetch "${latestMirrors[@]}")"
-    dub="dub-${dubVersion}"
+    local dub="$1"
     if [ -d "$ROOT/$dub" ]; then
         log "$dub already installed"
         return
     fi
     local tmp url
     tmp=$(mkdtemp)
+    dubVersion=${dub##dub-}
     local mirrors=(
-        "https://github.com/dlang/dub/releases/download/${dubVersion}/$dub-$OS-$ARCH.tar.gz"
-        "http://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
+        "https://github.com/dlang/dub/releases/download/v${dubVersion}/dub-v${dubVersion}-$OS-$ARCH.tar.gz"
+        "https://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
     )
     log "Downloading and unpacking ${mirrors[0]}"
     download_without_verify "$tmp/dub.tar.gz" "${mirrors[@]}"
     tar -C "$tmp" -zxf "$tmp/dub.tar.gz"
-    logV "Removing old dub versions"
-    rm -rf "$ROOT/dub" "$ROOT/dub-*"
+    logV "Removing old dub symlink"
+    rm -rf "$ROOT/dub"
     mv "$tmp" "$ROOT/$dub"
     logV "Linking $ROOT/dub -> $ROOT/$dub"
     ln -s "$dub" "$ROOT/dub"
