@@ -39,10 +39,13 @@ extern int __ref_oldnames;
 
 #if _APPTYPE == __UNKNOWN_APP
 
+extern BOOL WINAPI DllMain (HINSTANCE, DWORD, LPVOID);
+
 BOOL WINAPI
-DllMainCRTStartup (HANDLE hDll, DWORD dwReason, LPVOID lpReserved)
+_DllMainCRTStartup (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
 {
     BOOL bRet;
+    __ref_oldnames = 0; // drag in alternate definitions
 
     if (dwReason == DLL_PROCESS_ATTACH)
     {
