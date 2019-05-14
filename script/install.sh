@@ -479,7 +479,7 @@ resolve_latest() {
             if [[ ! $input_compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
                [[ ! $input_compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]; then
                 local url=http://downloads.dlang.org/nightlies/$input_compiler/LATEST
-                logV "Determing latest $compiler version ($url)."
+                logV "Determing latest $input_compiler version ($url)."
                 COMPILER="dmd-$(fetch "$url")"
             # rewrite dmd-2016-10-19 -> dmd-master-2016-10-19 (default branch for nightlies)
             elif [[ $COMPILER =~ ^dmd-([0-9]{4}-[0-9]{2}-[0-9]{2})$ ]]; then
