@@ -39,22 +39,16 @@
 ; Routinely Update
 ; ----------------
 ; Visual D
-!define VersionVisualD "0.48.1"
+!define VersionVisualD "0.49.2"
 
 ; DMC
 !define VersionDMC "857"
-
-; D1
-!define Version1 "1.076"
-!define Version1ReleaseYear "2013" ; S3 file hosting includes the year in the URL so update this as needed
-
 
 ; Update Rarely Needed
 ; --------------------
 ; Files
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
 !define DmcFilename "dmc-${VersionDMC}.exe"
-!define Dmd1Filename "dmd-${Version1}.exe"
 !define VS2013Filename "vs_community2013.exe"
 !define VS2017Filename "vs_community2017.exe"
 !define VS2017BTFilename "vs_BuildTools2017.exe"
@@ -71,9 +65,6 @@
 !define DmcUrl  "${BaseURL}/other/${DmcFilename}"
 !define DmcAltUrl "${BaseURLAlt}/${DmcFilename}"
 
-!define Dmd1Url "${BaseURL}/releases/${Version1ReleaseYear}/${Dmd1Filename}"
-!define Dmd1AltUrl "${BaseURLAlt}/${Dmd1Filename}"
-
 !define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
 !define VS2017Url "https://download.visualstudio.microsoft.com/download/pr/100404311/045b56eb413191d03850ecc425172a7d/vs_Community.exe"
 !define VS2017BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/100404314/e64d79b40219aea618ce2fe10ebd5f0d/vs_BuildTools.exe"
@@ -88,7 +79,7 @@
 
 ; ----------------
 ; Publishing Details
-!define DPublisher "Digital Mars"
+!define DPublisher "D Language Foundation"
 !define DName "DMD"
 !define ARP "Software\Microsoft\Windows\CurrentVersion\Uninstall\${DName}"
 
@@ -316,11 +307,6 @@ SectionGroup /e "Extras"
 
   Section /o "Download DMC" DmcDownload
     !insertmacro DownloadAndRun ${DmcFilename} ${DmcUrl} ${DmcAltUrl}
-  SectionEnd
-
-
-  Section /o "Download D1" Dmd1Download
-    !insertmacro DownloadAndRun ${Dmd1Filename} ${Dmd1Url} ${Dmd1AltUrl}
   SectionEnd
 SectionGroupEnd
 
