@@ -119,6 +119,23 @@ then
     exit 1
 fi
 
+# test dmd-nightly
+./script/install.sh install dmd-nightly
+dmd_nightly="$(./script/install.sh list | grep dmd-master)"
+./script/install.sh uninstall "$dmd_nightly"
+
+# test dmd-beta
+./script/install.sh install dmd-beta
+dmd_beta="$(./script/install.sh list | grep dmd)"
+./script/install.sh uninstall "$dmd_beta"
+
+# check whether dmd-beta and dmd-nightly installations have been uninstalled successfully
+if bash script/install.sh list
+then
+    echo "Uninstall of the compilers failed."
+    exit 1
+fi
+
 # test in-place update
 bash script/install.sh update --path "$PWD/script"
 bash script/install.sh update -p "$PWD/script"
