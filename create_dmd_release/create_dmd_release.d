@@ -343,7 +343,8 @@ void cleanAll(Bits bits, string branch)
     scope(exit) changeDir(saveDir);
 
     auto targetMakefile = bits == Bits.bits32? makefile : makefile64;
-    auto bitsStr        = bits == Bits.bits32? "32" : "64";
+    version (Windows) auto bitsStr = bits == Bits.bits32? "32mscoff" : "64";
+    else              auto bitsStr = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     auto hostDMDEnv = " HOST_DC="~hostDMD;
@@ -414,13 +415,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
     auto libPhobos      = bits == Bits.bits32? libPhobos32 : libPhobos64;
-    auto bitsStr = bits == Bits.bits32? "32" : "64";
+    version (Windows) auto bitsStr = bits == Bits.bits32? "32mscoff" : "64";
+    else              auto bitsStr = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
     version (Windows)
     {
         auto jobs = "";
-        auto dmdEnv = ` DMD=..\dmd\generated\`~osDirName~`\release\32\dmd`~exe;
+        auto dmdEnv = ` DMD=..\dmd\generated\`~osDirName~`\release\32mscoff\dmd`~exe;
         enum dmdConf = "sc.ini";
     }
     else
