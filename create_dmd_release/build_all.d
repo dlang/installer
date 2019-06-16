@@ -498,7 +498,7 @@ int main(string[] args)
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
-    enum libCurl = "libcurl-7.64.1-WinSSL-zlib-x86-x64.zip";
+    enum libCurl = "libcurl-7.65.1-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
     enum mingwlibs = "mingw-libs-5.0.2-1.zip";
     enum lld = "lld-link-8.0.0.zip";
