@@ -43,7 +43,7 @@ SET PATH=%MINGW_PATH%;%ORIG_PATH%
 call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
 
 mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
-mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static || exit /B 1
+mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static CURL_CFLAG_EXTRAS=-DDONT_USE_RECV_BEFORE_SEND_WORKAROUND || exit /B 1
 strip -s curl\lib\libcurl.dll
 
 mkdir dmd2\windows\bin dmd2\windows\lib
@@ -64,7 +64,7 @@ SET PATH=%MINGW64_PATH%;%ORIG_PATH%
 call "c:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x64
 
 mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
-mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static || exit /B 1
+mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 LDFLAGS=-static CURL_CFLAG_EXTRAS=-DDONT_USE_RECV_BEFORE_SEND_WORKAROUND || exit /B 1
 strip -s curl\lib\libcurl.dll
 
 mkdir dmd2\windows\bin64 dmd2\windows\lib64
