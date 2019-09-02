@@ -1,4 +1,0 @@
-Bundled libcurl is now built with `DONT_USE_RECV_BEFORE_SEND_WORKAROUND`
-
-The bundled libcurl is now build with
-`DONT_USE_RECV_BEFORE_SEND_WORKAROUND`. See [#399](https://github.com/dlang/installer/pull/399) for details.
