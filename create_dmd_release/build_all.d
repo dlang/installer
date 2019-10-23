@@ -240,7 +240,7 @@ void prepareExtraBins(string workDir)
 {
     auto extraBins = [
         windows_both : [
-            "windbg.hlp", "lib.exe", "link.exe", "make.exe",
+            "windbg.hlp", "lib.exe", "optlink.exe", "make.exe",
             "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
             "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll"
         ].addPrefix("bin/").array,
@@ -275,7 +275,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             break;
         case OS.windows:
             // update DMC's snn.lib and link.exe
-            cmd(`copy old-dmd\dmd2\windows\bin\link.exe C:\dm\bin\link.exe`);
+            cmd(`copy old-dmd\dmd2\windows\bin\optlink.exe C:\dm\bin\link.exe`);
             cmd(`copy old-dmd\dmd2\windows\lib\snn.lib C:\dm\lib\snn.lib`);
             // copy libcurl needed for create_dmd_release and dlang.org
             cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
@@ -550,6 +550,8 @@ int main(string[] args)
     prepareExtraBins(workDir);
     // add latest optlink
     extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
+    if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
+        remove(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe");
     // add latest dmc libC (snn.lib)
     copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
     // add libcurl build for windows

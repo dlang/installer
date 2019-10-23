@@ -457,13 +457,15 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
                 [Environment]
                 LIB="%@P%\..\..\..\..\..\phobos" "`~customExtrasDir~`\dmd2\windows\lib" "%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib"
                 DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
+                [Environment32]
+                LINKCMD=%@P%\optlink.exe
             `).outdent().strip());
         }
     }
 
     // Copy OPTLINK to same directory as the sc.ini we want it to read
     version(Windows)
-        copyFile(customExtrasDir~"/dmd2/windows/bin/link.exe", cloneDir~"/dmd/generated/"~osDirName~"/release/"~bitsStr~"/link.exe");
+        copyFile(customExtrasDir~"/dmd2/windows/bin/optlink.exe", cloneDir~"/dmd/generated/"~osDirName~"/release/"~bitsStr~"/optlink.exe");
 
     if(dmdOnly)
         return;
