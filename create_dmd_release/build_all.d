@@ -524,7 +524,10 @@ int main(string[] args)
     if (platforms.canFind!(p => p.os == OS.windows))
     {
         // Use latest optlink to build release
-        remove(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe");
+        if (exists(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe"))
+            remove(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe");
+        if (exists(workDir~"/windows/old-dmd/dmd2/windows/bin/optlink.exe"))
+            remove(workDir~"/windows/old-dmd/dmd2/windows/bin/optlink.exe");
         extract(cacheDir~"/"~optlink, workDir~"/windows/old-dmd/dmd2/windows/bin/");
         // Use latest libC (snn.lib) to build release
         remove(workDir~"/windows/old-dmd/dmd2/windows/lib/snn.lib");
