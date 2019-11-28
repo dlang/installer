@@ -30,3 +30,11 @@ do
 
     "$INSTALLER" uninstall $compiler
 done
+
+# test latest dub works
+"$INSTALLER" dmd-2.079.0,dub
+. $("$INSTALLER" $compiler -a)
+dub --version
+
+deactivate
+"$INSTALLER" uninstall $compiler
