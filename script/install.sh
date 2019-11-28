@@ -369,9 +369,15 @@ run_command() {
             # Only try to install dub if it wasn't the main compiler
             if ! [[ $COMPILER =~ ^dub ]] ; then
                 if [ -n "${DUB:-}" ] ; then
-                    # A dub version was explicitly specified with +dub-1.8.0
+                    # A dub version was explicitly specified with ,dub-1.8.0
                     DUB_BIN_PATH="${ROOT}/${DUB}"
-                    install_dub "$DUB"
+                    # Check whether the latest dub version needs to be resolved
+                    if ! [[ $DUB =~ ^dub- ]] ; then
+                        resolve_latest "$DUB"
+                        install_dub "dub-$DUB_VERSION"
+                    else
+                        install_dub "$DUB"
+                    fi
                 else
                     # compiler was installed without requesting dub
                     local -r binpath=$(binpath_for_compiler "$2")
