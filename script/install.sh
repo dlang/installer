@@ -129,16 +129,9 @@ case $(uname -s) in
     Darwin) OS=osx;;
     Linux) OS=linux;;
     FreeBSD) OS=freebsd;;
+    *_NT-*) OS=windows;;
     *)
         fatal "Unsupported OS $(uname -s)"
-        ;;
-esac
-case $(uname -m) in
-    x86_64|amd64) ARCH=x86_64; MODEL=64;;
-    aarch64) ARCH=aarch64; MODEL=64;;
-    i*86) ARCH=x86; MODEL=32;;
-    *)
-        fatal "Unsupported Arch $(uname -m)"
         ;;
 esac
 
@@ -556,10 +549,12 @@ install_compiler() {
             fi
         fi
 
-        if [[ $ver > "2.068.0z" ]]; then
-            local arch="tar.xz"
+        if [[ $OS == windows && $ver > "2.068.0" ]] && command -v 7z &>/dev/null; then
+            local ext=".7z"
+        elif [[ $ver > "2.068.0z" && $OS != windows ]]; then
+            local ext=".tar.xz"
         else
-            local arch="zip"
+            local ext=".zip"
         fi
 
         if [[ $ARCH != x86* ]]; then
@@ -569,13 +564,13 @@ install_compiler() {
         local mirrors
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
             mirrors=(
-                "http://downloads.dlang.org/pre-releases/2.x/$ver/$basename.$arch"
-                "http://ftp.digitalmars.com/$basename.$arch"
+                "http://downloads.dlang.org/pre-releases/2.x/$ver/$basename$ext"
+                "http://ftp.digitalmars.com/$basename$ext"
             )
         else
             mirrors=(
-                "http://downloads.dlang.org/releases/2.x/$ver/$basename.$arch"
-                "http://ftp.digitalmars.com/$basename.$arch"
+                "http://downloads.dlang.org/releases/2.x/$ver/$basename$ext"
+                "http://ftp.digitalmars.com/$basename$ext"
             )
         fi
 
@@ -591,15 +586,23 @@ install_compiler() {
         if [[ $ARCH != x86* ]]; then
             fatal "no DMD binaries available for $ARCH"
         fi
-        local url="http://downloads.dlang.org/nightlies/$1/$basename.tar.xz"
+        local ext
+        test $OS = windows && ext=.7z || ext=.tar.xz
+        local url="http://downloads.dlang.org/nightlies/$1/$basename$ext"
 
         download_and_unpack_with_verify "$ROOT/$compiler" "$url"
 
     # ldc-0.12.1 or ldc-0.15.0-alpha1
-    elif [[ $1 =~ ^ldc-([0-9]+\.[0-9]+\.[0-9]+(-.*)?)$ ]]; then
+    elif [[ $1 =~ ^ldc-(([0-9]+)\.([0-9]+)\.[0-9]+(-.*)?)$ ]]; then
         local ver=${BASH_REMATCH[1]}
-        local url="https://github.com/ldc-developers/ldc/releases/download/v$ver/ldc2-$ver-$OS-$ARCH.tar.xz"
-        if [ $OS != linux ] && [ $OS != osx ]; then
+        local vernum=$((BASH_REMATCH[2] * 1000 + BASH_REMATCH[3]))
+        local ext
+        test $OS = windows && ext=.7z || ext=.tar.xz
+        local url="https://github.com/ldc-developers/ldc/releases/download/v$ver/ldc2-$ver-$OS-$ARCH$ext"
+        if [[ $OS == windows && $vernum -lt 1007 ]]; then
+            url="https://github.com/ldc-developers/ldc/releases/download/v$ver/ldc2-$ver-win$MODEL-msvc.zip"
+        fi
+        if [ $OS != linux ] && [ $OS != windows ] && [ $OS != osx ]; then
             fatal "no ldc binaries available for $OS"
         fi
 
@@ -608,7 +611,9 @@ install_compiler() {
     # ldc-latest-ci: ldc-8c0abd52
     elif [[ $1 =~ ^ldc-([0-9a-f]+) ]]; then
         local package_hash=${BASH_REMATCH[1]}
-        local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH.tar.xz"
+        local ext
+        test $OS = windows && ext=.7z || ext=.tar.xz
+        local url="https://github.com/ldc-developers/ldc/releases/download/CI/ldc2-$package_hash-$OS-$ARCH$ext"
 
         # Install into 'ldc-8c0abd52-20171222' directory.
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
@@ -633,12 +638,7 @@ install_compiler() {
         chmod +x "$ROOT/$1/bin/gdmd"
 
     elif [[ $1 =~ ^dub-v?([0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?)$ ]]; then
-        local ver=${BASH_REMATCH[1]}
-        local mirrors=(
-            "https://github.com/dlang/dub/releases/download/v$ver/dub-v$ver-$OS-$ARCH.tar.gz"
-            "http://code.dlang.org/files/dub-$ver-$OS-$ARCH.tar.gz"
-        )
-        download_and_unpack_without_verify "$ROOT/$compiler" "${mirrors[@]}"
+        install_dub "$1"
     else
         fatal "Unknown compiler '$compiler'"
     fi
@@ -652,6 +652,27 @@ find_gpg() {
     else
         echo "Warning: No gpg tool found to verify downloads." >&2
     fi
+}
+
+unpack_zip() {
+    local zip=$1
+    local dir=$2
+
+    (
+        # Avoid invoking Windows programs with absolute paths, as
+        # POSIX environments on Windows are unreliable in converting
+        # POSIX paths to Windows paths on programs' command lines.
+        # Use relative paths instead.
+        cd "$ROOT"
+        zip=${zip/$ROOT\//}
+        dir=${dir/$ROOT\//}
+
+        if command -v 7z &>/dev/null; then
+            7z x -o"$dir" "$zip" 1>&2
+        else
+            unzip -q -d "$dir" "$zip"
+        fi
+    )
 }
 
 # path, verify (0/1), urls...
@@ -668,8 +689,12 @@ download_and_unpack() {
     check_tools curl
     if [[ $name =~ \.tar\.xz$ ]]; then
         check_tools tar xz
-    else
-        check_tools unzip
+    elif [[ $name =~ \.7z$ ]]; then
+        check_tools 7z
+    elif [[ $name =~ \.zip$ ]]; then
+        if ! command -v 7z &>/dev/null; then
+            check_tools unzip
+        fi
     fi
 
     log "Downloading and unpacking ${urls[0]}"
@@ -677,11 +702,21 @@ download_and_unpack() {
     if [[ $name =~ \.tar\.xz$ ]]; then
         tar --strip-components=1 -C "$tmp" -Jxf "$tmp/$name"
     elif [[ $name =~ \.tar\.gz$ ]]; then
-        tar -C "$tmp" -xf "$tmp/$name"
+        tar --strip-components=1 -C "$tmp" -xf "$tmp/$name"
     else
-        unzip -q -d "$tmp" "$tmp/$name"
-        mv "$tmp/dmd2"/* "$tmp/"
-        rmdir "$tmp/dmd2"
+        mkdir "$tmp"/target
+        unpack_zip "$tmp/$name" "$tmp"/target
+
+        local files=("$tmp"/target/*)
+        if [[ "${#files[@]}" -eq 1 && -d "${files[0]}" ]]; then
+            # Single directory at the top of the archive,
+            # as is common with .tar archives. Move it out.
+            find "$tmp"/target -mindepth 2 -maxdepth 2 -exec mv -t "$tmp" {} \+
+            rmdir "$tmp"/target/*
+        else
+            find "$tmp"/target -mindepth 1 -maxdepth 1 -exec mv -t "$tmp" {} \+
+        fi
+        rmdir "$tmp"/target
     fi
     rm "$tmp/$name"
     mv "$tmp" "$path"
@@ -719,7 +754,7 @@ binpath_for_compiler() {
     case $1 in
         dmd*)
             local suffix=
-            [ $OS = osx ] || suffix=$MODEL
+            [ $OS = osx ] || [ $OS = windows ] || suffix=$MODEL
             local -r binpath=$OS/bin$suffix
             ;;
 
@@ -886,7 +921,7 @@ list_compilers() {
 }
 
 install_dub() {
-    if [ $OS != linux ] && [ $OS != osx ]; then
+    if [ $OS != linux ] && [ $OS != windows ] && [ $OS != osx ]; then
         log "no dub binaries available for $OS"
         return
     fi
@@ -898,13 +933,35 @@ install_dub() {
     local tmp url
     tmp=$(mkdtemp)
     dubVersion=${dub##dub-}
+    local ext=.tar.gz arch=$ARCH
+    if [[ $OS == windows ]]; then
+        ext=.zip
+        if [[ "$dubVersion" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            local vernum=$((BASH_REMATCH[1] * 1000000 + BASH_REMATCH[2] * 1000 + BASH_REMATCH[3]))
+            if [[ $vernum -lt 1014000 ]]; then
+                # Older releases, pre-1.14.0, were on code.dlang.org,
+                # and did not have x86_64 versions.
+                arch=x86
+            elif [[ $vernum -lt 1020000 ]]; then
+                # Releases since 1.14.0 have x86_64 archives on GitHub.
+                # However, these are corrupted (https://github.com/dlang/dub/issues/1795).
+                # At this point it's unclear if the archives are going to be fixed,
+                # so just install them for now.
+                :
+            fi
+        fi
+    fi
     local mirrors=(
-        "https://github.com/dlang/dub/releases/download/v${dubVersion}/dub-v${dubVersion}-$OS-$ARCH.tar.gz"
-        "https://code.dlang.org/files/$dub-$OS-$ARCH.tar.gz"
+        "https://github.com/dlang/dub/releases/download/v${dubVersion}/dub-v${dubVersion}-$OS-$arch$ext"
+        "https://code.dlang.org/files/$dub-$OS-$arch$ext"
     )
     log "Downloading and unpacking ${mirrors[0]}"
-    download_without_verify "$tmp/dub.tar.gz" "${mirrors[@]}"
-    tar -C "$tmp" -zxf "$tmp/dub.tar.gz"
+    download_without_verify "$tmp/dub$ext" "${mirrors[@]}"
+    if [[ $ext == .tar.gz ]]; then
+        tar -C "$tmp" -zxf "$tmp/dub$ext"
+    else
+        unpack_zip "$tmp/dub$ext" "$tmp"
+    fi
     logV "Removing old dub symlink"
     rm -rf "$ROOT/dub"
     mv "$tmp" "$ROOT/$dub"
@@ -915,6 +972,19 @@ install_dub() {
 # ------------------------------------------------------------------------------
 
 parse_args "$@"
+
+case $(uname -m) in
+    x86_64|amd64) ARCH=x86_64; MODEL=64;;
+    aarch64) ARCH=aarch64; MODEL=64;;
+    i*86) ARCH=x86; MODEL=32;;
+    *)
+        fatal "Unsupported Arch $(uname -m)"
+        ;;
+esac
+if [[ $OS-$ARCH = windows-x86_64 && $COMPILER = ldc* ]]; then
+    ARCH=x64
+fi
+
 resolve_latest "$COMPILER"
 run_command ${COMMAND:-install} "$COMPILER"
 }
