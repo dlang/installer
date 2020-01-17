@@ -745,7 +745,7 @@ verify() {
         fatal "Broken GPG installation"
     fi
     local out
-    if ! out=$($GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring <(fetch "${urls[@]}") "$path" 2>&1); then
+    if ! out=$(fetch "${urls[@]}" | $GPG -q --verify --keyring "$ROOT/d-keyring.gpg" --no-default-keyring - "$path" 2>&1); then
         rm "$path" # delete invalid files
         logE "$out"
         fatal "Invalid signature ${urls[0]}"
