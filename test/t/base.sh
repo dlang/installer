@@ -137,10 +137,9 @@ then
 fi
 
 # test in-place update
-bash script/install.sh update --path "$PWD/script"
-bash script/install.sh update -p "$PWD/script"
-# reset script
-git checkout -- script/install.sh
+cp script/install.sh "$testDir"/
+bash "$testDir"/install.sh update --path "$testDir"
+bash "$testDir"/install.sh update -p "$testDir"
 
 if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     shellcheck script/install.sh
