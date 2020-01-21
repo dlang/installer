@@ -1,4 +1,4 @@
-language: minimal
+language: bash
 
 addons:
   apt:
@@ -17,5 +17,7 @@ matrix:
         - popd
       script: kcov --exclude-pattern=travis.sh $PWD/coverage ./test/all.sh
       after_success: bash <(curl -s https://codecov.io/bash) -s $PWD/coverage
+    - os: windows
+      script: ./test/all.sh
     - os: osx
       script: ./test/all.sh
