@@ -670,7 +670,9 @@ unpack_zip() {
         if command -v 7z &>/dev/null; then
             7z x -o"$dir" "$zip" 1>&2
         else
-            unzip -q -d "$dir" "$zip"
+            # Allow unzip to exit with code 1, which it uses to signal warnings such as
+            # ".zip appears to use backslashes as path separators"
+            unzip -q -d "$dir" "$zip" || [ "$?" -le "1" ]
         fi
     )
 }
