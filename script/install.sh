@@ -289,7 +289,11 @@ parse_args() {
                     fatal '-p|--path must be followed by a path.';
                 fi
                 shift
-                ROOT="$1"
+                if command -v cygpath &>/dev/null; then
+                    ROOT="$(cygpath "${1}")";
+                else
+                    ROOT="$1"
+                fi
                 ;;
 
             -v | --verbose)
