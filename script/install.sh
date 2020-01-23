@@ -496,7 +496,7 @@ resolve_latest() {
             COMPILER="ldc-$(fetch $url)"
             ;;
         ldc-latest-ci)
-            local url=http://thecybershadow.net/d/github-ldc
+            local url=https://thecybershadow.net/d/github-ldc
             logV "Finding latest ldc CI binary package (at $url)."
             local package
             package="$(fetch $url)"
@@ -509,7 +509,7 @@ resolve_latest() {
         ldc-*)
             ;;
         gdc)
-            local url=http://gdcproject.org/downloads/LATEST
+            local url=https://gdcproject.org/downloads/LATEST
             logV "Determing latest gdc version ($url)."
             COMPILER="gdc-$(fetch $url)"
             ;;
@@ -628,7 +628,7 @@ install_compiler() {
             x86_64) local triplet=x86_64-linux-gnu;;
             x86) local triplet=i686-linux-gnu;;
         esac
-        local url="http://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
+        local url="https://gdcproject.org/downloads/binaries/$triplet/$name.tar.xz"
 
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
@@ -670,7 +670,9 @@ unpack_zip() {
         if command -v 7z &>/dev/null; then
             7z x -o"$dir" "$zip" 1>&2
         else
-            unzip -q -d "$dir" "$zip"
+            # Allow unzip to exit with code 1, which it uses to signal warnings
+            # such as ".zip appears to use backslashes as path separators".
+            unzip -q -d "$dir" "$zip" || [ $? -le 1 ]
         fi
     )
 }
