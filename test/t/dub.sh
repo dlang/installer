@@ -26,22 +26,22 @@ do
     fi
 
     echo "Testing: $compiler"
-    "$INSTALLER" $compiler
-    . $("$INSTALLER" $compiler -a)
+    "$INSTALLER" -p ~/dlang $compiler
+    . $("$INSTALLER" -p ~/dlang $compiler -a)
 
     compilerVersion=$(dub --version | sed -n 1p | tr -d '\r')
     [[ "$compilerVersion" == "${versions[$idx]}"* ]]
     deactivate
 
-    "$INSTALLER" uninstall $compiler
+    "$INSTALLER" -p ~/dlang uninstall $compiler
 done
 
 # test latest dub works
-"$INSTALLER" dmd-2.080.0,dub
-. $("$INSTALLER" $compiler -a)
+"$INSTALLER" -p ~/dlang dmd-2.080.0,dub
+. $("$INSTALLER" -p ~/dlang $compiler -a)
 if [ "${TRAVIS_OS_NAME:-}" != "windows" ]; then # https://github.com/dlang/dub/issues/1795
     dub --version
 fi
 
 deactivate
-"$INSTALLER" uninstall $compiler
+"$INSTALLER" -p ~/dlang uninstall $compiler

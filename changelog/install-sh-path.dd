@@ -1,0 +1,44 @@
+The install script default installation path now depends on invocation.
+
+The official D version manager ($(LINK2 https://dlang.org/install.sh, install.sh),
+documented at $(LINK2 https://dlang.org/install.html, dlang.org/install.html))
+used to install compilers in `~/dlang`, unless a different path was explicitly
+supplied.
+
+If you have been using the previous default, you will not notice the change.
+
+The default installation path has been changed to be identical to the script
+file location. This makes deviating from the default easier: If you have
+previously been doing something like
+-------
+~/languages/dlang/install.sh -p ~/languages/dlang install dmd-nightly
+-------
+you now don't need to repeat the path:
+-------
+~/languages/dlang/install.sh install dmd-nightly
+-------
+This also facilitates managing compiler versions on Windows outside the POSIX
+file tree.
+
+If the script is run through a pipe then there is no script file, and then
+`~/dlang` is still the default if invoked from a POSIX terminal (including
+MSYS2 or Cygwin on Windows). Example:
+-------
+curl https://dlang.org/install.sh | bash -s
+-------
+However, the default changes to `%LOCALAPPDATA%\dlang` when run through a pipe
+from an ordinary Windows command prompt:
+-------
+\msys64\usr\bin\curl.exe https://dlang.org/install.sh | \msys64\usr\bin\bash.exe -sl
+-------
+
+This change only breaks your routine if you have been using the default path
+for compilers, but different path for the script. That is, if you previously
+did
+-------
+~/installer/script/install.sh
+-------
+then you should now do
+-------
+~/installer/script/install.sh -p ~/dlang
+-------

@@ -5,6 +5,13 @@
 # Authors: Martin Nowak
 # Documentation: https://dlang.org/install.html
 
+# SCRIPT_PATH is used to determine the default compiler installation path. It 
+# needs to be defined outside the main _() function. It will give us the path
+# of the script or, if the script is called through a symlink, the path of the
+# symlink. This way the script can be tested as if installed, while it actually
+# resides in a git checkout.
+SCRIPT_PATH=${BASH_SOURCE[0]}
+
 _() {
 set -ueo pipefail
 
@@ -119,10 +126,51 @@ fetch() {
 
 # ------------------------------------------------------------------------------
 
+# Returns false if the script is invoked from a Windows command prompt.
+posix_terminal() {
+    # If run from a POSIX terminal (including under MSYS2 or Cygwin) the TERM
+    # variable is defined to something like "xterm". If run from a Windows
+    # command prompt through bash.exe from an MSYS installation, TERM keeps
+    # its default value, which is "cygwin".
+    if [[ $TERM == "cygwin" ]]; then
+        false
+    else
+        true
+    fi
+}
+
+HAVE_CYGPATH=no
+if command -v cygpath &>/dev/null; then
+    HAVE_CYGPATH=yes
+fi
+posix_path() {
+    if [[ "$HAVE_CYGPATH" == "yes" ]]; then
+        cygpath "$1"
+    else
+        $1
+    fi
+}
+
 COMMAND=
 COMPILER=dmd
 VERBOSITY=1
-ROOT=~/dlang
+if [ -n "$SCRIPT_PATH" ]; then
+    # Default to the script location.
+    ROOT=$(dirname "$(posix_path "$SCRIPT_PATH")")
+else
+    # The script path is empty, which happens if we are being piped into bash
+    # from stdin. Set a default depending on the POSIX/Windows environment.
+    if posix_terminal; then
+        ROOT=~/dlang
+    else
+        # Default to a ROOT that is outside the POSIX-like environment.
+        if [ -z "$LOCALAPPDATA" ]; then
+            fatal '%LOCALAPPDATA% should not be empty on Windows.';
+        fi
+        ROOT=$(posix_path "$LOCALAPPDATA")/dlang
+    fi
+fi
+TMP_ROOT=
 DUB_VERSION=
 DUB_BIN_PATH=
 case $(uname -s) in
@@ -152,15 +200,14 @@ check_tools() {
 
 # ------------------------------------------------------------------------------
 
-mkdir -p "$ROOT"
-TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
-
 mkdtemp() {
     mktemp -d "$TMP_ROOT/XXXXXX"
 }
 
 cleanup() {
-    rm -rf "$TMP_ROOT";
+    if [[ -n $TMP_ROOT ]]; then
+        rm -rf "$TMP_ROOT";
+    fi
 }
 trap cleanup EXIT
 
@@ -181,11 +228,14 @@ Commands
 Options
 
   -h --help     Show this help
-  -p --path     Install location (default ~/dlang)
+  -p --path     Set install location. Default depends on script invocation:
+                  * from file system:                   script file location
+                  * through pipe in POSIX terminal:     ~/dlang              
+                  * through pipe on Windows cmd prompt: %LOCALAPPDATA%\dlang
   -v --verbose  Verbose output
 
 Run "install.sh <command> --help to get help for a specific command.
-If no argument are provided, the latest DMD compiler will be installed.
+If no arguments are provided, the latest DMD compiler will be installed.
 '
 }
 
@@ -289,11 +339,7 @@ parse_args() {
                     fatal '-p|--path must be followed by a path.';
                 fi
                 shift
-                if command -v cygpath &>/dev/null; then
-                    ROOT="$(cygpath "${1}")";
-                else
-                    ROOT="$1"
-                fi
+                ROOT="$(posix_path "$1")";
                 ;;
 
             -v | --verbose)
@@ -324,6 +370,9 @@ parse_args() {
         esac
         shift
     done
+
+    mkdir -p "$ROOT"
+    TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
 
     if [ -n "$_help" ]; then
         command_help $COMMAND

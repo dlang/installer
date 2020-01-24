@@ -55,7 +55,7 @@ for idx in "${!compilers[@]}"
 do
     compiler="${compilers[$idx]}"
     echo "Testing: $compiler"
-    ./script/install.sh $compiler
+    ./script/install.sh -p ~/dlang $compiler
 
     . ~/dlang/$compiler/activate
     compilerVersion=$($DC --version | sed -n 1p | tr -d '\r')
@@ -69,17 +69,17 @@ do
 
     # Check whether the compilers have been successfully installed
     touch "$testFile".d
-    source $(./script/install.sh $compiler --activate)
+    source $(./script/install.sh -p ~/dlang $compiler --activate)
     ( cd "$testDir" && ${DMD} -oftest test.d )
     test "$(${testFile} | tr -d '\r')" = "${frontendVersions[$idx]}"
     rm ${testFile}
     deactivate
 
-    source $(./script/install.sh $compiler -a)
+    source $(./script/install.sh -p ~/dlang $compiler -a)
     command -v dub >/dev/null 2>&1 || { echo >&2 "DUB hasn't been installed."; exit 1; }
     deactivate
 
-    ./script/install.sh uninstall $compiler
+    ./script/install.sh -p ~/dlang uninstall $compiler
 done
 
 # test resolution of latest using the remove error message
@@ -87,7 +87,7 @@ latest=(dmd dmd-beta dmd-master dmd-nightly ldc ldc-beta ldc-latest-ci gdc dmd-2
 for compiler in "${latest[@]}"
 do
     set +e
-    resolved=$(./script/install.sh remove "$compiler" 2>&1)
+    resolved=$(./script/install.sh -p ~/dlang remove "$compiler" 2>&1)
     set -e
     if ! [[ $resolved =~ ^${compiler%-*}-(.+)$ ]]; then
         echo "Failed to resolve $compiler, got '$resolved'"
@@ -108,33 +108,33 @@ done
 
 # test that a missing keyring gets restored - https://issues.dlang.org/show_bug.cgi?id=19100
 rm ~/dlang/d-keyring.gpg
-./script/install.sh dmd-2.081.2
+./script/install.sh -p ~/dlang dmd-2.081.2
 if [ ! $(find ~/dlang/d-keyring.gpg -type f -size +8096c 2>/dev/null) ]; then
     ls -l ~/dlang/d-keyring.gpg
     echo "Invalid keyring got installed."
     exit 1
 fi
-./script/install.sh remove dmd-2.081.2
+./script/install.sh -p ~/dlang remove dmd-2.081.2
 
 # check whether all installations have been uninstalled successfully
-if bash script/install.sh list
+if bash script/install.sh -p ~/dlang list
 then
     echo "Uninstall of the compilers failed."
     exit 1
 fi
 
 # test dmd-nightly
-./script/install.sh install dmd-nightly
-dmd_nightly="$(./script/install.sh list | grep dmd-master)"
-./script/install.sh uninstall "$dmd_nightly"
+./script/install.sh -p ~/dlang install dmd-nightly
+dmd_nightly="$(./script/install.sh -p ~/dlang list | grep dmd-master)"
+./script/install.sh -p ~/dlang uninstall "$dmd_nightly"
 
 # test dmd-beta
-./script/install.sh install dmd-beta
-dmd_beta="$(./script/install.sh list | grep dmd)"
-./script/install.sh uninstall "$dmd_beta"
+./script/install.sh -p ~/dlang install dmd-beta
+dmd_beta="$(./script/install.sh -p ~/dlang list | grep dmd)"
+./script/install.sh -p ~/dlang uninstall "$dmd_beta"
 
 # check whether dmd-beta and dmd-nightly installations have been uninstalled successfully
-if bash script/install.sh list
+if bash script/install.sh -p ~/dlang list
 then
     echo "Uninstall of the compilers failed."
     exit 1
