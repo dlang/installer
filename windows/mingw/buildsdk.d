@@ -114,6 +114,7 @@ void sanitizeDef(string defFile)
         "strnlen",
         "tanf", "tanhf",
         "wcrtomb", "wcsrtombs", "wctob",
+        "__lc_collate_cp", "_osplatform",
     ];
 
     patchLines(defFile, defFile, (line)
@@ -145,7 +146,7 @@ void sanitizeDef(string defFile)
         // Un-hide functions overridden by the MinGW runtime.
         foreach (name; overriddenMinGWFunctions)
         {
-            if (line.length == name.length + 5 && line.startsWith(name) && line.endsWith(" DATA"))
+            if (line.length == name.length + 5 && line.startsWith(name) && (line.endsWith(" DATA") || line.endsWith("\tDATA")))
                 return name;
         }
 
