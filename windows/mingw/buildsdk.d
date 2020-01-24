@@ -201,7 +201,8 @@ void def2implib(string defFile)
     }
 
     const libFile = setExtension(defFile, ".lib");
-    runShell(`lib "/DEF:` ~ defFile ~ `" "/OUT:` ~ libFile ~ `"`);
+    const machine = x64 ? "X64" : "X86";
+    runShell(`lib "/DEF:` ~ defFile ~ `" /MACHINE:` ~ machine ~ ` "/OUT:` ~ libFile ~ `"`);
     std.file.remove(setExtension(defFile, ".exp"));
 }
 
@@ -249,7 +250,7 @@ bool defWithStdcallMangling2implib(string defFile)
             line.startsWith("LIBRARY ") || line.startsWith("EXPORTS"))
             return line;
 
-        if (line.endsWith(" DATA"))
+        if (line.endsWith(" DATA") || line.endsWith("\tDATA"))
         {
             fields ~= line[0 .. $-5];
             return line;
