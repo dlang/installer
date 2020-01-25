@@ -64,6 +64,17 @@ _DllMainCRTStartup (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
     return bRet;
 }
 
+BOOL WINAPI __DefaultDllMain (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
+{
+    return TRUE;
+}
+
+#ifdef _M_X64
+__pragma(comment(linker, "/alternatename:DllMain=__DefaultDllMain"));
+#else
+__pragma(comment(linker, "/alternatename:_DllMain@12=___DefaultDllMain@12"));
+#endif
+
 #else // _APPTYPE != __UNKNOWN_APP
 
 extern int    __argc;

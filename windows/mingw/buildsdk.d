@@ -91,7 +91,10 @@ void sanitizeDef(string defFile)
         // ucrtbase.def:
         "_assert", "_cabs", "_fpreset", "_tzset",
         "ceil", "ceilf", "coshf", "fabs",
+        "feclearexcept", "fegetenv", "fegetexceptflag", "fegetround", "feholdexcept",
+        "fesetenv", "fesetexceptflag", "fesetround", "fetestexcept",
         "floor", "floorf", "modf", "modff",
+        "lgamma", "lgammaf", "lgammal",
         "sinhf", "sqrt", "sqrtf", "wcsnlen",
         // additional ones in msvcr100.def:
         "__report_gsfailure",
@@ -104,7 +107,7 @@ void sanitizeDef(string defFile)
         "_wassert",
         "acosf", "asinf", "atan2", "atan2f", "atanf",
         "btowc",
-        "cos", "cosf", "exp", "expf", "fmod", "fmodf", "ldexp",
+        "cos", "cosf", "exp", "expf", "fmod", "fmodf", "frexp", "ldexp",
         "longjmp",
         "llabs", "lldiv",
         "log", "log10f", "logf",
@@ -144,10 +147,13 @@ void sanitizeDef(string defFile)
         }
 
         // Un-hide functions overridden by the MinGW runtime.
-        foreach (name; overriddenMinGWFunctions)
+        if (line.endsWith(" DATA") || line.endsWith("\tDATA"))
         {
-            if (line.length == name.length + 5 && line.startsWith(name) && (line.endsWith(" DATA") || line.endsWith("\tDATA")))
-                return name;
+            foreach (name; overriddenMinGWFunctions)
+            {
+                if (line.length == name.length + 5 && line.startsWith(name))
+                    return name;
+            }
         }
 
         // Don't export function 'atexit'; we have our own in msvc_atexit.c.
@@ -338,11 +344,11 @@ bool defWithStdcallMangling2implib(string defFile)
     return true;
 }
 
-void c2lib(string outDir, string cFile)
+void c2lib(string outDir, string cFile, string clFlags = null)
 {
     const obj = buildPath(outDir, baseName(cFile).setExtension(".obj"));
     const lib = setExtension(obj, ".lib");
-    cl(obj, quote(cFile));
+    cl(obj, clFlags ~ (clFlags ? " " : null) ~ quote(cFile));
     runShell(`lib "/OUT:` ~ lib ~ `" ` ~ quote(obj));
     std.file.remove(obj);
 }
@@ -433,7 +439,7 @@ void buildOldnames(string outDir)
 
 void buildLegacyStdioDefinitions(string outDir)
 {
-    c2lib(outDir, "legacy_stdio_definitions.c");
+    c2lib(outDir, "legacy_stdio_definitions.c", "/O2");
 }
 
 // create empty uuid.lib (expected by dmd, but UUIDs already in druntime)
