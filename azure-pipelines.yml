@@ -2,6 +2,7 @@
 jobs:
   - job: Build_LLD
     timeoutInMinutes: 120
+    condition: true
     pool:
       vmImage: 'vs2017-win2016'
     variables:
@@ -12,6 +13,7 @@ jobs:
       - template: .azure-pipelines/build-lld.yml
   - job: Build_Mingw_libs
     timeoutInMinutes: 120
+    condition: true
     pool:
       vmImage: 'vs2017-win2016'
     variables:
@@ -20,3 +22,25 @@ jobs:
       D_VERSION: 2.077.1
     steps:
       - template: .azure-pipelines/build-mingw-libs.yml
+
+  - job: Build_Docs
+    condition: true
+    timeoutInMinutes: 120
+    pool:
+      vmImage: 'ubuntu-16.04'
+    variables:
+      BRANCH: stable
+    steps:
+      - template: .azure-pipelines/build-docs.yml
+
+  - job: Build_Release
+    dependsOn: Build_Docs
+    timeoutInMinutes: 120
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      BRANCH: stable
+      HOST_DMD_VERSION: 2.088.0
+    steps:
+      - template: .azure-pipelines/build-winrelease.yml
