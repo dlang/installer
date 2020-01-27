@@ -8,6 +8,7 @@ Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-bo
 import std.algorithm, std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
 import common;
 
+version (NoVagrant) {} else
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzilla 8269.");
 
@@ -42,7 +43,10 @@ enum osx_both = Platform(OS.osx, Model._both);
 /// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
 enum windows_both = Platform(OS.windows, Model._both);
 
-enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
+version(Windows)
+    enum platforms = [windows_both];
+else
+    enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
 
 enum OS { freebsd, linux, osx, windows, }
@@ -76,9 +80,13 @@ struct Shell
         _pipes.stdin.close();
         // TODO: capture stderr and attach it to enforce
         enforce(wait(_pipes.pid) == 0);
+        version(NoVagrant)
+            if (_cwd) chdir(_cwd);
     }
 
     ProcessPipes _pipes;
+    version(NoVagrant)
+        string _cwd;
 }
 
 struct Box
@@ -90,41 +98,68 @@ struct Box
         _platform = platform;
 
         _tmpdir = mkdtemp();
-        std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
 
-        // bring up the virtual box
-        if (platform.os != OS.osx)
-            run("cd "~_tmpdir~"; vagrant up");
-        else
-        {
-            // retry to workaround infrequent OSX boot failure
-            auto i = 0;
-            for (; i < 3 && runStatus("cd "~_tmpdir~"; vagrant up"); ++i)
-                run("cd "~_tmpdir~"; vagrant destroy -f");
-            enforce(i < 3, "Repeatedly failed to boot OSX box.");
+        version(NoVagrant) {} else {
+            std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
+    
+            // bring up the virtual box
+            if (platform.os != OS.osx)
+                run("cd "~_tmpdir~"; vagrant up");
+            else
+            {
+                // retry to workaround infrequent OSX boot failure
+                auto i = 0;
+                for (; i < 3 && runStatus("cd "~_tmpdir~"; vagrant up"); ++i)
+                    run("cd "~_tmpdir~"; vagrant destroy -f");
+                enforce(i < 3, "Repeatedly failed to boot OSX box.");
+            }
+            _isUp = true;
+    
+            // save the ssh config file
+            run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
         }
-        _isUp = true;
-
-        // save the ssh config file
-        run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
     }
 
     Shell shell()
     {
-        if (os == OS.windows)
-            return Shell(["ssh", "-F", sshcfg, "default", "powershell", "-Command", "-"]);
+        string[] args = os == OS.windows ? ["powershell", "-Command", "-"] : ["bash", "-e"];
+        version(NoVagrant)
+        {
+            auto cwd = getcwd();
+            chdir(_tmpdir);
+            auto sh = Shell(args);
+            sh._cwd = cwd;
+            return sh;
+        }
         else
-            return Shell(["ssh", "-F", sshcfg, "default", "bash", "-e"]);
+            return Shell(["ssh", "-F", sshcfg, "default"] ~ args);
     }
 
     void scp(string src, string tgt)
     {
         if (os == OS.windows)
         {
-            // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
-            auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
-            if (runStatus(cmd) && runStatus(cmd))
-                run(cmd);
+            version(NoVagrant)
+            {
+                if (src.startsWith("default:"))
+                    src = _tmpdir ~ "/" ~ src[8..$];
+                if (tgt.startsWith("default:"))
+                    tgt = _tmpdir ~ "/" ~ tgt[8..$];
+
+                string[] srcs = split(src, " ");
+                foreach(s; srcs)
+                    if (std.file.isFile(s))
+                        copyFile(s, buildPath(tgt, baseName(s)));
+                    else
+                        copyDirectory(s, tgt);
+            }
+            else
+            {
+                // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
+                auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+                if (runStatus(cmd) && runStatus(cmd))
+                    run(cmd);
+            }
         }
         else
             run("rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt);
@@ -180,7 +215,7 @@ private:
         try
         {
             if (_isUp) run("cd "~_tmpdir~"; vagrant destroy -f");
-            if (_tmpdir.length) rmdirRecurse(_tmpdir);
+            rmdirDirectoryNoFail(_tmpdir);
         }
         finally
         {
@@ -274,9 +309,6 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             rdmd = "old-dmd/dmd2/linux/bin64/rdmd --compiler="~dmd;
             break;
         case OS.windows:
-            // update DMC's snn.lib and link.exe
-            cmd(`copy old-dmd\dmd2\windows\bin\optlink.exe C:\dm\bin\link.exe`);
-            cmd(`copy old-dmd\dmd2\windows\lib\snn.lib C:\dm\lib\snn.lib`);
             // copy libcurl needed for create_dmd_release and dlang.org
             cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
             cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
@@ -456,7 +488,7 @@ void lzmaArchives(string gitTag)
     foreach (platform; platforms)
     {
         auto workDir = mkdtemp();
-        scope (success) if (workDir.exists) rmdirRecurse(workDir);
+        scope (success) rmdirDirectoryNoFail(workDir);
 
         auto name = baseName ~ platform.toString;
         writeln("Building LZMA archive '", name~lzmaExt(platform.os), "'.");
@@ -476,12 +508,24 @@ int error(Args...)(string fmt, Args args)
 
 int main(string[] args)
 {
-    if (args.length < 3 || args.length == 4 && args[$-1] != "--skip-docs" || args.length > 4)
-        return error("Expected <old-dmd-version> <git-branch-or-tag> [--skip-docs] as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
-    immutable skipDocs = args[$-1] == "--skip-docs";
+    bool skipDocs = false;
+    bool verifySignature = true;
+
+    while (args.length > 3)
+    {
+        if (args[$-1] == "--skip-docs")
+            skipDocs = true;
+        else if (args[$-1] == "--skip-verify")
+            verifySignature = false;
+        else
+            break;
+        args = args[0..$-1];
+    }
+    if (args.length != 3)
+        return error("Expected <old-dmd-version> <git-branch-or-tag> [--skip-docs] [--skip-verify] as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
 
     auto workDir = mkdtemp();
-    scope (success) if (workDir.exists) rmdirRecurse(workDir);
+    scope (success) rmdirDirectoryNoFail(workDir);
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
@@ -493,7 +537,7 @@ int main(string[] args)
     immutable gitTag = args[2];
     auto verMatch = gitTag.match(versionRE);
     immutable isBranch = !verMatch;
-    immutable isPreRelease = !verMatch.captures[4].empty;
+    immutable isPreRelease = isBranch || !verMatch.captures[4].empty;
     immutable dubTag = getDubTag(isPreRelease);
 
     enum optlink = "optlink.zip";
@@ -509,13 +553,13 @@ int main(string[] args)
     if (!isBranch)
         getCodesignCerts(workDir~"/codesign");
     foreach (url; oldCompilers.map!(s => "http://downloads.dlang.org/releases/2.x/"~oldVer~"/"~s))
-        fetchFile(url, cacheDir~"/"~baseName(url), true);
+        fetchFile(url, cacheDir~"/"~baseName(url), verifySignature);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, true);
-    fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, true);
-    fetchFile("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, true);
-    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, true);
+    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
+    fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
+    fetchFile("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature);
+    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
@@ -569,6 +613,10 @@ int main(string[] args)
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
 
+    version (NoVagrant) version(linux) {} else
+        if (!skipDocs)
+            copyDirectory("docs", workDir);
+            
     foreach (p; platforms)
     {
         with (Box(p))

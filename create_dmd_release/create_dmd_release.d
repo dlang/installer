@@ -166,7 +166,8 @@ bool codesign;
 
 version(Windows)
 {
-    string msvcBinDir;
+    string msvcBin32Dir;
+    string msvcBin64Dir;
 }
 
 // These are absolute and do NOT contain a trailing slash:
@@ -322,9 +323,19 @@ void init(string branch)
         trace("VCDIR:  " ~ displayPath(win64vcDir));
         trace("SDKDIR: " ~ displayPath(win64sdkDir));
 
-        msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
-        if(!exists(msvcBinDir~"cl.exe"))
-            msvcBinDir = win64vcDir ~ "/bin/amd64";
+        msvcBin64Dir = win64vcDir ~ "/bin/x86_amd64";
+        if(!exists(msvcBin64Dir~"/cl.exe"))
+            msvcBin64Dir = win64vcDir ~ "/bin/amd64";
+        if(!exists(msvcBin64Dir~"/cl.exe"))
+            msvcBin64Dir = win64vcDir ~ "/bin/Hostx64/x64"; // VS2017+
+        if(!exists(msvcBin64Dir~"/cl.exe"))
+            fail(`Microsoft compiler cl.exe for 64-bit not found in ` ~ win64vcDir);
+
+        msvcBin32Dir = win64vcDir ~ "/bin";
+        if(!exists(msvcBin32Dir~"/cl.exe"))
+            msvcBin32Dir = win64vcDir ~ "/bin/Hostx86/x86"; // VS2017+
+        if(!exists(msvcBin32Dir~"/cl.exe"))
+            fail(`Microsoft compiler cl.exe for 32-bit not found in ` ~ win64vcDir);
     }
 }
 
@@ -406,9 +417,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             msvcEnv =
                 " " ~ quote("VCDIR="  ~ win64vcDir) ~
                 " " ~ quote("SDKDIR=" ~ win64sdkDir) ~
-                " " ~ quote("CC="     ~ msvcBinDir~"/cl") ~
-                " " ~ quote("LD="     ~ msvcBinDir~"/link") ~
-                " " ~ quote("AR="     ~ msvcBinDir~"/lib");
+                " " ~ quote("CC="     ~ msvcBin64Dir~"/cl") ~
+                " " ~ quote("LD="     ~ msvcBin64Dir~"/link") ~
+                " " ~ quote("AR="     ~ msvcBin64Dir~"/lib");
+        }
+        else
+        {
+            msvcEnv =
+                " " ~ quote("AR="     ~ dirName(hostDMD)~"/lib");
         }
     }
 
@@ -455,7 +471,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         {
             std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
                 [Environment]
-                LIB="%@P%\..\..\..\..\..\phobos" "`~customExtrasDir~`\dmd2\windows\lib" "%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib"
+                LIB=%@P%\..\..\..\..\..\phobos;`~customExtrasDir~`\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib
                 DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
                 [Environment32]
                 LINKCMD=%@P%\optlink.exe
@@ -495,6 +511,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     version (Windows) if (bits == Bits.bits64)
     {
+        msvcEnv ~= " "~quote("CC32=" ~ msvcBin32Dir~"/cl");
         info("Building Druntime 32mscoff");
         changeDir(cloneDir~"/druntime");
         run(makecmd~msvcEnv~" druntime32mscoff");
@@ -581,9 +598,12 @@ void createRelease(string branch)
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
         copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
-        copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
-        // copy man pages from linux build
-        copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
+        version (Windows) {} else
+        {
+            copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
+            // copy man pages from linux build
+            copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
+        }
         makeDir(releaseDir~"/dmd2/html/d/zlib");
         copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
         copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");

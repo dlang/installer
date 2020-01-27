@@ -25,9 +25,10 @@ void copyFiles(string[] files, string srcDir, string dstDir, bool delegate(strin
     }
 }
 
-void copyFile(string src, string dst)
+void copyFile(string src, string dst, bool verbose = true)
 {
-    writefln("Copying file '%s' to '%s'.", src, dst);
+    if (verbose)
+        writefln("Copying file '%s' to '%s'.", src, dst);
     mkdirRecurse(dirName(dst));
     copy(src, dst);
     setAttributes(dst, getAttributes(src));
@@ -37,6 +38,32 @@ void copyFileIfExists(string src, string dst)
 {
     if(exists(src))
         copyFile(src, dst);
+}
+
+void copyDirectory(string src, string dst, bool verbose = true)
+{
+    if (verbose)
+        writefln("Copying directory '%s' to '%s'.", src, dst);
+    dst = buildPath(dst, baseName(src));
+    mkdirRecurse(dst);
+    foreach (de; dirEntries(src, SpanMode.shallow))
+        if (de.isFile)
+            copyFile(de, buildPath(dst, baseName(de)), false);
+        else
+            copyDirectory(de, dst, false);
+}
+
+void rmdirDirectoryNoFail(string dir)
+{
+    try
+    {
+        if (dir && dir.exists)
+            rmdirRecurse(dir);
+    }
+    catch(FileException e)
+    {
+        writeln("\033[031m" ~ e.msg ~ "\033[0m");
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -57,7 +84,9 @@ string mkdtemp()
     else
     {
         import std.format, std.random;
-        return buildPath(tempDir(), format("tmp.%06X\0", uniform(0, 0xFFFFFF)));
+        auto p = buildPath(tempDir(), format("tmp.%06X", uniform(0, 0xFFFFFF)));
+        mkdirRecurse(p);
+        return p;
     }
 }
 

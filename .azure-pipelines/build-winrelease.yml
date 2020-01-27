@@ -1,0 +1,48 @@
+steps:
+  - script: |
+      :: Use Windows CRLF line endings for checked-out text files
+      git config --global core.autocrlf true
+      set
+    displayName: Print environment variables
+  - checkout: self
+    fetchDepth: 1
+  - download: current
+    artifact: docs
+  - script: |
+      powershell -command "& { iwr http://downloads.dlang.org/releases/2.x/$(HOST_DMD_VERSION)/dmd.$(HOST_DMD_VERSION).windows.7z -OutFile dmd2.7z }"
+      7z x dmd2.7z
+      powershell -command "& { iwr http://downloads.dlang.org/other/dm857c.zip -OutFile dmc.7z }"
+      7z x dmc.7z
+      powershell -command "& { iwr http://ftp.digitalmars.com/bup.zip -OutFile bup.zip }"
+      7z x bup.zip dm/bin/implib.exe
+      powershell -command "& { iwr https://www.7-zip.org/a/7z1900-extra.7z -OutFile 7za.7z }"
+      7z e 7za.7z 7za.exe -odmd2\windows\bin
+      powershell -command "& { iwr https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip -OutFile inetc.zip }"
+      7z x inetc.zip -y -bb1 "-oc:\Program Files (x86)\NSIS"
+    displayName: Install prerequisites
+  - script: |
+      unzip "%PIPELINE_WORKSPACE%/docs/docs.zip"
+      move work\dlang.org\web create_dmd_release\docs
+    displayName: Unzipping docs
+  - script: |
+      @echo on
+      call windows/build_release.bat
+    displayName: Build release
+  - script: |
+      7z x create_dmd_release\build\dmd.$(BRANCH).windows.zip -odmd.$(BRANCH).windows
+    displayName: Unzipping build
+  - script: |
+      echo on
+      "c:\Program Files (x86)\NSIS\makensis" /version
+      for /f %%v in (dmd.$(BRANCH).windows\dmd2\src\version) do set ver=%%v
+      cd windows
+      "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%ver% /DEmbedD2Dir=..\dmd.$(BRANCH).windows\dmd2 d2-installer.nsi
+      cd ..
+      md artifacts
+      copy windows\*.exe artifacts
+    displayName: Build installer
+  - task: PublishPipelineArtifact@0
+    inputs:
+      artifactName: win_release
+      targetPath: artifacts
+    displayName: Publish artifacts
