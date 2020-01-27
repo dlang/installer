@@ -15,6 +15,7 @@ void __legacy_stdio_definitions()
     printf(NULL);
     scanf(NULL);
     snprintf(NULL, 0, NULL);
+    _snprintf(NULL, 0, NULL);
     sprintf(NULL, NULL);
     sscanf(NULL, NULL);
     swprintf(NULL, 0, NULL);
@@ -26,6 +27,7 @@ void __legacy_stdio_definitions()
     vprintf(NULL, NULL);
     vscanf(NULL, NULL);
     vsnprintf(NULL, 0, NULL, NULL);
+    _vsnprintf(NULL, 0, NULL, NULL);
     vsprintf(NULL, NULL, NULL);
     vsscanf(NULL, NULL, NULL);
     vswprintf(NULL, 0, NULL, NULL);
