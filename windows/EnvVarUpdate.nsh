@@ -35,20 +35,13 @@
 !include "WinMessages.NSH"
 !include "StrFunc.nsh"
  
-; ---- Fix for conflict if StrFunc.nsh is already includes in main file -----------------------
-!macro _IncludeStrFunction StrFuncName
-  !ifndef ${StrFuncName}_INCLUDED
-    ${${StrFuncName}}
-  !endif
-  !ifndef Un${StrFuncName}_INCLUDED
-    ${Un${StrFuncName}}
-  !endif
-  !define un.${StrFuncName} "${Un${StrFuncName}}"
-!macroend
- 
-!insertmacro _IncludeStrFunction StrTok
-!insertmacro _IncludeStrFunction StrStr
-!insertmacro _IncludeStrFunction StrRep
+; ---- assume no conflict (StrFunc.nsh not included in main file) -----------------------
+${StrTok}
+${UnStrTok}
+${StrStr}
+${UnStrStr}
+${StrRep}
+${UnStrRep}
  
 ; ---------------------------------- Macro Definitions ----------------------------------------
 !macro _EnvVarUpdateConstructor ResultVar EnvVarName Action Regloc PathString
@@ -76,9 +69,9 @@
 !define hklm_all_users     'HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"'
 !define hkcu_current_user  'HKCU "Environment"'
  
-!macro EnvVarUpdate UN
+!macro EnvVarUpdate UN UNdot
  
-Function ${UN}EnvVarUpdate
+Function ${UNdot}EnvVarUpdate
  
   Push $0
   Exch 4
@@ -343,8 +336,8 @@ Function ${UN}EnvVarUpdate
 FunctionEnd
  
 !macroend   ; EnvVarUpdate UN
-!insertmacro EnvVarUpdate ""
-!insertmacro EnvVarUpdate "un."
+!insertmacro EnvVarUpdate "" ""
+!insertmacro EnvVarUpdate "Un" "Un."
 ;----------------------------------- EnvVarUpdate end----------------------------------------
  
 !verbose pop
