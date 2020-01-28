@@ -1,6 +1,10 @@
 @setlocal
 
 set ROOT=%CD%
+mkdir "%ROOT%\artifacts"
+
+REM Stop early if the artifact already exists
+powershell -Command "Invoke-WebRequest downloads.dlang.org/other/mingw-libs-%MINGW_VER%.zip -OutFile %ROOT%\artifacts\mingw-libs-%MINGW_VER%.zip" && exit /B 0
 
 set DMD_URL=http://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
 echo DMD_URL=%DMD_URL%
@@ -31,5 +35,4 @@ call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x86 %ROOT%\mingw-w64 dmd2\windows\lib32mscoff\mingw || exit /B 1
 
-mkdir "%ROOT%\artifacts"
 7z a %ROOT%\artifacts\mingw-libs-%MINGW_VER%.zip dmd2\windows
