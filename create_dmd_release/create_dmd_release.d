@@ -363,13 +363,9 @@ void cleanAll(Bits bits, string branch)
     // common make arguments
     auto makecmd = make~makeModel~hostDMDEnv~latest~" -f"~targetMakefile;
 
-    // Windows is 32-bit only currently
-    if (targetMakefile != "win64.mak")
-    {
-        info("Cleaning DMD "~bitsDisplay);
-        changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" clean");
-    }
+    info("Cleaning DMD "~bitsDisplay);
+    changeDir(cloneDir~"/dmd/src");
+    run(makecmd~" clean");
 
     info("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
@@ -457,26 +453,23 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     // common make arguments
     auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~latest~" -f "~targetMakefile;
 
-    if(build64BitTools || bits == Bits.bits32)
-    {
-        info("Building DMD "~bitsDisplay);
-        changeDir(cloneDir~"/dmd/src");
-        version (Windows)
-            run(makecmd~" dmd");
-        else
-            run(makecmd);
+    info("Building DMD "~bitsDisplay);
+    changeDir(cloneDir~"/dmd/src");
+    version (Windows)
+        run(makecmd~" dmd");
+    else
+        run(makecmd);
 
-        // Generate temporary sc.ini
-        version(Windows)
-        {
-            std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
-                [Environment]
-                LIB=%@P%\..\..\..\..\..\phobos;`~customExtrasDir~`\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib
-                DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
-                [Environment32]
-                LINKCMD=%@P%\optlink.exe
-            `).outdent().strip());
-        }
+    // Generate temporary sc.ini
+    version(Windows)
+    {
+        std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
+            [Environment]
+            LIB=%@P%\..\..\..\..\..\phobos;`~customExtrasDir~`\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib
+            DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
+            [Environment32]
+            LINKCMD=%@P%\optlink.exe
+        `).outdent().strip());
     }
 
     // Copy OPTLINK to same directory as the sc.ini we want it to read
@@ -667,16 +660,23 @@ void createRelease(string branch)
     }
 
     // Copy bin64
-    version(Windows) {} else // Win doesn't include 64-bit tools
+    if(do64Bit)
     {
-        if(do64Bit)
+        copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
+        version(Windows)
         {
-            copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
+            // patch sc.ini to point to optlink.exe in bin folder
+            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/ini/windows/bin/sc.ini");
+            sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
+            std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
+        }
+        else // Win doesn't include 64-bit tools
+        {
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
             copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
-            if (codesign)
-                signBinaries(releaseBin32Dir);
         }
+        if (codesign)
+            signBinaries(releaseBin64Dir);
     }
 }
 
