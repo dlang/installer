@@ -12,6 +12,6 @@ steps:
     displayName: Build LLD
   - task: PublishPipelineArtifact@0
     inputs:
-      artifactName: lld-%ARCH%
+      artifactName: lld-$(ARCH)
       targetPath: artifacts
     displayName: Publish artifacts
