@@ -8,11 +8,10 @@ steps:
     fetchDepth: 1
   - script: |
       @echo on
-      call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
       windows/build_lld.bat
     displayName: Build LLD
   - task: PublishPipelineArtifact@0
     inputs:
-      artifactName: lld
+      artifactName: lld-%ARCH%
       targetPath: artifacts
     displayName: Publish artifacts

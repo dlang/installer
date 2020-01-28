@@ -4,12 +4,17 @@
 set ROOT=%CD%
 mkdir "%ROOT%\artifacts"
 
+set ARTIFACT=lld-link-%LLVM_VER%.zip
+if "%ARCH%" == "x64" set ARTIFACT=lld-link-%LLVM_VER%-x64.zip
+set ARTIFACTPATH=%ROOT%\artifacts\%ARTIFACT%
+
 REM Stop early if the artifact already exists
-powershell -Command "Invoke-WebRequest downloads.dlang.org/other/lld-link-%LLVM_VER%.zip -OutFile %ROOT%\artifacts\lld-link-%LLVM_VER%.zip" && exit /B 0
+powershell -Command "Invoke-WebRequest downloads.dlang.org/other/%ARTIFACT% -OutFile %ARTIFACTPATH%" && exit /B 0
 
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
 cd %ROOT%
+@echo on
 
 set LLVM_URL=http://releases.llvm.org/%LLVM_VER%
 powershell -Command "Invoke-WebRequest %LLVM_URL%/lld-%LLVM_VER%.src.tar.xz -OutFile lld.src.tar.xz" || exit /B 1
@@ -33,6 +38,8 @@ if not exist "%lld_build_dir%\nul" md "%lld_build_dir%"
 cd "%lld_build_dir%"
 
 set CMAKE_OPT=-G "Visual Studio 15"
+if "%ARCH%" == "x64" set CMAKE_OPT=-G "Visual Studio 15 Win64"
+
 set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_BUILD_TYPE=Release
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_TARGETS_TO_BUILD=X86
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_USE_CRT_DEBUG=MTd
@@ -40,8 +47,11 @@ set CMAKE_OPT=%CMAKE_OPT% -DLLVM_USE_CRT_RELEASE=MT
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_USE_CRT_MINSIZEREL=MT
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_INCLUDE_DIRS="c:/projects/llvm/include"
 
+set VSARCH=%ARCH%
+if "%VSARCH%" == "x86" set VSARCH=Win32
+
 cmake %CMAKE_OPT% ..\llvm || exit /B 1
-devenv LLVM.sln /project lld /Build "MinSizeRel|Win32" || exit /B 1
+devenv LLVM.sln /project lld /Build "MinSizeRel|%VSARCH%" || exit /B 1
 
 cd MinSizeRel\bin
-7z a "%ROOT%\artifacts\lld-link-%LLVM_VER%.zip" lld-link.exe
+7z a "%ARTIFACTPATH%" lld-link.exe
