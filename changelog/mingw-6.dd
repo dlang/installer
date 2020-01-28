@@ -1,0 +1,3 @@
+The bundled Windows libraries have been changed from MinGW to MinGW-w64.
+
+The bundled Windows libraries and definitions have been changed from MinGW 5.0.2 to MinGW 7.0.0.
