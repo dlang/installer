@@ -2,6 +2,11 @@
 @echo on
 
 set ROOT=%CD%
+mkdir "%ROOT%\artifacts"
+
+REM Stop early if the artifact already exists
+powershell -Command "Invoke-WebRequest downloads.dlang.org/other/lld-link-%LLVM_VER%.zip -OutFile %ROOT%\artifacts\lld-link-%LLVM_VER%.zip" && exit /B 0
+
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
 cd %ROOT%
@@ -39,5 +44,4 @@ cmake %CMAKE_OPT% ..\llvm || exit /B 1
 devenv LLVM.sln /project lld /Build "MinSizeRel|Win32" || exit /B 1
 
 cd MinSizeRel\bin
-mkdir "%ROOT%\artifacts"
 7z a "%ROOT%\artifacts\lld-link-%LLVM_VER%.zip" lld-link.exe
