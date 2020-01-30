@@ -39,6 +39,20 @@ jobs:
     steps:
       - template: .azure-pipelines/build-mingw-libs.yml
 
+  - job: Build_curl
+    timeoutInMinutes: 120
+    condition: true
+    pool:
+      vmImage: 'vs2017-win2016'
+    variables:
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      # NB: update windows/build_curl.sha256sums as well
+      CURL_VER: 7.68.0
+      ZLIB_VER: 1.2.11
+      PEXPORTS_VER: 0.47
+    steps:
+      - template: .azure-pipelines/build-curl.yml
+
   - job: Build_Docs
     condition: true
     timeoutInMinutes: 120
