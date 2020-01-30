@@ -101,7 +101,7 @@ struct Box
 
         version(NoVagrant) {} else {
             std.file.write(buildPath(_tmpdir, "Vagrantfile"), vagrantFile);
-    
+
             // bring up the virtual box
             if (platform.os != OS.osx)
                 run("cd "~_tmpdir~"; vagrant up");
@@ -114,7 +114,7 @@ struct Box
                 enforce(i < 3, "Repeatedly failed to boot OSX box.");
             }
             _isUp = true;
-    
+
             // save the ssh config file
             run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
         }
@@ -542,10 +542,10 @@ int main(string[] args)
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
-    enum libCurl = "libcurl-7.65.3-2-WinSSL-zlib-x86-x64.zip";
+    enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
     enum mingwlibs = "mingw-libs-7.0.0.zip";
-    enum lld = "lld-link-8.0.0.zip";
+    enum lld = "lld-link-9.0.0.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -616,7 +616,7 @@ int main(string[] args)
     version (NoVagrant) version(linux) {} else
         if (!skipDocs)
             copyDirectory("docs", workDir);
-            
+
     foreach (p; platforms)
     {
         with (Box(p))
