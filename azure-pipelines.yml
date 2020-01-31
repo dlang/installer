@@ -1,4 +1,7 @@
 # Learn more: https://aka.ms/yaml
+variables:
+  BRANCH: $[ coalesce(variables['System.PullRequest.TargetBranch'], variables['Build.SourceBranchName'], 'master') ]
+
 jobs:
   - job: Build_LLD
     timeoutInMinutes: 120
@@ -58,8 +61,6 @@ jobs:
     timeoutInMinutes: 120
     pool:
       vmImage: 'ubuntu-16.04'
-    variables:
-      BRANCH: stable
     steps:
       - template: .azure-pipelines/build-docs.yml
 
@@ -70,7 +71,6 @@ jobs:
       vmImage: 'vs2017-win2016'
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
-      BRANCH: stable
       HOST_DMD_VERSION: 2.088.0
     steps:
       - template: .azure-pipelines/build-winrelease.yml
