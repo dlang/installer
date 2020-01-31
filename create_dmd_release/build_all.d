@@ -275,9 +275,7 @@ void prepareExtraBins(string workDir)
 {
     auto extraBins = [
         windows_both : [
-            "windbg.hlp", "lib.exe", "optlink.exe", "make.exe",
-            "replace.exe", "shell.exe", "windbg.exe", "dm.dll", "eecxxx86.dll",
-            "emx86.dll", "mspdb41.dll", "shcv.dll", "tlloc.dll"
+            "lib.exe", "optlink.exe", "make.exe", "replace.exe", "shell.exe"
         ].addPrefix("bin/").array,
         linux_both : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
         freebsd_32 : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
