@@ -48,6 +48,8 @@ version(Windows)
 else
     enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
+/// the LDC version to use to build dmd (on Windows), leave empty to use dmd
+enum ldcVer = "1.20.0";
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
@@ -312,7 +314,10 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
             cmd(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
 
-            dmd = `old-dmd\dmd2\windows\bin\dmd.exe`;
+            if (ldcVer.empty)
+                dmd = `old-dmd\dmd2\windows\bin\dmd.exe`;
+            else
+                dmd = `ldc\ldc2-`~ldcVer~`-windows-multilib\bin\ldmd2.exe`;
             rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe --compiler=`~dmd;
             break;
         case OS.osx:
@@ -546,6 +551,7 @@ int main(string[] args)
     enum mingwlibs = mingwtag ~ ".zip";
     enum lld = "lld-link-9.0.0-seh.zip";
     enum lld64 = "lld-link-9.0.0-seh-x64.zip";
+    enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -561,6 +567,8 @@ int main(string[] args)
     fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature);
     fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature);
     fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature);
+    if (!ldcVer.empty)
+        fetchFile("https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~ldc, cacheDir~"/"~ldc, false);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
@@ -611,6 +619,8 @@ int main(string[] args)
     // add lld linker
     extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
     extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
+    // add ldc compiler
+    extract(cacheDir~"/"~ldc, workDir~"/windows/ldc/");
 
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
@@ -623,7 +633,9 @@ int main(string[] args)
     {
         with (Box(p))
         {
-            auto toCopy = [platform~"/old-dmd", "clones", osS~"/extraBins"].addPrefix(workDir~"/").join(" ");
+            auto src = [platform~"/old-dmd", "clones", osS~"/extraBins"];
+            if (os == OS.windows) src ~= platform~"/ldc";
+            auto toCopy = src.addPrefix(workDir~"/").join(" ");
             scp(toCopy, "default:");
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies

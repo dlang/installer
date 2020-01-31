@@ -14,6 +14,10 @@ set VCDIR=%VCToolsInstallDir%
 set SDKDIR=.
 set MSVC_AR=%VCToolsInstallDir%\bin\Hostx64\x64\lib.exe
 
+rem enable autodetection in LDC, so it doesn't mix x86/x64 libs
+set LDC_VSDIR=%VSINSTALLDIR%
+set VSINSTALLDIR=
+
 cd create_dmd_release
 
 "%HOST_DC%" -m32 -gf build_all.d common.d -version=NoVagrant || exit /B 1

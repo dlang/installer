@@ -419,8 +419,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         }
         else
         {
-            msvcEnv =
-                " " ~ quote("AR="     ~ dirName(hostDMD)~"/lib");
+            if (!hostDMD.endsWith("ldmd2") && !hostDMD.endsWith("ldmd2.exe"))
+                msvcEnv = " " ~ quote("AR="~dirName(hostDMD)~"/lib");
         }
     }
 
