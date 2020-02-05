@@ -23,7 +23,6 @@ extern _PVFV __xp_z[];
 extern _PVFV __xt_a[];
 extern _PVFV __xt_z[];
 
-extern int main (int, char **, char **);
 extern void _setargv (void);
 extern void term_atexit();
 
@@ -78,7 +77,14 @@ __pragma(comment(linker, "/alternatename:_DllMain@12=___DefaultDllMain@12"));
 #else // _APPTYPE != __UNKNOWN_APP
 
 extern int    __argc;
+
+#ifndef _UNICODE
 extern char **__argv;
+extern int main(int, char **, char **);
+#else
+extern wchar_t **__wargv;
+extern int wmain(int, wchar_t **, wchar_t **);
+#endif
 
 #if MSVCRT_VERSION >= 140 // UCRT
 
@@ -95,10 +101,17 @@ enum _crt_argv_mode
     _crt_argv_expanded_arguments,
 };
 
+#ifndef _UNICODE
 extern int _initialize_narrow_environment();
 extern char **_get_initial_narrow_environment();
 extern int _configure_narrow_argv(int);
 extern char *_get_narrow_winmain_command_line();
+#else // _UNICODE
+extern int _initialize_wide_environment();
+extern wchar_t **_get_initial_wide_environment();
+extern int _configure_wide_argv(int);
+extern wchar_t *_get_wide_winmain_command_line();
+#endif
 
 #else // MSVCRT_VERSION < 140
 
@@ -107,17 +120,29 @@ extern char *_get_narrow_winmain_command_line();
  * it as a dummy, with a declared size of zero in its first and only field).
  */
 typedef struct _startupinfo { int mode; } _startupinfo;
-extern void __getmainargs( int *argc, char ***argv, char ***penv, int glob, _startupinfo *info );
-
+#ifndef _UNICODE
+extern int __getmainargs(int *argc, char ***argv, char ***penv, int glob, _startupinfo *info);
+#else
+extern int __wgetmainargs(int *argc, wchar_t ***argv, wchar_t ***penv, int glob, _startupinfo *info);
 #endif
+
+#endif // MSVCRT_VERSION < 140
 
 /* The function mainCRTStartup() is the entry point for all
  * console/desktop programs.
  */
 #if _APPTYPE == __CONSOLE_APP
+  #ifndef _UNICODE
 void mainCRTStartup(void)
-#else
+  #else
+void wmainCRTStartup(void)
+  #endif
+#else // desktop app
+  #ifndef _UNICODE
 void WinMainCRTStartup(void)
+  #else
+void wWinMainCRTStartup(void)
+  #endif
 #endif
 {
     int nRet;
@@ -125,37 +150,61 @@ void WinMainCRTStartup(void)
     __ref_oldnames = 0; // drag in alternate definitions
 
 #if MSVCRT_VERSION >= 140 // UCRT
+  #ifndef _UNICODE
     _configure_narrow_argv(_crt_argv_unexpanded_arguments);
     _initialize_narrow_environment();
     char **envp = _get_initial_narrow_environment();
-#else
+  #else
+    _configure_wide_argv(_crt_argv_unexpanded_arguments);
+    _initialize_wide_environment();
+    wchar_t **wenvp = _get_initial_wide_environment();
+  #endif
+#else // MSVCRT_VERSION < 140
     /* The MSVCRT.DLL start-up hook requires this invocation
      * protocol...
      */
-    char **envp = NULL;
     _startupinfo start_info = { 0 };
+  #ifndef _UNICODE
+    char **envp = NULL;
     __getmainargs(&__argc, &__argv, &envp, 0, &start_info);
-#endif
+  #else
+    wchar_t **wenvp = NULL;
+    __wgetmainargs(&__argc, &__wargv, &wenvp, 0, &start_info);
+  #endif
+#endif // MSVCRT_VERSION < 140
 
     _initterm_e(__xi_a, __xi_z);
     _initterm(__xc_a, __xc_z);
 
 #if _APPTYPE == __CONSOLE_APP
+  #ifndef _UNICODE
     nRet = main(__argc, __argv, envp);
-#else
+  #else
+    nRet = wmain(__argc, __wargv, wenvp);
+  #endif
+#else // desktop app
     {
         STARTUPINFOA startupInfo;
         GetStartupInfoA(&startupInfo);
         int showWindowMode = startupInfo.dwFlags & STARTF_USESHOWWINDOW
                            ? startupInfo.wShowWindow : SW_SHOWDEFAULT;
-#if MSVCRT_VERSION >= 140 // UCRT
+  #ifndef _UNICODE
+    #if MSVCRT_VERSION >= 140 // UCRT
         LPSTR lpszCommandLine = _get_narrow_winmain_command_line();
-#else
+    #else
         LPSTR lpszCommandLine = GetCommandLineA();
-#endif
+    #endif
         nRet = WinMain((HINSTANCE)&__ImageBase, NULL, lpszCommandLine, showWindowMode);
+  #else // _UNICODE
+    #if MSVCRT_VERSION >= 140 // UCRT
+        LPWSTR lpszCommandLine = _get_wide_winmain_command_line();
+    #else
+        LPWSTR lpszCommandLine = GetCommandLineW();
+    #endif
+        nRet = wWinMain((HINSTANCE)&__ImageBase, NULL, lpszCommandLine, showWindowMode);
+  #endif
     }
-#endif
+#endif // desktop app
 
     term_atexit();
     _initterm(__xp_a, __xp_z);
