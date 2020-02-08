@@ -135,7 +135,7 @@ InstallDirRegKey HKCU "Software\${DName}" "InstallationFolder"
 CRCCheck force
 
 SetCompressor /SOLID lzma
-
+SetCompressorDictSize 112
 
 ;------------------------------------------------------------
 ; Macros definition
