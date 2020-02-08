@@ -231,8 +231,12 @@ Page custom VCInstallPage VCInstallPageValidate
 
 
 ; Reserve files needed by the installation
+; (move files needed by the installer itself to the beginning of the solid archive
+;  to avoid pauses when switching pages)
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
+ReserveFile /Plugin INetC.dll
+ReserveFile "vcinstall.ini"
 
 ;--------------------------------------------------------
 ; Sections
@@ -321,7 +325,6 @@ Function VCInstallPage
   Abort
   ask_vs:
  
-  ReserveFile "vcinstall.ini"
   !insertmacro MUI_HEADER_TEXT "Choose Visual Studio Installation" "Choose the Visual C runtime to link against"
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "vcinstall.ini"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "vcinstall.ini"
