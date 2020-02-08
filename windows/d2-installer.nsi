@@ -52,6 +52,8 @@
 !define VS2013Filename "vs_community2013.exe"
 !define VS2017Filename "vs_community2017.exe"
 !define VS2017BTFilename "vs_BuildTools2017.exe"
+!define VS2019Filename "vs_community2019.exe"
+!define VS2019BTFilename "vs_BuildTools2019.exe"
 !define VCRedistx86Filename "vcredist_x86.exe"
 !define VCRedistx64Filename "vcredist_x64.exe"
 
@@ -68,6 +70,8 @@
 !define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
 !define VS2017Url "https://download.visualstudio.microsoft.com/download/pr/100404311/045b56eb413191d03850ecc425172a7d/vs_Community.exe"
 !define VS2017BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/100404314/e64d79b40219aea618ce2fe10ebd5f0d/vs_BuildTools.exe"
+!define VS2019Url "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/8cc1a4ebd138b5d0c2b97501a198f5eacdc434daa8a5c6564c8e23fdaaad3619/vs_Community.exe"
+!define VS2019BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/cfffd18469d936d6cb9dff55fd4ae538035e7f247f1756c5a31f3e03751d7ee7/vs_BuildTools.exe"
 
 ; see https://stackoverflow.com/questions/12206314/detect-if-visual-c-redistributable-for-visual-studio-2012-is-installed/14878248
 ; selecting VC2010
@@ -333,9 +337,9 @@ Function VCInstallPageValidate
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 2" "State"
   StrCmp $0 1 install_vs2013
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 3" "State"
-  StrCmp $0 1 install_vs2017
+  StrCmp $0 1 install_vs2019
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 4" "State"
-  StrCmp $0 1 install_bt2017
+  StrCmp $0 1 install_bt2019
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 5" "State"
   StrCmp $0 1 install_vc2010
   goto done_vc
@@ -344,12 +348,12 @@ Function VCInstallPageValidate
     !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
     goto done_vc
 
-  install_vs2017:
-    !insertmacro DownloadAndRun ${VS2017Filename} ${VS2017Url} ""
+  install_vs2019:
+    !insertmacro DownloadAndRun ${VS2019Filename} ${VS2019Url} ""
     goto done_vc
 
-  install_bt2017:
-    !insertmacro DownloadAndRun ${VS2017BTFilename} ${VS2017BuildToolsUrl} ""
+  install_bt2019:
+    !insertmacro DownloadAndRun ${VS2019BTFilename} ${VS2019BuildToolsUrl} ""
     goto done_vc
 
   install_vc2010:
