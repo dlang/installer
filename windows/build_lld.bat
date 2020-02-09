@@ -4,8 +4,8 @@
 set ROOT=%CD%
 mkdir "%ROOT%\artifacts"
 
-set ARTIFACT=lld-link-%LLVM_VER%.zip
-if "%ARCH%" == "x64" set ARTIFACT=lld-link-%LLVM_VER%-x64.zip
+set ARTIFACT=lld-link-%LLVM_VER%-seh.zip
+if "%ARCH%" == "x64" set ARTIFACT=lld-link-%LLVM_VER%-seh-x64.zip
 set ARTIFACTPATH=%ROOT%\artifacts\%ARTIFACT%
 
 REM Stop early if the artifact already exists
@@ -32,6 +32,12 @@ sha256sum -c "%ROOT%\windows\build_lld.sha256sums" || exit /B 1
 
 move "llvm-%LLVM_VER%.src" llvm
 move "lld-%LLVM_VER%.src" llvm\tools\lld
+
+rem patch lld to not emit "No structured exception handler"
+sed -e s/IMAGE_DLL_CHARACTERISTICS_NO_SEH/0/ llvm\tools\lld\COFF\Writer.cpp >Writer.tmp
+move /Y Writer.tmp llvm\tools\lld\COFF\Writer.cpp
+
+set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_CXX_FLAGS="/DIMAGE_DLL_CHARACTERISTICS_NO_SEH=0"
 
 set lld_build_dir=build-lld
 if not exist "%lld_build_dir%\nul" md "%lld_build_dir%"
