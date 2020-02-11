@@ -546,10 +546,22 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         // too easily with the latest compiler, e.g. for nightlies
         info("Building Dub "~bitsDisplay);
         changeDir(cloneDir~"/dub");
-        version (Windows)
-            run("SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+
+        if (exists("build.d"))
+        {
+            // v1.20+
+            version (Windows)
+                run("SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+            else
+                run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+        }
         else
-            run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
+        {
+            version (Windows)
+                run("SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+            else
+                run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
+        }
         rename(cloneDir~"/dub/bin/dub"~exe, cloneDir~"/dub/bin/dub"~bitsStr~exe);
     }
 }
