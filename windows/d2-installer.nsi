@@ -459,7 +459,7 @@ Function .onInit
     Abort
   ; Remove in background the remaining uninstaller program itself
   Sleep 1000
-  Exec '$R5 /S'
+  ExecWait '$R5 /S'
   ; MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled" /SD IDOK
 
   done_uninst_prev:
