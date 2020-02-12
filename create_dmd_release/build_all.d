@@ -543,7 +543,7 @@ int main(string[] args)
     enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
     enum mingwlibs = "mingw-libs-7.0.0.zip";
-    enum lld = "lld-link-9.0.0.zip";
+    enum lld = "lld-link-9.0.0-seh.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
