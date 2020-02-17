@@ -379,6 +379,8 @@ void buildMsvcrt(string outDir)
         // compile some additional objects
         foreach (i; 0 .. 3)
             addObj(format!"msvcrt_stub%d.obj"(i), format!"/D_APPTYPE=%d msvcrt_stub.c"(i));
+        foreach (i; 1 .. 3) // not needed for DLLs
+            addObj(format!"msvcrt_stub_wide%d.obj"(i), format!"/D_APPTYPE=%d /D_UNICODE msvcrt_stub.c"(i));
         addObj("msvcrt_data.obj", "msvcrt_data.c");
         addObj("msvcrt_atexit.obj", "msvcrt_atexit.c");
         if (!x64)
