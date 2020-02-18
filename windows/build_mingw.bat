@@ -3,7 +3,7 @@
 set ROOT=%CD%
 mkdir "%ROOT%\artifacts"
 
-set TAG=mingw-libs-%MINGW_VER%-2
+set TAG=mingw-libs-%MINGW_VER%-3
 set ARTIFACT=%TAG%.zip
 set ARTIFACTPATH=%ROOT%\artifacts\%ARTIFACT%
 set GITHUB_RELEASE=https://github.com/dlang/installer/releases/download/%TAG%/%ARTIFACT%
@@ -39,5 +39,10 @@ dmd -run buildsdk.d x64 %ROOT%\mingw-w64 dmd2\windows\lib64\mingw || exit /B 1
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x86 %ROOT%\mingw-w64 dmd2\windows\lib32mscoff\mingw || exit /B 1
+
+md dmd2\windows\bin
+copy "%WINDIR%\SysWow64\msvcr120.dll" dmd2\windows\bin
+md dmd2\windows\bin64
+copy "%WINDIR%\System32\msvcr120.dll" dmd2\windows\bin64
 
 7z a "%ARTIFACTPATH%" dmd2\windows
