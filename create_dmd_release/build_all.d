@@ -542,7 +542,8 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
-    enum mingwlibs = "mingw-libs-7.0.0.zip";
+    enum mingwtag = "mingw-libs-7.0.0-2";
+    enum mingwlibs = mingwtag ~ ".zip";
     enum lld = "lld-link-9.0.0-seh.zip";
 
     auto oldCompilers = platforms
@@ -556,8 +557,8 @@ int main(string[] args)
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
     fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature);
     fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature);
+    fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))
