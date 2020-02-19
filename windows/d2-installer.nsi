@@ -392,6 +392,26 @@ FunctionEnd
 Function DetectVC
     ClearErrors
 
+    Call DetectVS2019_InstallationFolder
+    StrCpy $1 "VC2019"
+    StrCmp $0 "" not_vc2019 vs2019
+    vs2019:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2019
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2019:
+
+    Call DetectVS2019BuildTools_InstallationFolder
+    StrCpy $1 "VC2019BT"
+    StrCmp $0 "" not_vc2019BT vs2019BT
+    vs2019BT:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2019BT
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2019BT:
+
     ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\SxS\VS7" "15.0"
     StrCpy $1 "VC2017"
     IfErrors not_vc2017
@@ -400,6 +420,17 @@ Function DetectVC
         StrCpy $0 "$0\VC\Tools\MSVC\$2"
         Goto done_vs
     not_vc2017:
+
+    Call DetectVS2017BuildTools_InstallationFolder
+    StrCpy $1 "VC2017BT"
+    StrCmp $0 "" not_vc2017BT vs2017BT
+    vs2017BT:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2017BT
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2017BT:
+
     ClearErrors
     ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\14.0\Setup\VC" "ProductDir"
     StrCpy $1 "VC2015"
@@ -557,5 +588,89 @@ Function un.onInit
   ${IfNot} "$InstanceCheck" == "False"
     !insertmacro OneInstanceOnly
   ${EndIf}
+FunctionEnd
+
+;--------------------------------------------------------
+; VS 2017/2019 detection functions
+;
+; returns path to VS (not VC) in $0
+;--------------------------------------------------------
+Function DetectVS2017BuildTools_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCmp $2 "Visual Studio Build Tools 2017" 0 NotVS2017BT
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                ; MessageBox MB_YESNO|MB_ICONQUESTION "$2$\n$\nMore?" IDYES 0 IDNO done
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2017BT:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
+FunctionEnd
+
+Function DetectVS2019_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCpy $3 $2 14
+        StrCmp $3 "Visual Studio " 0 NotVS2019
+        StrCpy $3 $2 12 -12
+        StrCmp $3 "2019 Preview" IsVS2019
+        StrCpy $3 $2 4 -4
+        StrCmp $3 "2019" IsVS2019 NotVS2019
+        IsVS2019:
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2019:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
+FunctionEnd
+
+Function DetectVS2019BuildTools_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCmp $2 "Visual Studio Build Tools 2019" 0 NotVS2019BT
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2019BT:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
 FunctionEnd
 
