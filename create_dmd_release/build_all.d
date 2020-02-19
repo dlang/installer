@@ -545,6 +545,7 @@ int main(string[] args)
     enum mingwtag = "mingw-libs-7.0.0-2";
     enum mingwlibs = mingwtag ~ ".zip";
     enum lld = "lld-link-9.0.0-seh.zip";
+    enum lld64 = "lld-link-9.0.0-seh-x64.zip";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -558,6 +559,7 @@ int main(string[] args)
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
     fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
     fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature);
+    fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature);
     fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature);
 
     // Unpack previous dmd release
@@ -608,6 +610,7 @@ int main(string[] args)
     extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
     // add lld linker
     extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
+    extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
 
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
