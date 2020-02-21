@@ -26,6 +26,8 @@ steps:
     displayName: Unzipping docs
   - script: |
       @echo on
+      powershell -command "& { iwr https://dlang.org/d-keyring.gpg -OutFile d-keyring.gpg }"
+      gpg --import d-keyring.gpg
       call windows/build_release.bat
     displayName: Build release
   - script: |

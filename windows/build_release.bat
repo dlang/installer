@@ -21,4 +21,4 @@ set VSINSTALLDIR=
 cd create_dmd_release
 
 "%HOST_DC%" -m32 -gf build_all.d common.d -version=NoVagrant || exit /B 1
-build_all v%HOST_DMD_VERSION% %BRANCH% --skip-verify || exit /B 1
+build_all v%HOST_DMD_VERSION% %BRANCH% || exit /B 1

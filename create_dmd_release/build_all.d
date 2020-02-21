@@ -548,10 +548,10 @@ int main(string[] args)
     enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
     enum mingwtag = "mingw-libs-7.0.0-2";
-    enum mingwlibs = mingwtag ~ ".zip";
-    enum lld = "lld-link-9.0.0-seh.zip";
-    enum lld64 = "lld-link-9.0.0-seh-x64.zip";
-    enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z";
+    enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"ae9f991a64b17b2a6c9e5bd9f91f88a8ac3065194b0981be03be4280e2b6cc5a";
+    enum lld = "lld-link-9.0.0-seh.zip";              enum lld_sha   = hexString!"ffde2eb0e0410e6985bbbb44c200b21a2b2dd34d3f8c3411f5ca5beb7f67ba5b";
+    enum lld64 = "lld-link-9.0.0-seh-x64.zip";        enum lld64_sha = hexString!"c24f9b8daf7ec49c7bfb96d7c0de4e3ced76f9777114f7601bdd4185a2cc7338";
+    enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z"; enum ldc_sha   = hexString!"7e4300fd6064305b2e7c2ff312283cefddbbe63eb1c36c551495f3df39f62000";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -564,11 +564,11 @@ int main(string[] args)
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
     fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature);
-    fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature);
+    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
+    fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
+    fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
     if (!ldcVer.empty)
-        fetchFile("https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~ldc, cacheDir~"/"~ldc, false);
+        fetchFile("https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~ldc, cacheDir~"/"~ldc, verifySignature, ldc_sha);
 
     // Unpack previous dmd release
     foreach (platform, oldCompiler; platforms.zip(oldCompilers))

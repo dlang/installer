@@ -98,7 +98,7 @@ template fetchFile()
 {
     pragma(lib, "curl");
 
-    void fetchFile(string url, string path, bool verify = false)
+    void fetchFile(string url, string path, bool verify = false, string sha = null)
     {
         import std.array, std.datetime, std.exception, std.net.curl,
             std.path, std.stdio, std.string;
@@ -163,11 +163,24 @@ template fetchFile()
 
         if (verify)
         {
-            path ~= ".sig";
-            if (!path.exists)
-                download(url~".sig", path);
-            auto gpg = execute(["gpg", "--verify", path]);
-            enforce(!gpg.status, gpg.output);
+            if (sha)
+            {
+                import std.digest.sha, std.conv;
+
+                auto data = cast(ubyte[])std.file.read(path);
+                SHA256 sha256;
+                sha256.start();
+                sha256.put(data);
+                enforce(sha256.finish() == cast(ubyte[])sha);
+            }
+            else
+            {
+                path ~= ".sig";
+                if (!path.exists)
+                    download(url~".sig", path);
+                auto gpg = execute(["gpg", "--verify", path]);
+                enforce(!gpg.status, gpg.output);
+            }
         }
     }
 }
