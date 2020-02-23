@@ -463,7 +463,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     version (Windows) if (bits == Bits.bits64)
     {
-        msvcEnv ~= " "~quote("CC32=" ~ msvcBin32Dir~"/cl");
         info("Building Druntime 32mscoff");
         changeDir(cloneDir~"/druntime");
         run(msvcVarsX86~makecmd~msvcEnv~" druntime32mscoff");
