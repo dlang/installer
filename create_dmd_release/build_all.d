@@ -318,7 +318,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
                 dmd = `old-dmd\dmd2\windows\bin\dmd.exe`;
             else
                 dmd = `ldc\ldc2-`~ldcVer~`-windows-multilib\bin\ldmd2.exe`;
-            rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe --compiler=`~dmd;
+            rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`;
             break;
         case OS.osx:
             dmd = "old-dmd/dmd2/osx/bin/dmd";
@@ -326,7 +326,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             break;
         }
 
-        auto build = rdmd~" create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
+        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)

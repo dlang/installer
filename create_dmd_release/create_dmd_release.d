@@ -367,20 +367,26 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto msvcEnv = "";
     version(Windows)
     {
+        bool hostIsLDC = hostDMD.endsWith("ldmd2") || hostDMD.endsWith("ldmd2.exe");
         if(bits == Bits.bits64)
         {
             // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
             msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
-            // Setup MSVC environment for x64 native builds
-            auto msvcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
-            msvcVarsX64 = msvcVars~" x64 && ";
-            msvcVarsX86 = msvcVars~" x86 && ";
         }
         else
         {
-            if (!hostDMD.endsWith("ldmd2") && !hostDMD.endsWith("ldmd2.exe"))
-                msvcEnv = " " ~ quote("AR="~dirName(hostDMD)~"/lib");
+            // use lib.exe from dmc distribution
+            auto dmcPath = environment["PATH"].split(';').find!((p, f) => buildPath(p, f).exists)("dmc.exe").front;
+            msvcEnv = " " ~ quote("AR="~dmcPath~"/lib");
         }
+        if(bits == Bits.bits64 || hostIsLDC)
+        {
+            // Setup MSVC environment for x64/x86 native builds
+            auto vcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
+            msvcVarsX64 = vcVars~" x64 && ";
+            msvcVarsX86 = vcVars~" x86 && ";
+        }
+        auto msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
     }
 
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
@@ -415,7 +421,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     info("Building DMD "~bitsDisplay);
     changeDir(cloneDir~"/dmd/src");
     version (Windows)
-        run(makecmd~" dmd");
+        run(msvcVars~makecmd~" dmd");
     else
         run(makecmd);
 
@@ -509,14 +515,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         {
             // v1.20+
             version (Windows)
-                run("SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
             else
                 run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
         }
         else
         {
             version (Windows)
-                run("SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+                run(msvcVars~"SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
             else
                 run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
         }
