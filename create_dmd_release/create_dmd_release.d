@@ -9,12 +9,10 @@ Prerequisites to Run:
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
 - Windows: Working DMC and MSVC toolchains. The default make must be DM make.
-  Also, these environment variables must be set:
-    VCDIR:  Visual C directory
-    SDKDIR: Windows SDK directory
+  Also, this environment variable must be set:
+    VSINSTALLDIR:  Visual C directory
   Examples:
-    set VCDIR=C:\Program Files (x86)\Microsoft Visual Studio 8\VC\
-    set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
+    set VSINSTALLDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
 - Windows: A version of OPTLINK with the /LA[RGEADDRESSAWARE] flag:
     <https://github.com/DigitalMars/optlink/commit/475bc5c1fa28eaf899ba4ac1dcfe2ab415db16c6>
 - Windows: Microsoft's HTML Help Workshop on the PATH.
@@ -164,12 +162,6 @@ bool do32Bit;
 bool do64Bit;
 bool codesign;
 
-version(Windows)
-{
-    string msvcBin32Dir;
-    string msvcBin64Dir;
-}
-
 // These are absolute and do NOT contain a trailing slash:
 string defaultWorkDir;
 string cloneDir;
@@ -184,8 +176,6 @@ string allExtrasDir;
 string osExtrasDir;
 string customExtrasDir;
 string hostDMD;
-string win64vcDir;
-string win64sdkDir;
 
 int main(string[] args)
 {
@@ -304,39 +294,6 @@ void init(string branch)
     releaseLib64Dir = osDir ~ "/lib" ~ suffix64;
     allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
     osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
-
-    // configure MSVC tools needed for 64-bit
-    version (Windows) if (do64Bit)
-    {
-        if(environment.get("VCDIR", "") == "" || environment.get("SDKDIR", "") == "")
-        {
-            fail(`
-                    Environment variables VCDIR and SDKDIR must both be set. For example:
-                    set VCDIR=C:\Program Files (x86)\Microsoft Visual Studio 8\VC\
-                    set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
-                `.outdent().strip());
-        }
-
-        win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
-        win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
-
-        trace("VCDIR:  " ~ displayPath(win64vcDir));
-        trace("SDKDIR: " ~ displayPath(win64sdkDir));
-
-        msvcBin64Dir = win64vcDir ~ "/bin/x86_amd64";
-        if(!exists(msvcBin64Dir~"/cl.exe"))
-            msvcBin64Dir = win64vcDir ~ "/bin/amd64";
-        if(!exists(msvcBin64Dir~"/cl.exe"))
-            msvcBin64Dir = win64vcDir ~ "/bin/Hostx64/x64"; // VS2017+
-        if(!exists(msvcBin64Dir~"/cl.exe"))
-            fail(`Microsoft compiler cl.exe for 64-bit not found in ` ~ win64vcDir);
-
-        msvcBin32Dir = win64vcDir ~ "/bin";
-        if(!exists(msvcBin32Dir~"/cl.exe"))
-            msvcBin32Dir = win64vcDir ~ "/bin/Hostx86/x86"; // VS2017+
-        if(!exists(msvcBin32Dir~"/cl.exe"))
-            fail(`Microsoft compiler cl.exe for 32-bit not found in ` ~ win64vcDir);
-    }
 }
 
 void cleanAll(string branch)
@@ -405,23 +362,31 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
 
+    auto msvcVarsX64 = "";
+    auto msvcVarsX86 = "";
     auto msvcEnv = "";
     version(Windows)
     {
+        bool hostIsLDC = hostDMD.endsWith("ldmd2") || hostDMD.endsWith("ldmd2.exe");
         if(bits == Bits.bits64)
         {
-            msvcEnv =
-                " " ~ quote("VCDIR="  ~ win64vcDir) ~
-                " " ~ quote("SDKDIR=" ~ win64sdkDir) ~
-                " " ~ quote("CC="     ~ msvcBin64Dir~"/cl") ~
-                " " ~ quote("LD="     ~ msvcBin64Dir~"/link") ~
-                " " ~ quote("AR="     ~ msvcBin64Dir~"/lib");
+            // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
+            msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
         }
         else
         {
-            if (!hostDMD.endsWith("ldmd2") && !hostDMD.endsWith("ldmd2.exe"))
-                msvcEnv = " " ~ quote("AR="~dirName(hostDMD)~"/lib");
+            // use lib.exe from dmc distribution
+            auto dmcPath = environment["PATH"].split(';').find!((p, f) => buildPath(p, f).exists)("dmc.exe").front;
+            msvcEnv = " " ~ quote("AR="~dmcPath~"/lib");
         }
+        if(bits == Bits.bits64 || hostIsLDC)
+        {
+            // Setup MSVC environment for x64/x86 native builds
+            auto vcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
+            msvcVarsX64 = vcVars~" x64 && ";
+            msvcVarsX86 = vcVars~" x86 && ";
+        }
+        auto msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
     }
 
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
@@ -456,7 +421,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     info("Building DMD "~bitsDisplay);
     changeDir(cloneDir~"/dmd/src");
     version (Windows)
-        run(makecmd~" dmd");
+        run(msvcVars~makecmd~" dmd");
     else
         run(makecmd);
 
@@ -486,13 +451,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~pic~msvcEnv~makeTargetDruntime);
+    run(msvcVarsX64~makecmd~pic~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~pic~msvcEnv);
+    run(msvcVarsX64~makecmd~pic~msvcEnv);
 
     version(OSX) if(bits == Bits.bits64)
     {
@@ -504,16 +469,15 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     version (Windows) if (bits == Bits.bits64)
     {
-        msvcEnv ~= " "~quote("CC32=" ~ msvcBin32Dir~"/cl");
         info("Building Druntime 32mscoff");
         changeDir(cloneDir~"/druntime");
-        run(makecmd~msvcEnv~" druntime32mscoff");
+        run(msvcVarsX86~makecmd~msvcEnv~" druntime32mscoff");
         removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
                     file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
         changeDir(cloneDir~"/phobos");
-        run(makecmd~msvcEnv~" phobos32mscoff");
+        run(msvcVarsX86~makecmd~msvcEnv~" phobos32mscoff");
         removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
     }
 
@@ -551,14 +515,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         {
             // v1.20+
             version (Windows)
-                run("SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
             else
                 run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
         }
         else
         {
             version (Windows)
-                run("SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+                run(msvcVars~"SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
             else
                 run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
         }

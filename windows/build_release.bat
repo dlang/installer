@@ -12,11 +12,6 @@ set HOST_DC=%DMD_BIN_DIR%\dmd.exe
 set PATH=%DMD_BIN_DIR%;%PATH%;%CD%\dm\bin
 set VCDIR=%VCToolsInstallDir%
 set SDKDIR=.
-set MSVC_AR=%VCToolsInstallDir%\bin\Hostx64\x64\lib.exe
-
-rem enable autodetection in LDC, so it doesn't mix x86/x64 libs
-set LDC_VSDIR=%VSINSTALLDIR%
-set VSINSTALLDIR=
 
 cd create_dmd_release
 
