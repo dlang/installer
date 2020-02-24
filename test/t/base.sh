@@ -26,7 +26,7 @@ frontendVersions=(
     '2074'
 )
 
-if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
+if [ "${TRAVIS_OS_NAME:-}" = "linux" ]; then
     compilers+=(
         gdc-4.9.3
         gdc-4.8.5
@@ -42,9 +42,10 @@ if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
     )
 fi
 
+OS=$(uname -s)
 testDir=/tmp/dlang-installer-test-$UID
 rm -rf "$testDir"
-mkdir -m 700 "$testDir"
+mkdir -m 700 "$testDir" || mkdir -p "$testDir"
 export HOME=$testDir
 
 testFile="$testDir"/test
@@ -57,17 +58,20 @@ do
     ./script/install.sh $compiler
 
     . ~/dlang/$compiler/activate
-    compilerVersion=$($DC --version | sed -n 1p)
-    test "$compilerVersion" = "${versions[$idx]}"
-    compilerVersion=$($DMD --version | sed -n 1p)
-    test "$compilerVersion" = "${versions[$idx]}"
+    compilerVersion=$($DC --version | sed -n 1p | tr -d '\r')
+    expectedVersion="${versions[$idx]}"
+    # We don't ship 64-bit binaries on Windows
+    if [[ "$OS" == *_NT-* ]]; then expectedVersion=${expectedVersion/DMD64/DMD32}; fi
+    test "$compilerVersion" = "$expectedVersion"
+    compilerVersion=$($DMD --version | sed -n 1p | tr -d '\r')
+    test "$compilerVersion" = "$expectedVersion"
     deactivate
 
     # Check whether the compilers have been successfully installed
     touch "$testFile".d
     source $(./script/install.sh $compiler --activate)
-    ${DMD} "-of${testFile}" "${testFile}.d"
-    test "$(${testFile})" = "${frontendVersions[$idx]}"
+    ( cd "$testDir" && ${DMD} -oftest test.d )
+    test "$(${testFile} | tr -d '\r')" = "${frontendVersions[$idx]}"
     rm ${testFile}
     deactivate
 
@@ -137,11 +141,12 @@ then
 fi
 
 # test in-place update
-bash script/install.sh update --path "$PWD/script"
-bash script/install.sh update -p "$PWD/script"
-# reset script
-git checkout -- script/install.sh
+if [ "${TRAVIS_OS_NAME:-}" != "windows" ]; then # needs bootstrapping, TODO remove after merge/deploy
+    cp script/install.sh "$testDir"/
+    bash "$testDir"/install.sh update --path "$testDir"
+    bash "$testDir"/install.sh update -p "$testDir"
+fi
 
-if [ "${TRAVIS_OS_NAME:-}" != "osx" ]; then
+if [ "${TRAVIS_OS_NAME:-}" = "linux" ]; then
     shellcheck script/install.sh
 fi
