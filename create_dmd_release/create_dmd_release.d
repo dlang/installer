@@ -516,7 +516,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         {
             // v1.20+
             version (Windows)
-                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
             else
                 run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
         }
