@@ -139,32 +139,27 @@ struct Box
 
     void scp(string src, string tgt)
     {
-        if (os == OS.windows)
+        version(NoVagrant)
         {
-            version(NoVagrant)
-            {
-                if (src.startsWith("default:"))
-                    src = _tmpdir ~ "/" ~ src[8..$];
-                if (tgt.startsWith("default:"))
-                    tgt = _tmpdir ~ "/" ~ tgt[8..$];
+            if (src.startsWith("default:"))
+                src = _tmpdir ~ "/" ~ src[8..$];
+            if (tgt.startsWith("default:"))
+                tgt = _tmpdir ~ "/" ~ tgt[8..$];
 
-                string[] srcs = split(src, " ");
-                foreach(s; srcs)
-                    if (std.file.isFile(s))
-                        copyFile(s, buildPath(tgt, baseName(s)));
-                    else
-                        copyDirectory(s, tgt);
-            }
-            else
-            {
-                // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
-                auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
-                if (runStatus(cmd) && runStatus(cmd))
-                    run(cmd);
-            }
+            string[] srcs = split(src, " ");
+            foreach(s; srcs)
+                if (std.file.isFile(s))
+                    copyFile(s, buildPath(tgt, baseName(s)));
+                else
+                    copyDirectory(s, tgt);
         }
         else
-            run("rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt);
+        {
+            // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
+            auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            if (runStatus(cmd) && runStatus(cmd))
+                run(cmd);
+        }
     }
 
 private:
