@@ -364,6 +364,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     auto msvcVarsX64 = "";
     auto msvcVarsX86 = "";
+    auto msvcVars = "";
     auto msvcEnv = "";
     version(Windows)
     {
@@ -385,8 +386,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
             auto vcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
             msvcVarsX64 = vcVars~" x64 && ";
             msvcVarsX86 = vcVars~" x86 && ";
+            msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
         }
-        auto msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
     }
 
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
@@ -451,13 +452,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(msvcVarsX64~makecmd~pic~msvcEnv~makeTargetDruntime);
+    run(msvcVars~makecmd~pic~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(msvcVarsX64~makecmd~pic~msvcEnv);
+    run(msvcVars~makecmd~pic~msvcEnv);
 
     version(OSX) if(bits == Bits.bits64)
     {
@@ -515,7 +516,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         {
             // v1.20+
             version (Windows)
-                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
             else
                 run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
         }
