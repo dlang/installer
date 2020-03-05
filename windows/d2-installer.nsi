@@ -95,6 +95,7 @@
   !define /file Version2 ${D2VersionPath}
 !endif
 
+Unicode True
 
 ;--------------------------------------------------------
 ; Includes
@@ -121,8 +122,6 @@ Var VCPath
 ;--------------------------------------------------------
 ; General definitions
 ;--------------------------------------------------------
-
-Unicode True
 
 ; Name of the installer
 Name "D Programming Language"
