@@ -506,7 +506,11 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" dustmite");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
+    }
 
+    bool buildDub = true; // build64BitTools || bits == Bits.bits32;
+    if(buildDub)
+    {
         // build dub with stable (host) compiler, b/c it breaks
         // too easily with the latest compiler, e.g. for nightlies
         info("Building Dub "~bitsDisplay);
@@ -650,8 +654,8 @@ void createRelease(string branch)
         else // Win doesn't include 64-bit tools
         {
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
-            copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         }
+        copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         if (codesign)
             signBinaries(releaseBin64Dir);
     }
