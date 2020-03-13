@@ -1,8 +1,0 @@
-The install script now runs on Windows
-
-The D installation script (install.sh, available at
-$(LINK2 https://dlang.org/install.sh, dlang.org/install.sh))
-now supports POSIX-like environments on Windows.
-This allows installing and using Windows versions of DMD, LDC, and Dub
-from e.g. CygWin or MSys2, thus providing a unified way of installing
-D compilers across supported platforms.

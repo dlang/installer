@@ -95,6 +95,7 @@
   !define /file Version2 ${D2VersionPath}
 !endif
 
+Unicode True
 
 ;--------------------------------------------------------
 ; Includes
