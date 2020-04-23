@@ -542,8 +542,8 @@ int main(string[] args)
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
     enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
-    enum mingwtag = "mingw-libs-7.0.0-2";
-    enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"ae9f991a64b17b2a6c9e5bd9f91f88a8ac3065194b0981be03be4280e2b6cc5a";
+    enum mingwtag = "mingw-libs-7.0.0-3";
+    enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"640c080e7fb120dd66cdfe18f9c56fe39dd901c24c32347dae57f80dce931b61";
     enum lld = "lld-link-9.0.0-seh.zip";              enum lld_sha   = hexString!"ffde2eb0e0410e6985bbbb44c200b21a2b2dd34d3f8c3411f5ca5beb7f67ba5b";
     enum lld64 = "lld-link-9.0.0-seh-x64.zip";        enum lld64_sha = hexString!"c24f9b8daf7ec49c7bfb96d7c0de4e3ced76f9777114f7601bdd4185a2cc7338";
     enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z"; enum ldc_sha   = hexString!"7e4300fd6064305b2e7c2ff312283cefddbbe63eb1c36c551495f3df39f62000";
