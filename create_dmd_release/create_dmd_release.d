@@ -314,7 +314,7 @@ void cleanAll(Bits bits, string branch)
     auto bitsStr        = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
-    auto hostDMDEnv = " HOST_DC="~hostDMD;
+    auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto latest = " LATEST="~branch;
 
     // common make arguments
@@ -407,7 +407,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         auto dmdEnv = " DMD=../dmd/generated/"~osDirName~"/release/"~bitsStr~"/dmd"~exe;
         enum dmdConf = "dmd.conf";
     }
-    auto hostDMDEnv = " HOST_DC="~hostDMD;
+    auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto isRelease = " ENABLE_RELEASE=1";
     auto latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
