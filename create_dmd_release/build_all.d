@@ -49,7 +49,7 @@ else
     enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
 /// the LDC version to use to build dmd (on Windows), leave empty to use dmd
-enum ldcVer = "1.20.0";
+enum ldcVer = "1.21.0";
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
