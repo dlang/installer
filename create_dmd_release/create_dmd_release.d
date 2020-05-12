@@ -931,6 +931,8 @@ string runCapture(string cmd)
     version(Windows) {
         trace("CD = \n" ~ executeShell("echo %CD%").output);
         trace("DIR = \n" ~ executeShell("dir").output);
+        trace("git ls-files = \n" ~ executeShell("git ls-files").output);
+        trace("git ls-files . = \n" ~ executeShell("git ls-files .").output);
         stdout.flush();
         stderr.flush();
     }
