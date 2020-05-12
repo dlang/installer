@@ -52,6 +52,8 @@
 !define VS2013Filename "vs_community2013.exe"
 !define VS2017Filename "vs_community2017.exe"
 !define VS2017BTFilename "vs_BuildTools2017.exe"
+!define VS2019Filename "vs_community2019.exe"
+!define VS2019BTFilename "vs_BuildTools2019.exe"
 !define VCRedistx86Filename "vcredist_x86.exe"
 !define VCRedistx64Filename "vcredist_x64.exe"
 
@@ -68,6 +70,8 @@
 !define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
 !define VS2017Url "https://download.visualstudio.microsoft.com/download/pr/100404311/045b56eb413191d03850ecc425172a7d/vs_Community.exe"
 !define VS2017BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/100404314/e64d79b40219aea618ce2fe10ebd5f0d/vs_BuildTools.exe"
+!define VS2019Url "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/8cc1a4ebd138b5d0c2b97501a198f5eacdc434daa8a5c6564c8e23fdaaad3619/vs_Community.exe"
+!define VS2019BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/cfffd18469d936d6cb9dff55fd4ae538035e7f247f1756c5a31f3e03751d7ee7/vs_BuildTools.exe"
 
 ; see https://stackoverflow.com/questions/12206314/detect-if-visual-c-redistributable-for-visual-studio-2012-is-installed/14878248
 ; selecting VC2010
@@ -91,6 +95,7 @@
   !define /file Version2 ${D2VersionPath}
 !endif
 
+Unicode True
 
 ;--------------------------------------------------------
 ; Includes
@@ -135,7 +140,7 @@ InstallDirRegKey HKCU "Software\${DName}" "InstallationFolder"
 CRCCheck force
 
 SetCompressor /SOLID lzma
-
+SetCompressorDictSize 112
 
 ;------------------------------------------------------------
 ; Macros definition
@@ -231,8 +236,12 @@ Page custom VCInstallPage VCInstallPageValidate
 
 
 ; Reserve files needed by the installation
+; (move files needed by the installer itself to the beginning of the solid archive
+;  to avoid pauses when switching pages)
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
+ReserveFile /Plugin INetC.dll
+ReserveFile "vcinstall.ini"
 
 ;--------------------------------------------------------
 ; Sections
@@ -321,7 +330,6 @@ Function VCInstallPage
   Abort
   ask_vs:
  
-  ReserveFile "vcinstall.ini"
   !insertmacro MUI_HEADER_TEXT "Choose Visual Studio Installation" "Choose the Visual C runtime to link against"
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "vcinstall.ini"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "vcinstall.ini"
@@ -333,9 +341,9 @@ Function VCInstallPageValidate
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 2" "State"
   StrCmp $0 1 install_vs2013
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 3" "State"
-  StrCmp $0 1 install_vs2017
+  StrCmp $0 1 install_vs2019
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 4" "State"
-  StrCmp $0 1 install_bt2017
+  StrCmp $0 1 install_bt2019
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 5" "State"
   StrCmp $0 1 install_vc2010
   goto done_vc
@@ -344,12 +352,12 @@ Function VCInstallPageValidate
     !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
     goto done_vc
 
-  install_vs2017:
-    !insertmacro DownloadAndRun ${VS2017Filename} ${VS2017Url} ""
+  install_vs2019:
+    !insertmacro DownloadAndRun ${VS2019Filename} ${VS2019Url} ""
     goto done_vc
 
-  install_bt2017:
-    !insertmacro DownloadAndRun ${VS2017BTFilename} ${VS2017BuildToolsUrl} ""
+  install_bt2019:
+    !insertmacro DownloadAndRun ${VS2019BTFilename} ${VS2019BuildToolsUrl} ""
     goto done_vc
 
   install_vc2010:
@@ -385,6 +393,26 @@ FunctionEnd
 Function DetectVC
     ClearErrors
 
+    Call DetectVS2019_InstallationFolder
+    StrCpy $1 "VC2019"
+    StrCmp $0 "" not_vc2019 vs2019
+    vs2019:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2019
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2019:
+
+    Call DetectVS2019BuildTools_InstallationFolder
+    StrCpy $1 "VC2019BT"
+    StrCmp $0 "" not_vc2019BT vs2019BT
+    vs2019BT:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2019BT
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2019BT:
+
     ReadRegStr $0 HKLM "SOFTWARE\Microsoft\VisualStudio\SxS\VS7" "15.0"
     StrCpy $1 "VC2017"
     IfErrors not_vc2017
@@ -393,6 +421,17 @@ Function DetectVC
         StrCpy $0 "$0\VC\Tools\MSVC\$2"
         Goto done_vs
     not_vc2017:
+
+    Call DetectVS2017BuildTools_InstallationFolder
+    StrCpy $1 "VC2017BT"
+    StrCmp $0 "" not_vc2017BT vs2017BT
+    vs2017BT:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2017BT
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2017BT:
+
     ClearErrors
     ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\14.0\Setup\VC" "ProductDir"
     StrCpy $1 "VC2015"
@@ -455,7 +494,7 @@ Function .onInit
     Abort
   ; Remove in background the remaining uninstaller program itself
   Sleep 1000
-  Exec '$R5 /S'
+  ExecWait '$R5 /S'
   ; MessageBox MB_OK|MB_ICONINFORMATION "Previous DMD uninstalled" /SD IDOK
 
   done_uninst_prev:
@@ -550,5 +589,89 @@ Function un.onInit
   ${IfNot} "$InstanceCheck" == "False"
     !insertmacro OneInstanceOnly
   ${EndIf}
+FunctionEnd
+
+;--------------------------------------------------------
+; VS 2017/2019 detection functions
+;
+; returns path to VS (not VC) in $0
+;--------------------------------------------------------
+Function DetectVS2017BuildTools_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCmp $2 "Visual Studio Build Tools 2017" 0 NotVS2017BT
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                ; MessageBox MB_YESNO|MB_ICONQUESTION "$2$\n$\nMore?" IDYES 0 IDNO done
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2017BT:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
+FunctionEnd
+
+Function DetectVS2019_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCpy $3 $2 14
+        StrCmp $3 "Visual Studio " 0 NotVS2019
+        StrCpy $3 $2 12 -12
+        StrCmp $3 "2019 Preview" IsVS2019
+        StrCpy $3 $2 4 -4
+        StrCmp $3 "2019" IsVS2019 NotVS2019
+        IsVS2019:
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2019:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
+FunctionEnd
+
+Function DetectVS2019BuildTools_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCmp $2 "Visual Studio Build Tools 2019" 0 NotVS2019BT
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2019BT:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
 FunctionEnd
 

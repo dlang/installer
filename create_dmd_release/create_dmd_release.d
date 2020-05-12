@@ -9,12 +9,10 @@ Prerequisites to Run:
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
 - Windows: Working DMC and MSVC toolchains. The default make must be DM make.
-  Also, these environment variables must be set:
-    VCDIR:  Visual C directory
-    SDKDIR: Windows SDK directory
+  Also, this environment variable must be set:
+    VSINSTALLDIR:  Visual C directory
   Examples:
-    set VCDIR=C:\Program Files (x86)\Microsoft Visual Studio 8\VC\
-    set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
+    set VSINSTALLDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
 - Windows: A version of OPTLINK with the /LA[RGEADDRESSAWARE] flag:
     <https://github.com/DigitalMars/optlink/commit/475bc5c1fa28eaf899ba4ac1dcfe2ab415db16c6>
 - Windows: Microsoft's HTML Help Workshop on the PATH.
@@ -164,11 +162,6 @@ bool do32Bit;
 bool do64Bit;
 bool codesign;
 
-version(Windows)
-{
-    string msvcBinDir;
-}
-
 // These are absolute and do NOT contain a trailing slash:
 string defaultWorkDir;
 string cloneDir;
@@ -183,8 +176,6 @@ string allExtrasDir;
 string osExtrasDir;
 string customExtrasDir;
 string hostDMD;
-string win64vcDir;
-string win64sdkDir;
 
 int main(string[] args)
 {
@@ -303,29 +294,6 @@ void init(string branch)
     releaseLib64Dir = osDir ~ "/lib" ~ suffix64;
     allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
     osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
-
-    // configure MSVC tools needed for 64-bit
-    version (Windows) if (do64Bit)
-    {
-        if(environment.get("VCDIR", "") == "" || environment.get("SDKDIR", "") == "")
-        {
-            fail(`
-                    Environment variables VCDIR and SDKDIR must both be set. For example:
-                    set VCDIR=C:\Program Files (x86)\Microsoft Visual Studio 8\VC\
-                    set SDKDIR=C:\Program Files\Microsoft SDKs\Windows\v7.1\
-                `.outdent().strip());
-        }
-
-        win64vcDir  = environment[ "VCDIR"].chomp("\\").chomp("/");
-        win64sdkDir = environment["SDKDIR"].chomp("\\").chomp("/");
-
-        trace("VCDIR:  " ~ displayPath(win64vcDir));
-        trace("SDKDIR: " ~ displayPath(win64sdkDir));
-
-        msvcBinDir = win64vcDir ~ "/bin/x86_amd64";
-        if(!exists(msvcBinDir~"cl.exe"))
-            msvcBinDir = win64vcDir ~ "/bin/amd64";
-    }
 }
 
 void cleanAll(string branch)
@@ -346,19 +314,15 @@ void cleanAll(Bits bits, string branch)
     auto bitsStr        = bits == Bits.bits32? "32" : "64";
     auto bitsDisplay = toString(bits);
     auto makeModel = " MODEL="~bitsStr;
-    auto hostDMDEnv = " HOST_DC="~hostDMD;
+    auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto latest = " LATEST="~branch;
 
     // common make arguments
     auto makecmd = make~makeModel~hostDMDEnv~latest~" -f"~targetMakefile;
 
-    // Windows is 32-bit only currently
-    if (targetMakefile != "win64.mak")
-    {
-        info("Cleaning DMD "~bitsDisplay);
-        changeDir(cloneDir~"/dmd/src");
-        run(makecmd~" clean");
-    }
+    info("Cleaning DMD "~bitsDisplay);
+    changeDir(cloneDir~"/dmd/src");
+    run(makecmd~" clean");
 
     info("Cleaning Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
@@ -398,17 +362,33 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
 
+    auto msvcVarsX64 = "";
+    auto msvcVarsX86 = "";
+    auto msvcVars = "";
     auto msvcEnv = "";
     version(Windows)
     {
+        bool hostIsLDC = hostDMD.endsWith("ldmd2") || hostDMD.endsWith("ldmd2.exe");
         if(bits == Bits.bits64)
         {
-            msvcEnv =
-                " " ~ quote("VCDIR="  ~ win64vcDir) ~
-                " " ~ quote("SDKDIR=" ~ win64sdkDir) ~
-                " " ~ quote("CC="     ~ msvcBinDir~"/cl") ~
-                " " ~ quote("LD="     ~ msvcBinDir~"/link") ~
-                " " ~ quote("AR="     ~ msvcBinDir~"/lib");
+            // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
+            msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
+        }
+        else
+        {
+            // use lib.exe from dmc distribution
+            auto dmcPath = environment["PATH"].split(';').find!((p, f) => buildPath(p, f).exists)("dmc.exe").front;
+            msvcEnv = " " ~ quote("AR="~dmcPath~"/lib");
+        }
+        if(bits == Bits.bits64 || hostIsLDC)
+        {
+            // ensure LDC auto-configures proper environment
+            auto ldcVars = hostIsLDC ? "set LDC_VSDIR_FORCE=1 && " : null;
+            // Setup MSVC environment for x64/x86 native builds
+            auto vcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
+            msvcVarsX64 = vcVars~" x64 && " ~ ldcVars;
+            msvcVarsX86 = vcVars~" x86 && " ~ ldcVars;
+            msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
         }
     }
 
@@ -429,7 +409,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         auto dmdEnv = " DMD=../dmd/generated/"~osDirName~"/release/"~bitsStr~"/dmd"~exe;
         enum dmdConf = "dmd.conf";
     }
-    auto hostDMDEnv = " HOST_DC="~hostDMD;
+    auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto isRelease = " ENABLE_RELEASE=1";
     auto latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
@@ -441,26 +421,23 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     // common make arguments
     auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~latest~" -f "~targetMakefile;
 
-    if(build64BitTools || bits == Bits.bits32)
-    {
-        info("Building DMD "~bitsDisplay);
-        changeDir(cloneDir~"/dmd/src");
-        version (Windows)
-            run(makecmd~" dmd");
-        else
-            run(makecmd);
+    info("Building DMD "~bitsDisplay);
+    changeDir(cloneDir~"/dmd/src");
+    version (Windows)
+        run(msvcVars~makecmd~" dmd");
+    else
+        run(makecmd);
 
-        // Generate temporary sc.ini
-        version(Windows)
-        {
-            std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
-                [Environment]
-                LIB="%@P%\..\..\..\..\..\phobos" "`~customExtrasDir~`\dmd2\windows\lib" "%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib"
-                DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
-                [Environment32]
-                LINKCMD=%@P%\optlink.exe
-            `).outdent().strip());
-        }
+    // Generate temporary sc.ini
+    version(Windows)
+    {
+        std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
+            [Environment]
+            LIB=%@P%\..\..\..\..\..\phobos;`~customExtrasDir~`\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib
+            DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
+            [Environment32]
+            LINKCMD=%@P%\optlink.exe
+        `).outdent().strip());
     }
 
     // Copy OPTLINK to same directory as the sc.ini we want it to read
@@ -477,13 +454,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(makecmd~pic~msvcEnv~makeTargetDruntime);
+    run(msvcVars~makecmd~pic~msvcEnv~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(makecmd~pic~msvcEnv);
+    run(msvcVars~makecmd~pic~msvcEnv);
 
     version(OSX) if(bits == Bits.bits64)
     {
@@ -497,13 +474,13 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     {
         info("Building Druntime 32mscoff");
         changeDir(cloneDir~"/druntime");
-        run(makecmd~msvcEnv~" druntime32mscoff");
+        run(msvcVarsX86~makecmd~msvcEnv~" druntime32mscoff");
         removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
                     file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
         changeDir(cloneDir~"/phobos");
-        run(makecmd~msvcEnv~" phobos32mscoff");
+        run(msvcVarsX86~makecmd~msvcEnv~" phobos32mscoff");
         removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
     }
 
@@ -531,15 +508,31 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         run(makecmd~" dustmite");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
+    }
 
+    bool buildDub = true; // build64BitTools || bits == Bits.bits32;
+    if(buildDub)
+    {
         // build dub with stable (host) compiler, b/c it breaks
         // too easily with the latest compiler, e.g. for nightlies
         info("Building Dub "~bitsDisplay);
         changeDir(cloneDir~"/dub");
-        version (Windows)
-            run("SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+
+        if (exists("build.d"))
+        {
+            // v1.20+
+            version (Windows)
+                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
+            else
+                run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
+        }
         else
-            run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
+        {
+            version (Windows)
+                run(msvcVars~"SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
+            else
+                run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
+        }
         rename(cloneDir~"/dub/bin/dub"~exe, cloneDir~"/dub/bin/dub"~bitsStr~exe);
     }
 }
@@ -581,9 +574,12 @@ void createRelease(string branch)
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
         copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
-        copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
-        // copy man pages from linux build
-        copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
+        version (Windows) {} else
+        {
+            copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
+            // copy man pages from linux build
+            copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
+        }
         makeDir(releaseDir~"/dmd2/html/d/zlib");
         copyFile(cloneDir~"/phobos/etc/c/zlib/ChangeLog", releaseDir~"/dmd2/html/d/zlib/ChangeLog");
         copyFile(cloneDir~"/phobos/etc/c/zlib/README",    releaseDir~"/dmd2/html/d/zlib/README");
@@ -647,16 +643,23 @@ void createRelease(string branch)
     }
 
     // Copy bin64
-    version(Windows) {} else // Win doesn't include 64-bit tools
+    if(do64Bit)
     {
-        if(do64Bit)
+        copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
+        version(Windows)
         {
-            copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
-            copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
-            copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
-            if (codesign)
-                signBinaries(releaseBin32Dir);
+            // patch sc.ini to point to optlink.exe in bin folder
+            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/ini/windows/bin/sc.ini");
+            sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
+            std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
         }
+        else // Win doesn't include 64-bit tools
+        {
+            copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
+        }
+        copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
+        if (codesign)
+            signBinaries(releaseBin64Dir);
     }
 }
 
