@@ -7,11 +7,10 @@ steps:
   - checkout: self
     fetchDepth: 1
   - script: |
-      @echo on
-      windows/build_lld.bat
-    displayName: Build LLD
+      windows/build_curl.bat
+    displayName: Build Curl
   - task: PublishPipelineArtifact@0
     inputs:
-      artifactName: lld-$(ARCH)
+      artifactName: curl
       targetPath: artifacts
     displayName: Publish artifacts

@@ -1,6 +1,15 @@
 @setlocal
 
 set ROOT=%CD%
+mkdir "%ROOT%\artifacts"
+
+set TAG=mingw-libs-%MINGW_VER%-3
+set ARTIFACT=%TAG%.zip
+set ARTIFACTPATH=%ROOT%\artifacts\%ARTIFACT%
+set GITHUB_RELEASE=https://github.com/dlang/installer/releases/download/%TAG%/%ARTIFACT%
+
+REM Stop early if the artifact already exists
+powershell -Command "Invoke-WebRequest %GITHUB_RELEASE% -OutFile %ARTIFACTPATH%" && exit /B 0
 
 set DMD_URL=http://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
 echo DMD_URL=%DMD_URL%
@@ -31,5 +40,9 @@ call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x86 %ROOT%\mingw-w64 dmd2\windows\lib32mscoff\mingw || exit /B 1
 
-mkdir "%ROOT%\artifacts"
-7z a %ROOT%\artifacts\mingw-libs-%MINGW_VER%.zip dmd2\windows
+md dmd2\windows\bin
+copy "%WINDIR%\SysWow64\msvcr120.dll" dmd2\windows\bin
+md dmd2\windows\bin64
+copy "%WINDIR%\System32\msvcr120.dll" dmd2\windows\bin64
+
+7z a "%ARTIFACTPATH%" dmd2\windows
