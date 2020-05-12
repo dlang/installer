@@ -185,7 +185,7 @@ Options
   -v --verbose  Verbose output
 
 Run "install.sh <command> --help to get help for a specific command.
-If no argument are provided, the latest DMD compiler will be installed.
+If no arguments are provided, the latest DMD compiler will be installed.
 '
 }
 
