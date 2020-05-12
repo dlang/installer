@@ -229,8 +229,8 @@ Options
 
   -h --help     Show this help
   -p --path     Set install location. Default depends on script invocation:
-                  * from file system:                   script file location
-                  * through pipe in POSIX terminal:     ~/dlang              
+                  * from file system: Uses script file or sym-link location
+                  * through pipe in POSIX terminal: ~/dlang              
                   * through pipe on Windows cmd prompt: %LOCALAPPDATA%\dlang
   -v --verbose  Verbose output
 
