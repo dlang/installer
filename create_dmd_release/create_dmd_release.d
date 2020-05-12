@@ -929,7 +929,8 @@ string runCapture(string cmd)
 
     ///////////////
     version(Windows) {
-        trace("CD = " ~ executeShell("echo %CD%"));
+        trace("CD = \n" ~ executeShell("echo %CD%").output);
+        trace("DIR = \n" ~ executeShell("dir").output);
         stdout.flush();
         stderr.flush();
     }
