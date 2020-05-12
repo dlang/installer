@@ -927,6 +927,14 @@ string runCapture(string cmd)
     stdout.flush();
     stderr.flush();
 
+    ///////////////
+    version(Windows) {
+        trace("CD = " ~ executeShell("echo %CD%"));
+        stdout.flush();
+        stderr.flush();
+    }
+    ///////////////
+
     auto result = executeShell(cmd);
     if(result.status != 0)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
