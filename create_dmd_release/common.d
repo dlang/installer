@@ -18,7 +18,7 @@ void copyFiles(string[] files, string srcDir, string dstDir, bool delegate(strin
         auto srcPath  = buildPath(srcDir, file);
         auto dstPath = buildPath(dstDir, file);
 
-        trace("Copying \""~srcPath~"\" to \""~dstPath~"\"");
+        writeln("Copying \""~srcPath~"\" to \""~dstPath~"\"");
 
         mkdirRecurse(dirName(dstPath));
 
