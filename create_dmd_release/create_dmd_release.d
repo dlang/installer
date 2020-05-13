@@ -929,6 +929,7 @@ string runCapture(string cmd)
 
     ///////////////
     version(Windows) {
+        trace("git --version = \n" ~ executeShell("git --version").output);
         trace("CD = \n" ~ executeShell("echo %CD%").output);
         trace("DIR = \n" ~ executeShell("dir").output);
         stdout.flush();
@@ -945,12 +946,8 @@ string runCapture(string cmd)
 
 string[] gitVersionedFiles(string path)
 {
-    auto saveDir = getcwd();
-    scope(exit) changeDir(saveDir);
-    changeDir(path);
-
     Appender!(string[]) versionedFiles;
-    auto gitOutput = runCapture("git ls-files").strip();
+    auto gitOutput = runCapture("git ls-files "~escapeShellFileName(path)).strip();
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
 
