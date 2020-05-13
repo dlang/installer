@@ -181,11 +181,6 @@ int main(string[] args)
 {
     defaultWorkDir = buildPath(tempDir(), defaultWorkDirName);
 
-    trace("%%%%%%%%%%%%%%%%%%%%%% MAIN %%%%%%%%%%%%%%%%%%%%%%%");
-    writeln("args = ", args);
-    trace("getcwd() = " ~ getcwd());
-    trace("defaultWorkDir = " ~ defaultWorkDir);
-
     bool help;
     bool clean;
 
@@ -291,7 +286,6 @@ void init(string branch)
     if(cloneDir == "")
         cloneDir = defaultWorkDir;
     assert(isAbsolute(cloneDir), "The \"use-clone\" argument must be given an absolute path.");
-    writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__, "cloneDir = ", cloneDir);
 
     osDir = releaseDir ~ "/dmd2/" ~ osDirName;
     releaseBin32Dir = osDir ~ "/bin" ~ suffix32;
@@ -717,13 +711,10 @@ void fatal(string msg)
 /// - On windows: Convert slashes to backslash.
 string displayPath(string path)
 {
-    return path;
-    /*
     version(Windows)
         path = path.replace("/", "\\");
 
     return chompPrefix(path, origDir ~ dirSeparator);
-    */
 }
 
 string quote(string str)
@@ -950,25 +941,7 @@ string[] gitVersionedFiles(string path)
     changeDir(path);
 
     Appender!(string[]) versionedFiles;
-    // At some point in the spring of 2020, git commands started working as issued from the repository root, not from the cwd.
-    // The reason is still a mistery, it has not been reproduced locally. "ls-tree" can be made to work instead of "ls-files".
     auto gitOutput = runCapture("git ls-files").strip();
-    auto toplevel = runCapture("git rev-parse --show-toplevel").strip;
-    writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__);
-    trace("git ls-files = "~gitOutput);
-    trace("path = "~path);
-    trace("cloneDir = "~cloneDir);
-    trace("saveDir = "~saveDir);
-    trace("toplevel = "~toplevel);
-    trace("getcwd() = "~getcwd());
-    stdout.flush();
-    stderr.flush();
-    string prefix;
-    if (getcwd().length > toplevel.length + 1)
-        prefix = ":" ~ getcwd()[toplevel.length + 1 .. $].translate(['\\' : '/']);
-    trace("prefix = "~prefix);
-    /*auto*/ gitOutput = runCapture("git ls-tree -r HEAD"~prefix~" --name-only --full-tree").strip();
-    // ^^^^
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
 

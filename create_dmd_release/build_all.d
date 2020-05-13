@@ -435,7 +435,6 @@ void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, st
 {
     auto prefix = "https://github.com/dlang/";
     auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
-    writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__, ": fmt = ", fmt);
     size_t nfallback;
     foreach (proj; allProjects)
     {

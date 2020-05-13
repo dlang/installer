@@ -18,8 +18,6 @@ void copyFiles(string[] files, string srcDir, string dstDir, bool delegate(strin
         auto srcPath  = buildPath(srcDir, file);
         auto dstPath = buildPath(dstDir, file);
 
-        writeln("Copying \""~srcPath~"\" to \""~dstPath~"\"");
-
         mkdirRecurse(dirName(dstPath));
 
         copy(srcPath, dstPath);
