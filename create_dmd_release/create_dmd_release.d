@@ -181,11 +181,10 @@ int main(string[] args)
 {
     defaultWorkDir = buildPath(tempDir(), defaultWorkDirName);
 
-    trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-    trace(__FUNCTION__, " entered");
-    trace("args = ", args);
-    trace("getcwd() = ", getcwd());
-    trace("defaultWorkDir = ", defaultWorkDir);
+    trace("%%%%%%%%%%%%%%%%%%%%%% MAIN %%%%%%%%%%%%%%%%%%%%%%%");
+    trace("args = " ~ args);
+    trace("getcwd() = " ~ getcwd());
+    trace("defaultWorkDir = " ~ defaultWorkDir);
 
     bool help;
     bool clean;
