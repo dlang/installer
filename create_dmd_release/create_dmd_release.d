@@ -937,23 +937,15 @@ string runCapture(string cmd)
         stdout.flush();
         stderr.flush();
         trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("MSYS_NO_PATHCONV=1 git ls-files = \n" ~ executeShell("MSYS_NO_PATHCONV=1 git ls-files").output);
+        trace("git ls-files dmd/src = \n" ~ executeShell("git ls-files dmd/src").output);
         stdout.flush();
         stderr.flush();
         trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("git ls-files -- dmd/src/* = \n" ~ executeShell("git ls-files -- dmd/src/*").output);
+        trace("git ls-tree -r HEAD --name-only = \n" ~ executeShell("git ls-tree -r HEAD --name-only").output);
         stdout.flush();
         stderr.flush();
         trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src/* = \n" ~ executeShell("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src/*").output);
-        stdout.flush();
-        stderr.flush();
-        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("git ls-files -- dmd/src = \n" ~ executeShell("git ls-files -- dmd/src").output);
-        stdout.flush();
-        stderr.flush();
-        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src = \n" ~ executeShell("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src").output);
+        trace("git ls-tree -r HEAD:src/dmd --name-only --full-tree = \n" ~ executeShell("git ls-tree -r HEAD:src/dmd --name-only --full-tree").output);
         stdout.flush();
         stderr.flush();
     }
