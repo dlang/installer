@@ -181,11 +181,11 @@ int main(string[] args)
 {
     defaultWorkDir = buildPath(tempDir(), defaultWorkDirName);
 
-    writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-    writeln(__FUNCTION__, " entered");
-    writeln("args = ", args);
-    writeln("getcwd() = ", getcwd());
-    writeln("defaultWorkDir = ", defaultWorkDir);
+    trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+    trace(__FUNCTION__, " entered");
+    trace("args = ", args);
+    trace("getcwd() = ", getcwd());
+    trace("defaultWorkDir = ", defaultWorkDir);
 
     bool help;
     bool clean;
@@ -953,9 +953,10 @@ string[] gitVersionedFiles(string path)
     Appender!(string[]) versionedFiles;
     // At some point in the spring of 2020, git commands started working as issued from the repository root, not from the cwd.
     // The reason is still a mistery, it has not been reproduced locally. "ls-tree" can be made to work instead of "ls-files".
-    // auto gitOutput = runCapture("git ls-files").strip();
+    auto gitOutput = runCapture("git ls-files").strip();
     auto toplevel = runCapture("git rev-parse --show-toplevel").strip;
     trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__);
+    trace("git ls-files = "~gitOutput);
     trace("path = "~path);
     trace("cloneDir = "~cloneDir);
     trace("saveDir = "~saveDir);
@@ -967,7 +968,7 @@ string[] gitVersionedFiles(string path)
     if (getcwd().length > toplevel.length + 1)
         prefix = ":" ~ getcwd()[toplevel.length + 1 .. $].translate(['\\' : '/']);
     trace("prefix = "~prefix);
-    auto gitOutput = runCapture("git ls-tree -r HEAD"~prefix~" --name-only --full-tree").strip();
+    /*auto*/ gitOutput = runCapture("git ls-tree -r HEAD"~prefix~" --name-only --full-tree").strip();
     // ^^^^
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
