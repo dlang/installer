@@ -285,7 +285,7 @@ void init(string branch)
 
     if(cloneDir == "")
         cloneDir = defaultWorkDir;
-    cloneDir = absolutePath(cloneDir);
+    assert(isAbsolute(cloneDir), "The \"use-clone\" argument must be given an absolute path.");
 
     osDir = releaseDir ~ "/dmd2/" ~ osDirName;
     releaseBin32Dir = osDir ~ "/bin" ~ suffix32;
