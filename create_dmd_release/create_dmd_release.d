@@ -946,8 +946,17 @@ string runCapture(string cmd)
 
 string[] gitVersionedFiles(string path)
 {
+    auto saveDir = getcwd();
+    scope(exit) changeDir(saveDir);
+    changeDir(path);
+
     Appender!(string[]) versionedFiles;
-    auto gitOutput = runCapture("git ls-files "~escapeShellFileName(path)).strip();
+    version(Windows)
+    {
+        auto gitOutput = runCapture("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src/*").strip();
+    } else {
+        auto gitOutput = runCapture("git ls-files").strip();
+    }
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
 
