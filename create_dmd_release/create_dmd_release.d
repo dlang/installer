@@ -181,6 +181,11 @@ int main(string[] args)
 {
     defaultWorkDir = buildPath(tempDir(), defaultWorkDirName);
 
+    writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+    writeln(__FUNCTION__, " entered");
+    writeln("getcwd() = ", getcwd());
+    writeln("defaultWorkDir = ", defaultWorkDir);
+
     bool help;
     bool clean;
 
@@ -711,10 +716,13 @@ void fatal(string msg)
 /// - On windows: Convert slashes to backslash.
 string displayPath(string path)
 {
+    return path;
+    /*
     version(Windows)
         path = path.replace("/", "\\");
 
     return chompPrefix(path, origDir ~ dirSeparator);
+    */
 }
 
 string quote(string str)
@@ -945,11 +953,18 @@ string[] gitVersionedFiles(string path)
     // The reason is still a mistery, it has not been reproduced locally. "ls-tree" can be made to work instead of "ls-files".
     // auto gitOutput = runCapture("git ls-files").strip();
     auto toplevel = runCapture("git rev-parse --show-toplevel").strip;
+    trace("path = "~path);
+    trace("cloneDir = "~cloneDir);
+    trace("saveDir = "~saveDir);
     trace("toplevel = "~toplevel);
     trace("getcwd() = "~getcwd());
-    auto prefix = getcwd()[toplevel.length + 1 .. $].translate(['\\' : '/']);
+    stdout.flush();
+    stderr.flush();
+    string prefix;
+    if (getcwd().length > toplevel.length + 1)
+        prefix = ":" ~ getcwd()[toplevel.length + 1 .. $].translate(['\\' : '/']);
     trace("prefix = "~prefix);
-    auto gitOutput = runCapture("git ls-tree -r HEAD:"~prefix~" --name-only --full-tree").strip();
+    auto gitOutput = runCapture("git ls-tree -r HEAD"~prefix~" --name-only --full-tree").strip();
     // ^^^^
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
