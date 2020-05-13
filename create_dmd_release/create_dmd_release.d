@@ -932,6 +932,28 @@ string runCapture(string cmd)
         trace("git --version = \n" ~ executeShell("git --version").output);
         trace("CD = \n" ~ executeShell("echo %CD%").output);
         trace("DIR = \n" ~ executeShell("dir").output);
+        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        trace("git ls-files = \n" ~ executeShell("git ls-files").output);
+        stdout.flush();
+        stderr.flush();
+        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        trace("MSYS_NO_PATHCONV=1 git ls-files = \n" ~ executeShell("MSYS_NO_PATHCONV=1 git ls-files").output);
+        stdout.flush();
+        stderr.flush();
+        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        trace("git ls-files -- dmd/src/* = \n" ~ executeShell("git ls-files -- dmd/src/*").output);
+        stdout.flush();
+        stderr.flush();
+        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        trace("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src/* = \n" ~ executeShell("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src/*").output);
+        stdout.flush();
+        stderr.flush();
+        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        trace("git ls-files -- dmd/src = \n" ~ executeShell("git ls-files -- dmd/src").output);
+        stdout.flush();
+        stderr.flush();
+        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+        trace("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src = \n" ~ executeShell("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src").output);
         stdout.flush();
         stderr.flush();
     }
@@ -951,12 +973,7 @@ string[] gitVersionedFiles(string path)
     changeDir(path);
 
     Appender!(string[]) versionedFiles;
-    version(Windows)
-    {
-        auto gitOutput = runCapture("MSYS_NO_PATHCONV=1 git ls-files -- dmd/src/*").strip();
-    } else {
-        auto gitOutput = runCapture("git ls-files").strip();
-    }
+    auto gitOutput = runCapture("git ls-files").strip();
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
 
