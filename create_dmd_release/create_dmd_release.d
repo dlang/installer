@@ -941,11 +941,16 @@ string[] gitVersionedFiles(string path)
     changeDir(path);
 
     Appender!(string[]) versionedFiles;
-    // At some point in the spring of 2020, "git ls-files" started listing all files from the root of the repository.
-    // The reason is still a mistery, it has not been reproduced locally. "git -ls-tree" can be made to work instead.
+    // At some point in the spring of 2020, git commands started working as issued from the repository root, not from the cwd.
+    // The reason is still a mistery, it has not been reproduced locally. "ls-tree" can be made to work instead of "ls-files".
     // auto gitOutput = runCapture("git ls-files").strip();
-    auto prefix = runCapture("git rev-parse --show-prefix");
-    trace("Prefix = "~prefix);
+    auto toplevel = runCapture("git rev-parse --show-toplevel").strip;
+    trace("toplevel = "~toplevel);
+    trace("escapeShellFileName(toplevel) = "~escapeShellFileName(toplevel));
+    trace("saveDir = "~saveDir);
+    trace("escapeShellFileName(saveDir) = "~escapeShellFileName(saveDir));
+    auto prefix = toplevel[saveDir.length .. $];
+    trace("prefix = "~prefix);
     auto gitOutput = runCapture("git ls-tree -r HEAD:"~prefix~" --name-only --full-tree").strip();
     // ^^^^
     foreach(filename; gitOutput.splitter("\n"))
