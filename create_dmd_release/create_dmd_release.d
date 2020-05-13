@@ -927,30 +927,6 @@ string runCapture(string cmd)
     stdout.flush();
     stderr.flush();
 
-    ///////////////
-    version(Windows) {
-        trace("git --version = \n" ~ executeShell("git --version").output);
-        trace("CD = \n" ~ executeShell("echo %CD%").output);
-        trace("DIR = \n" ~ executeShell("dir").output);
-        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("git ls-files = \n" ~ executeShell("git ls-files").output);
-        stdout.flush();
-        stderr.flush();
-        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("git ls-files dmd/src = \n" ~ executeShell("git ls-files dmd/src").output);
-        stdout.flush();
-        stderr.flush();
-        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("git ls-tree -r HEAD --name-only = \n" ~ executeShell("git ls-tree -r HEAD --name-only").output);
-        stdout.flush();
-        stderr.flush();
-        trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-        trace("git ls-tree -r HEAD:src/dmd --name-only --full-tree = \n" ~ executeShell("git ls-tree -r HEAD:src/dmd --name-only --full-tree").output);
-        stdout.flush();
-        stderr.flush();
-    }
-    ///////////////
-
     auto result = executeShell(cmd);
     if(result.status != 0)
         fail("Command failed (ran from dir '"~displayPath(getcwd())~"'): "~cmd);
@@ -965,7 +941,13 @@ string[] gitVersionedFiles(string path)
     changeDir(path);
 
     Appender!(string[]) versionedFiles;
-    auto gitOutput = runCapture("git ls-files").strip();
+    // At some point in the spring of 2020, "git ls-files" started listing all files from the root of the repository.
+    // The reason is still a mistery, it has not been reproduced locally. "git -ls-tree" can be made to work instead.
+    // auto gitOutput = runCapture("git ls-files").strip();
+    auto prefix = runCapture("git rev-parse --show-prefix");
+    trace("Prefix = "~prefix);
+    auto gitOutput = runCapture("git ls-tree -r HEAD:"~prefix~" --name-only --full-tree").strip();
+    // ^^^^
     foreach(filename; gitOutput.splitter("\n"))
         versionedFiles.put(filename);
 
