@@ -947,7 +947,7 @@ string[] gitVersionedFiles(string path)
     auto toplevel = runCapture("git rev-parse --show-toplevel").strip;
     trace("toplevel = "~toplevel);
     trace("getcwd() = "~getcwd());
-    auto prefix = getcwd()[toplevel.length + 1 .. $].translate(['\\', '/']);
+    auto prefix = getcwd()[toplevel.length + 1 .. $].translate(['\\' : '/']);
     trace("prefix = "~prefix);
     auto gitOutput = runCapture("git ls-tree -r HEAD:"~prefix~" --name-only --full-tree").strip();
     // ^^^^
