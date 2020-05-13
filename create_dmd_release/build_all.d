@@ -321,7 +321,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             break;
         }
 
-        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
+        auto cloneDir = escapeShellFileName(workDir~"/clones");
+        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone="~cloneDir~" --host-dmd="~dmd;
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
@@ -435,6 +436,7 @@ void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, st
 {
     auto prefix = "https://github.com/dlang/";
     auto fmt = "git clone --depth 1 --branch %1$s " ~ prefix ~ "%2$s.git " ~ tgtDir ~ "/%2$s";
+    writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__, ": fmt = ", fmt);
     size_t nfallback;
     foreach (proj; allProjects)
     {

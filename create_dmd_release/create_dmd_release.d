@@ -183,6 +183,7 @@ int main(string[] args)
 
     writeln("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
     writeln(__FUNCTION__, " entered");
+    writeln("args = ", args);
     writeln("getcwd() = ", getcwd());
     writeln("defaultWorkDir = ", defaultWorkDir);
 
@@ -290,7 +291,8 @@ void init(string branch)
 
     if(cloneDir == "")
         cloneDir = defaultWorkDir;
-    cloneDir = absolutePath(cloneDir);
+    assert(isAbsolute(cloneDir), "The \"use-clone\" argument must be given an absolute path.");
+    trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__, "cloneDir = ", cloneDir);
 
     osDir = releaseDir ~ "/dmd2/" ~ osDirName;
     releaseBin32Dir = osDir ~ "/bin" ~ suffix32;
@@ -953,6 +955,7 @@ string[] gitVersionedFiles(string path)
     // The reason is still a mistery, it has not been reproduced locally. "ls-tree" can be made to work instead of "ls-files".
     // auto gitOutput = runCapture("git ls-files").strip();
     auto toplevel = runCapture("git rev-parse --show-toplevel").strip;
+    trace("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n", __FUNCTION__);
     trace("path = "~path);
     trace("cloneDir = "~cloneDir);
     trace("saveDir = "~saveDir);
