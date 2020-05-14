@@ -184,7 +184,8 @@ Options
   -p --path     Install location (default ~/dlang)
   -v --verbose  Verbose output
 
-Run "install.sh <command> --help to get help for a specific command.
+Run "install.sh <command> --help to get help for a specific command, or consult
+https://dlang.org/install.html for documentation.
 If no arguments are provided, the latest DMD compiler will be installed.
 '
 }
