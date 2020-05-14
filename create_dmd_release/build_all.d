@@ -197,9 +197,9 @@ private:
         return res.outdent();
     }
 
-    auto build(string ver, bool isBranch, bool skipDocs)
+    auto build(string ver, bool isBranch, bool skipDocs, string clones)
     {
-        return runBuild(this, ver, isBranch, skipDocs);
+        return runBuild(this, ver, isBranch, skipDocs, clones);
     }
 
     ~this()
@@ -288,7 +288,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
+void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string clones)
 {
     with (box.shell())
     {
@@ -321,7 +321,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             break;
         }
 
-        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
+        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone="~escapeShellFileName(clones)~" --host-dmd="~dmd;
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
@@ -638,7 +638,7 @@ int main(string[] args)
             if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs);
+            build(ver, isBranch, skipDocs, workDir~"/clones");
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
