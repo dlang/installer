@@ -257,7 +257,7 @@ SectionGroup /e "D2"
 
     ; Embed the directory specified
     File /r ${EmbedD2Dir}
-  
+
     ; Create 32-bit command line batch file
     FileOpen $0 "$INSTDIR\dmd2vars32.bat" w
     FileWrite $0 "@echo.$\n"
@@ -324,16 +324,16 @@ SectionGroupEnd
 ;--------------------------------------------------------
 
 Function VCInstallPage
- 
+
   Call DetectVC
   StrCmp $VCVer "" ask_vs
   Abort
   ask_vs:
- 
+
   !insertmacro MUI_HEADER_TEXT "Choose Visual Studio Installation" "Choose the Visual C runtime to link against"
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "vcinstall.ini"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "vcinstall.ini"
- 
+
 FunctionEnd
 
 Function VCInstallPageValidate
@@ -347,7 +347,7 @@ Function VCInstallPageValidate
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 5" "State"
   StrCmp $0 1 install_vc2010
   goto done_vc
-  
+
   install_vs2013:
     !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
     goto done_vc
@@ -480,7 +480,7 @@ Function .onInit
   ReadRegStr $R6 HKLM "SOFTWARE\D" "Install_Dir"
   StrCmp $R5 "" done_uninst_prev
   MessageBox MB_OKCANCEL|MB_ICONQUESTION \
-  "A previous DMD is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
+  "A previous DMD is installed on your system$\n$\nPress 'OK' to replace it with ${DName} ${Version2}" \
   /SD IDOK IDOK +2
   Abort
   ClearErrors
@@ -508,7 +508,7 @@ Function .onInit
   ReadRegStr $I HKLM "${ARP}" "DisplayName"
   ReadRegStr $J HKLM "${ARP}" "DisplayVersion"
   MessageBox MB_OKCANCEL|MB_ICONQUESTION \
-  "$I v$J is installed on your system$\n$\nPress 'OK' to replace by ${DName} ${Version2}" \
+  "$I v$J is installed on your system$\n$\nPress 'OK' to replace it with ${DName} ${Version2}" \
   /SD IDOK IDOK uninst
   Abort
 
