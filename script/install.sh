@@ -5,6 +5,8 @@
 # Authors: Martin Nowak
 # Documentation: https://dlang.org/install.html
 
+# set -x
+
 _() {
 
 # Returns false if the script is invoked from a Windows command prompt.
@@ -407,6 +409,13 @@ parse_args() {
 
 # run_command command [compiler]
 run_command() {
+    # check if tools where installed already and update d-keyring.gpg if necessary
+    local tmp=$(mkdtemp)
+    if [ -f "$ROOT/d-keyring.gpg" ] && [ "$(command curl https://dlang.org/d-keyring.gpg -z $ROOT/d-keyring.gpg -o $tmp/d-keyring.gpg -s -L -w %{http_code})" == "200" ] ; then
+        mv "$tmp/d-keyring.gpg" "$ROOT/d-keyring.gpg"
+        log "auto-updated $ROOT/d-keyring.gpg"
+    fi
+
     case $1 in
         install)
             check_tools curl
@@ -494,13 +503,13 @@ Run \`$(display_path "$ROOT/$2/activate.bat")\` to add $2 to your PATH."
 }
 
 install_dlang_installer() {
-    local tmp mirrors
+    local tmp mirrors keyring_mirrors
     tmp=$(mkdtemp)
-    local mirrors=(
+    mirrors=(
         "https://dlang.org/install.sh"
         "https://s3-us-west-2.amazonaws.com/downloads.dlang.org/other/install.sh"
     )
-    local keyring_mirrors=(
+    keyring_mirrors=(
         "https://dlang.org/d-keyring.gpg"
         "https://s3-us-west-2.amazonaws.com/downloads.dlang.org/other/d-keyring.gpg"
     )
