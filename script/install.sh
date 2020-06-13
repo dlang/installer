@@ -327,7 +327,7 @@ Description
 
 Description
 
-  Update the dlang installer itself.
+  Update the dlang installer itself and the keyring.
 '
     esac
 }
