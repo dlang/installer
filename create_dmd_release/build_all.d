@@ -49,7 +49,7 @@ else
     enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
 
 /// the LDC version to use to build dmd (on Windows), leave empty to use dmd
-enum ldcVer = "1.20.0";
+enum ldcVer = "1.21.0";
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
@@ -197,9 +197,9 @@ private:
         return res.outdent();
     }
 
-    auto build(string ver, bool isBranch, bool skipDocs)
+    auto build(string ver, bool isBranch, bool skipDocs, string clones)
     {
-        return runBuild(this, ver, isBranch, skipDocs);
+        return runBuild(this, ver, isBranch, skipDocs, clones);
     }
 
     ~this()
@@ -288,7 +288,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
+void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string clones)
 {
     with (box.shell())
     {
@@ -321,7 +321,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             break;
         }
 
-        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
+        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone="~escapeShellFileName(clones)~" --host-dmd="~dmd;
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
@@ -546,7 +546,7 @@ int main(string[] args)
     enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"640c080e7fb120dd66cdfe18f9c56fe39dd901c24c32347dae57f80dce931b61";
     enum lld = "lld-link-9.0.0-seh.zip";              enum lld_sha   = hexString!"ffde2eb0e0410e6985bbbb44c200b21a2b2dd34d3f8c3411f5ca5beb7f67ba5b";
     enum lld64 = "lld-link-9.0.0-seh-x64.zip";        enum lld64_sha = hexString!"c24f9b8daf7ec49c7bfb96d7c0de4e3ced76f9777114f7601bdd4185a2cc7338";
-    enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z"; enum ldc_sha   = hexString!"7e4300fd6064305b2e7c2ff312283cefddbbe63eb1c36c551495f3df39f62000";
+    enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z"; enum ldc_sha   = hexString!"aba9d9eb52372f3a782df172d75518851f38a0e71b81e4bcadbc9c9c26f09ec0";
 
     auto oldCompilers = platforms
         .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
@@ -638,7 +638,7 @@ int main(string[] args)
             if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs);
+            build(ver, isBranch, skipDocs, workDir~"/clones");
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }

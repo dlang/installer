@@ -6,6 +6,31 @@
 # Documentation: https://dlang.org/install.html
 
 _() {
+
+# Returns false if the script is invoked from a Windows command prompt.
+posix_terminal() {
+    # If this script is run on Windows cmd by passing it as argument to bash.exe,
+    # the shell level will be 1. If it is run from a POSIX terminal, it will be > 1.
+    if [ "$SHLVL" = 1 ]; then
+        false
+    else
+        true
+    fi
+}
+
+if ! posix_terminal; then
+    # We have been invoked from Windows cmd. Run the login script.
+    # (Cannot use --login bash option, as that runs /etc/bash.bash_logout
+    # afterwards which typically clears the screen, removing any output.)
+    if [ -r /etc/profile ]; then
+        # shellcheck disable=SC1091
+        source /etc/profile
+    else
+        fatal "Failed to source /etc/profile.";
+    fi
+fi
+
+# Earliest opportunity for security settings, tolerate insecure /etc/profile.
 set -ueo pipefail
 
 # ------------------------------------------------------------------------------
@@ -119,10 +144,43 @@ fetch() {
 
 # ------------------------------------------------------------------------------
 
+HAVE_CYGPATH=no
+if command -v cygpath &>/dev/null; then
+    HAVE_CYGPATH=yes
+fi
+posix_path() {
+    if [[ "$HAVE_CYGPATH" == "yes" ]]; then
+        cygpath "$1"
+    else
+        echo "$1"
+    fi
+}
+display_path() {
+    if [[ "$HAVE_CYGPATH" == "yes" ]]; then
+        if posix_terminal; then
+           cygpath "$1"
+        else
+           cygpath -w "$1"
+        fi
+    else
+        echo "$1"
+    fi
+}
+
 COMMAND=
 COMPILER=dmd
 VERBOSITY=1
-ROOT=~/dlang
+# Set a default install path depending on the POSIX/Windows environment.
+if posix_terminal; then
+    ROOT=~/dlang
+else
+    # Default to a ROOT that is outside the POSIX-like environment.
+    if [ -z "$USERPROFILE" ]; then
+        fatal '%USERPROFILE% should not be empty on Windows.';
+    fi
+    ROOT=$(posix_path "$USERPROFILE")/dlang
+fi
+TMP_ROOT=
 DUB_VERSION=
 DUB_BIN_PATH=
 case $(uname -s) in
@@ -152,15 +210,14 @@ check_tools() {
 
 # ------------------------------------------------------------------------------
 
-mkdir -p "$ROOT"
-TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
-
 mkdtemp() {
     mktemp -d "$TMP_ROOT/XXXXXX"
 }
 
 cleanup() {
-    rm -rf "$TMP_ROOT";
+    if [[ -n $TMP_ROOT ]]; then
+        rm -rf "$TMP_ROOT";
+    fi
 }
 trap cleanup EXIT
 
@@ -181,11 +238,14 @@ Commands
 Options
 
   -h --help     Show this help
-  -p --path     Install location (default ~/dlang)
+  -p --path     Install location
+                  POSIX default:   ~/dlang
+                  Windows default: %USERPROFILE%\dlang
   -v --verbose  Verbose output
 
-Run "install.sh <command> --help to get help for a specific command.
-If no argument are provided, the latest DMD compiler will be installed.
+Run "install.sh <command> --help to get help for a specific command, or consult
+https://dlang.org/install.html for documentation.
+If no arguments are provided, the latest DMD compiler will be installed.
 '
 }
 
@@ -267,7 +327,7 @@ Description
 
 Description
 
-  Update the dlang installer itself.
+  Update the dlang installer itself and the keyring.
 '
     esac
 }
@@ -289,11 +349,7 @@ parse_args() {
                     fatal '-p|--path must be followed by a path.';
                 fi
                 shift
-                if command -v cygpath &>/dev/null; then
-                    ROOT="$(cygpath "${1}")";
-                else
-                    ROOT="$1"
-                fi
+                ROOT="$(posix_path "$1")";
                 ;;
 
             -v | --verbose)
@@ -324,6 +380,9 @@ parse_args() {
         esac
         shift
     done
+
+    mkdir -p "$ROOT"
+    TMP_ROOT=$(mktemp -d "$ROOT/.installer_tmp_XXXXXX")
 
     if [ -n "$_help" ]; then
         command_help $COMMAND
@@ -395,16 +454,25 @@ run_command() {
 
             write_env_vars "$2"
 
-            if [ "$(basename "$SHELL")" = fish ]; then
-                local suffix=.fish
-            fi
-            if [ "$VERBOSITY" -eq 0 ]; then
-                echo "$ROOT/$2/activate${suffix:-}"
-            else
-                log "
+            if posix_terminal; then
+                if [ "$(basename "$SHELL")" = fish ]; then
+                    local suffix=.fish
+                fi
+                if [ "$VERBOSITY" -eq 0 ]; then
+                    echo "$ROOT/$2/activate${suffix:-}"
+                else
+                    log "
 Run \`source $ROOT/$2/activate${suffix:-}\` in your shell to use $2.
 This will setup PATH, LIBRARY_PATH, LD_LIBRARY_PATH, DMD, DC, and PS1.
 Run \`deactivate\` later on to restore your environment."
+                fi
+            else
+                if [ "$VERBOSITY" -eq 0 ]; then
+                    display_path "$ROOT/$2/activate.bat"
+                else
+                    log "
+Run \`$(display_path "$ROOT/$2/activate.bat")\` to add $2 to your PATH."
+                fi
             fi
             ;;
 
@@ -903,13 +971,32 @@ write_env_vars() {
     echo "    printf '($1)%s' (_old_d_fish_prompt)"
     echo "end"
 } > "$ROOT/$1/activate.fish"
+
+    if [[ $OS == windows ]]; then
+        logV "Writing environment variables to $ROOT/$1/activate.bat"
+{
+    local -r winpath=$(cygpath -w "$ROOT/$1/$binpath")
+    echo "@echo off"
+    echo "if not \"%PATH:${winpath}=%\"==\"%PATH%\" ("
+    echo "    echo $1 is already active."
+    echo "    goto :EOF"
+    echo ")"
+    echo "echo Adding $1 to your PATH."
+    echo "echo Run \`set PATH=%%_OLD_D_PATH%%\` later on to restore your PATH."
+    echo "set _OLD_D_PATH=%PATH%"
+    echo "set PATH=${DUB_BIN_PATH:+$(cygpath -w "${DUB_BIN_PATH}");}${winpath};%PATH%"
+    if [[ $PROCESSOR_ARCHITECTURE != x86 ]]; then
+        echo "set PATH=${winpath}64;%PATH%"
+    fi
+} > "$ROOT/$1/activate.bat"
+    fi
 }
 
 uninstall_compiler() {
     if [ ! -d "$ROOT/$1" ]; then
         fatal "$1 is not installed in $ROOT"
     fi
-    log "Removing $ROOT/$1"
+    log "Removing $(display_path "$ROOT/$1")"
     rm -rf "${ROOT:?}/$1"
 }
 

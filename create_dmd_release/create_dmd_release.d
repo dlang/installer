@@ -285,7 +285,7 @@ void init(string branch)
 
     if(cloneDir == "")
         cloneDir = defaultWorkDir;
-    cloneDir = absolutePath(cloneDir);
+    assert(isAbsolute(cloneDir), "The \"use-clone\" argument must be given an absolute path.");
 
     osDir = releaseDir ~ "/dmd2/" ~ osDirName;
     releaseBin32Dir = osDir ~ "/bin" ~ suffix32;
@@ -382,10 +382,12 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         }
         if(bits == Bits.bits64 || hostIsLDC)
         {
+            // ensure LDC auto-configures proper environment
+            auto ldcVars = hostIsLDC ? "set LDC_VSDIR_FORCE=1 && " : null;
             // Setup MSVC environment for x64/x86 native builds
             auto vcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
-            msvcVarsX64 = vcVars~" x64 && ";
-            msvcVarsX86 = vcVars~" x86 && ";
+            msvcVarsX64 = vcVars~" x64 && " ~ ldcVars;
+            msvcVarsX86 = vcVars~" x86 && " ~ ldcVars;
             msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
         }
     }
