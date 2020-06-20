@@ -410,8 +410,9 @@ parse_args() {
 # run_command command [compiler]
 run_command() {
     # check if tools where installed already and update d-keyring.gpg if necessary
-    local tmp=$(mkdtemp)
-    if [ -f "$ROOT/d-keyring.gpg" ] && [ "$(command curl https://dlang.org/d-keyring.gpg -z $ROOT/d-keyring.gpg -o $tmp/d-keyring.gpg -s -L -w %{http_code})" == "200" ] ; then
+    local tmp
+    tmp=$(mkdtemp)
+    if [ -f "$ROOT/d-keyring.gpg" ] && [ $(command curl https://dlang.org/d-keyring.gpg -z "$ROOT/d-keyring.gpg" -o "$tmp/d-keyring.gpg" -s -L -w "%{http_code}") == "200" ] ; then
         mv "$tmp/d-keyring.gpg" "$ROOT/d-keyring.gpg"
         log "auto-updated $ROOT/d-keyring.gpg"
     fi
