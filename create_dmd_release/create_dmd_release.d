@@ -553,10 +553,10 @@ void createRelease(string branch)
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
     // Copy sources
-    copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd");
-    copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime");
-    copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos");
-    copyDirVersioned(cloneDir~"/dmd/ini/" ~ osDirName,  releaseDir~"/dmd2/" ~ osDirName);
+    copyDirVersioned(cloneDir~"/dmd", "src", releaseDir~"/dmd2/src/dmd");
+    copyDirVersioned(cloneDir~"/druntime", null, releaseDir~"/dmd2/src/druntime");
+    copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
+    copyDirVersioned(cloneDir~"/dmd", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
     if(exists(cloneDir~"/druntime/doc"))
@@ -573,10 +573,10 @@ void createRelease(string branch)
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-        copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
+        copyDirVersioned(cloneDir~"/dmd", "samples", releaseDir~"/dmd2/samples/d");
         version (Windows) {} else
         {
-            copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
+            copyDirVersioned(cloneDir~"/tools", "man", releaseDir~"/dmd2/man");
             // copy man pages from linux build
             copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
         }
@@ -849,10 +849,10 @@ void copyAttributes(string src, string dest)
 
 /// Recursively copy the contents of a directory, excluding anything
 /// untracked or ignored by git.
-void copyDirVersioned(string src, string dest, bool delegate(string) filter = null)
+void copyDirVersioned(string repo, string path, string dest, bool delegate(string) filter = null)
 {
-    auto versionedFiles = gitVersionedFiles(src);
-    copyFiles(versionedFiles, src, dest, filter);
+    auto versionedFiles = gitVersionedFiles(repo, path);
+    copyFiles(versionedFiles, buildPath(repo, path), dest, filter);
 }
 
 /// Recursively copy contents of 'src' directory into 'dest' directory.
@@ -934,16 +934,23 @@ string runCapture(string cmd)
     return result.output;
 }
 
-string[] gitVersionedFiles(string path)
+string[] gitVersionedFiles(string repo, string path)
 {
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
-    changeDir(path);
+    changeDir(repo);
+
+    path = path.replace("\\", "/");
+    if(!path.empty && !path.endsWith("/"))
+        path ~= "/";
 
     Appender!(string[]) versionedFiles;
-    auto gitOutput = runCapture("git ls-files").strip();
+    auto gitOutput = runCapture("git ls-files -- "~path).strip();
     foreach(filename; gitOutput.splitter("\n"))
-        versionedFiles.put(filename);
+    {
+        assert(filename.startsWith(path));
+        versionedFiles.put(filename[path.length .. $]);
+    }
 
     return versionedFiles.data;
 }
