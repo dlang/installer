@@ -218,9 +218,9 @@ int main(string[] args)
 
     version(OSX)
     {
-        if(do32Bit || do64Bit)
+        if(do32Bit)
         {
-            info("WARNING: Using --only-32 and --only-64: Universal binaries will not be created.");
+            fatal("32-bit builds no longer supported on OSX.");
             return 1;
         }
     }
@@ -461,13 +461,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
     run(msvcVars~makecmd~pic~msvcEnv);
-
-    version(OSX) if(bits == Bits.bits64)
-    {
-        info("Building Phobos Universal Binary");
-        changeDir(cloneDir~"/phobos");
-        run(makecmd~" libphobos2.a");
-    }
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     version (Windows) if (bits == Bits.bits64)
@@ -588,14 +581,7 @@ void createRelease(string branch)
 
     // Copy lib
     version(OSX)
-    {
-        if(do32Bit && do64Bit)
-            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/libphobos2.a", releaseLib32Dir~"/libphobos2.a");
-        else if(do32Bit)
-            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/libphobos2.a", releaseLib32Dir~"/libphobos2_32.a");
-        else if(do64Bit)
-            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/libphobos2.a", releaseLib32Dir~"/libphobos2_64.a");
-    }
+        copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/libphobos2.a", releaseLib32Dir~"/libphobos2.a");
     else version (Windows)
     {
         if(do32Bit)
@@ -727,13 +713,21 @@ string quote(string str)
 
 string releaseBitSuffix(bool has32, bool has64)
 {
-    if(do32Bit && !do64Bit)
-        return releaseBitSuffix32;
+    version (OSX)
+    {
+        assert(!do32Bit && do64Bit);
+        return "";
+    }
+    else
+    {
+        if(do32Bit && !do64Bit)
+            return releaseBitSuffix32;
 
-    if(do64Bit && !do32Bit)
-        return releaseBitSuffix64;
+        if(do64Bit && !do32Bit)
+            return releaseBitSuffix64;
 
-    return "";
+        return "";
+    }
 }
 
 // Filesystem Utils -----------------------
