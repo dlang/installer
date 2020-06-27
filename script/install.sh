@@ -903,6 +903,7 @@ write_env_vars() {
     echo "    unset -f deactivate"
     echo "}"
     echo
+    echo "[[ -v _OLD_D_PATH ]] && deactivate"
     echo "_OLD_D_PATH=\"\${PATH:-}\""
 
     if [ -n "$libpath" ] ; then
