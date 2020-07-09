@@ -218,9 +218,9 @@ int main(string[] args)
 
     version(OSX)
     {
-        if(do32Bit || do64Bit)
+        if(do32Bit)
         {
-            info("WARNING: Using --only-32 and --only-64: Universal binaries will not be created.");
+            fatal("32-bit builds no longer supported on OSX.");
             return 1;
         }
     }
@@ -285,7 +285,7 @@ void init(string branch)
 
     if(cloneDir == "")
         cloneDir = defaultWorkDir;
-    assert(isAbsolute(cloneDir), "The \"use-clone\" argument must be given an absolute path.");
+    cloneDir = absolutePath(cloneDir);
 
     osDir = releaseDir ~ "/dmd2/" ~ osDirName;
     releaseBin32Dir = osDir ~ "/bin" ~ suffix32;
@@ -461,13 +461,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
     run(msvcVars~makecmd~pic~msvcEnv);
-
-    version(OSX) if(bits == Bits.bits64)
-    {
-        info("Building Phobos Universal Binary");
-        changeDir(cloneDir~"/phobos");
-        run(makecmd~" libphobos2.a");
-    }
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     version (Windows) if (bits == Bits.bits64)
@@ -553,10 +546,10 @@ void createRelease(string branch)
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
     // Copy sources
-    copyDirVersioned(cloneDir~"/dmd/src",  releaseDir~"/dmd2/src/dmd");
-    copyDirVersioned(cloneDir~"/druntime", releaseDir~"/dmd2/src/druntime");
-    copyDirVersioned(cloneDir~"/phobos",   releaseDir~"/dmd2/src/phobos");
-    copyDirVersioned(cloneDir~"/dmd/ini/" ~ osDirName,  releaseDir~"/dmd2/" ~ osDirName);
+    copyDirVersioned(cloneDir~"/dmd", "src", releaseDir~"/dmd2/src/dmd");
+    copyDirVersioned(cloneDir~"/druntime", null, releaseDir~"/dmd2/src/druntime");
+    copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
+    copyDirVersioned(cloneDir~"/dmd", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
     if(exists(cloneDir~"/druntime/doc"))
@@ -573,10 +566,10 @@ void createRelease(string branch)
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-        copyDirVersioned(cloneDir~"/dmd/samples",  releaseDir~"/dmd2/samples/d");
+        copyDirVersioned(cloneDir~"/dmd", "samples", releaseDir~"/dmd2/samples/d");
         version (Windows) {} else
         {
-            copyDirVersioned(cloneDir~"/tools/man", releaseDir~"/dmd2/man");
+            copyDirVersioned(cloneDir~"/tools", "man", releaseDir~"/dmd2/man");
             // copy man pages from linux build
             copyDir(origDir~"/docs/man", releaseDir~"/dmd2/man");
         }
@@ -588,14 +581,7 @@ void createRelease(string branch)
 
     // Copy lib
     version(OSX)
-    {
-        if(do32Bit && do64Bit)
-            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/libphobos2.a", releaseLib32Dir~"/libphobos2.a");
-        else if(do32Bit)
-            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/libphobos2.a", releaseLib32Dir~"/libphobos2_32.a");
-        else if(do64Bit)
-            copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/libphobos2.a", releaseLib32Dir~"/libphobos2_64.a");
-    }
+        copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/libphobos2.a", releaseLib32Dir~"/libphobos2.a");
     else version (Windows)
     {
         if(do32Bit)
@@ -727,13 +713,21 @@ string quote(string str)
 
 string releaseBitSuffix(bool has32, bool has64)
 {
-    if(do32Bit && !do64Bit)
-        return releaseBitSuffix32;
+    version (OSX)
+    {
+        assert(!do32Bit && do64Bit);
+        return "";
+    }
+    else
+    {
+        if(do32Bit && !do64Bit)
+            return releaseBitSuffix32;
 
-    if(do64Bit && !do32Bit)
-        return releaseBitSuffix64;
+        if(do64Bit && !do32Bit)
+            return releaseBitSuffix64;
 
-    return "";
+        return "";
+    }
 }
 
 // Filesystem Utils -----------------------
@@ -849,10 +843,10 @@ void copyAttributes(string src, string dest)
 
 /// Recursively copy the contents of a directory, excluding anything
 /// untracked or ignored by git.
-void copyDirVersioned(string src, string dest, bool delegate(string) filter = null)
+void copyDirVersioned(string repo, string path, string dest, bool delegate(string) filter = null)
 {
-    auto versionedFiles = gitVersionedFiles(src);
-    copyFiles(versionedFiles, src, dest, filter);
+    auto versionedFiles = gitVersionedFiles(repo, path);
+    copyFiles(versionedFiles, buildPath(repo, path), dest, filter);
 }
 
 /// Recursively copy contents of 'src' directory into 'dest' directory.
@@ -934,16 +928,23 @@ string runCapture(string cmd)
     return result.output;
 }
 
-string[] gitVersionedFiles(string path)
+string[] gitVersionedFiles(string repo, string path)
 {
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
-    changeDir(path);
+    changeDir(repo);
+
+    path = path.replace("\\", "/");
+    if(!path.empty && !path.endsWith("/"))
+        path ~= "/";
 
     Appender!(string[]) versionedFiles;
-    auto gitOutput = runCapture("git ls-files").strip();
+    auto gitOutput = runCapture("git ls-files -- "~path).strip();
     foreach(filename; gitOutput.splitter("\n"))
-        versionedFiles.put(filename);
+    {
+        assert(filename.startsWith(path));
+        versionedFiles.put(filename[path.length .. $]);
+    }
 
     return versionedFiles.data;
 }
