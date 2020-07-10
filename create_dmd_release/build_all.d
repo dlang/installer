@@ -37,7 +37,7 @@ enum linux_both = Platform(OS.linux, Model._both);
 
 /// Name: create_dmd_release-osx
 /// Setup: Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
-enum osx_both = Platform(OS.osx, Model._both);
+enum osx_64 = Platform(OS.osx, Model._64);
 
 /// Name: create_dmd_release-windows
 /// Setup: Preparing Win7x64 box, https://gist.github.com/MartinNowak/8270666
@@ -46,7 +46,7 @@ enum windows_both = Platform(OS.windows, Model._both);
 version(Windows)
     enum platforms = [windows_both];
 else
-    enum platforms = [linux_both, windows_both, osx_both, freebsd_32, freebsd_64];
+    enum platforms = [linux_both, windows_both, osx_64, freebsd_32, freebsd_64];
 
 /// the LDC version to use to build dmd (on Windows), leave empty to use dmd
 enum ldcVer = "1.21.0";
@@ -57,7 +57,11 @@ struct Platform
 {
     @property string osS() { return to!string(os); }
     @property string modelS() { return model == Model._both ? "" : to!string(cast(uint)model); }
-    string toString() { return model == Model._both ? osS : osS ~ "-" ~ modelS; }
+    string toString()
+    {
+        // 64-bit builds on OSX named just "osx" for compat with older universal binary releases
+        return (model == Model._both || os == OS.osx) ? osS : osS ~ "-" ~ modelS;
+    }
     OS os;
     Model model;
 }
@@ -197,9 +201,9 @@ private:
         return res.outdent();
     }
 
-    auto build(string ver, bool isBranch, bool skipDocs, string clones)
+    auto build(string ver, bool isBranch, bool skipDocs)
     {
-        return runBuild(this, ver, isBranch, skipDocs, clones);
+        return runBuild(this, ver, isBranch, skipDocs);
     }
 
     ~this()
@@ -277,7 +281,7 @@ void prepareExtraBins(string workDir)
         linux_both : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
         freebsd_32 : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
         freebsd_64 : [],
-        osx_both : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
+        osx_64 : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
     ];
 
     foreach (platform; platforms)
@@ -288,7 +292,7 @@ void prepareExtraBins(string workDir)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string clones)
+void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
 {
     with (box.shell())
     {
@@ -321,7 +325,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string clon
             break;
         }
 
-        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone="~escapeShellFileName(clones)~" --host-dmd="~dmd;
+        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
@@ -638,7 +642,7 @@ int main(string[] args)
             if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs, workDir~"/clones");
+            build(ver, isBranch, skipDocs);
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
