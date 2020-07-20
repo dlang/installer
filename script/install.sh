@@ -9,9 +9,11 @@ _() {
 
 # Returns false if the script is invoked from a Windows command prompt.
 posix_terminal() {
-    # If this script is run on Windows cmd by passing it as argument to bash.exe,
-    # the shell level will be 1. If it is run from a POSIX terminal, it will be > 1.
-    if [ "$SHLVL" = 1 ]; then
+    # If run from a POSIX terminal (including under MSYS2 or Cygwin) the TERM
+    # variable is defined to something like "xterm". If run from a Windows
+    # command prompt through bash.exe from an MSYS installation, TERM keeps
+    # its default value, which is "cygwin".
+    if [[ $TERM == "cygwin" ]]; then
         false
     else
         true
