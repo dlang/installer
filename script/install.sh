@@ -13,7 +13,7 @@ posix_terminal() {
     # variable is defined to something like "xterm". If run from a Windows
     # command prompt through bash.exe from an MSYS installation, TERM keeps
     # its default value, which is "cygwin".
-    if [[ $TERM == "cygwin" ]]; then
+    if [[ "${TERM:-noterm}" == "cygwin" ]]; then
         false
     else
         true
