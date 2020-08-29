@@ -308,10 +308,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
             rdmd = "old-dmd/dmd2/linux/bin64/rdmd --compiler="~dmd;
             break;
         case OS.windows:
-            // copy libcurl needed for create_dmd_release and dlang.org
             cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
-            cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll clones\dlang.org`);
-            cmd(`copy old-dmd\dmd2\windows\lib\curl.lib clones\dlang.org`);
+            // copy libcurl needed for create_dmd_release
 
             if (ldcVer.empty)
                 dmd = `old-dmd\dmd2\windows\bin\dmd.exe`;
