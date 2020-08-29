@@ -270,26 +270,6 @@ auto addPrefix(R)(R rng, string prefix)
 }
 
 //------------------------------------------------------------------------------
-// Copy additional release binaries from the previous release
-
-void prepareExtraBins(string workDir)
-{
-    auto extraBins = [
-        windows_both : [
-            "lib.exe", "optlink.exe", "make.exe", "replace.exe", "shell.exe"
-        ].addPrefix("bin/").array,
-        linux_both : ["bin32/dumpobj", "bin64/dumpobj", "bin32/obj2asm", "bin64/obj2asm"],
-        freebsd_32 : ["bin32/dumpobj", "bin32/obj2asm", "bin32/shell"],
-        freebsd_64 : [],
-        osx_64 : ["bin/dumpobj", "bin/obj2asm", "bin/shell"],
-    ];
-
-    foreach (platform; platforms)
-        copyFiles(extraBins[platform].addPrefix("dmd2/"~platform.osS~"/").array(),
-                  workDir~"/"~platform.toString~"/old-dmd", workDir~"/"~platform.osS~"/extraBins");
-}
-
-//------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
 void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
@@ -599,8 +579,6 @@ int main(string[] args)
     }
     applyPatches(gitTag, skipDocs, workDir~"/clones");
 
-    // copy weird custom binaries from the previous release
-    prepareExtraBins(workDir);
     // add latest optlink
     extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
     if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
