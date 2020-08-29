@@ -71,6 +71,6 @@ jobs:
       vmImage: 'vs2017-win2016'
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
-      HOST_DMD_VERSION: 2.088.0
+      HOST_LDC_VERSION: 1.23.0
     steps:
       - template: .azure-pipelines/build-winrelease.yml

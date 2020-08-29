@@ -15,16 +15,10 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 /// Open Source OS boxes are from http://www.vagrantbox.es/
 /// For each box additional setup steps were performed, afterwards the boxes were repackaged.
 
-/// Name: create_dmd_release-freebsd-32
-/// https://vagrantcloud.com/bento/freebsd-11.2-i386
-/// URL: https://app.vagrantup.com/bento/boxes/freebsd-11.2-i386/versions/201807.12.0/providers/virtualbox.box
-/// Setup: sudo pkg install bash curl git gmake rsync
-enum freebsd_32 = Platform(OS.freebsd, Model._32);
-
 /// Name: create_dmd_release-freebsd-64
-/// https://vagrantcloud.com/bento/freebsd-11.2
-/// URL: https://vagrantcloud.com/bento/boxes/freebsd-11.2/versions/201812.27.0/providers/virtualbox.box
-/// Setup: sudo pkg install bash curl git gmake rsync
+/// https://vagrantcloud.com/bento/freebsd-11
+/// URL: https://vagrantcloud.com/bento/boxes/freebsd-11/versions/202006.29.0/providers/virtualbox.box
+/// Setup: sudo pkg install bash curl git gmake rsync llvm90
 enum freebsd_64 = Platform(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
@@ -46,10 +40,7 @@ enum windows_both = Platform(OS.windows, Model._both);
 version(Windows)
     enum platforms = [windows_both];
 else
-    enum platforms = [linux_both, windows_both, osx_64, freebsd_32, freebsd_64];
-
-/// the LDC version to use to build dmd (on Windows), leave empty to use dmd
-enum ldcVer = "1.21.0";
+    enum platforms = [linux_both, windows_both, osx_64, freebsd_64];
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
@@ -201,9 +192,9 @@ private:
         return res.outdent();
     }
 
-    auto build(string ver, bool isBranch, bool skipDocs)
+    auto build(string ver, bool isBranch, bool skipDocs, string ldcVer)
     {
-        return runBuild(this, ver, isBranch, skipDocs);
+        return runBuild(this, ver, isBranch, skipDocs, ldcVer);
     }
 
     ~this()
@@ -272,7 +263,7 @@ auto addPrefix(R)(R rng, string prefix)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
+void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcVer)
 {
     with (box.shell())
     {
@@ -280,30 +271,29 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs)
         final switch (box.os)
         {
         case OS.freebsd:
-            dmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/dmd";
-            rdmd = "old-dmd/dmd2/freebsd/bin"~box.modelS~"/rdmd"~" --compiler="~dmd;
+            dmd = "ldc/ldc2-"~ldcVer~"-freebsd-x86_64/bin/ldmd2";
+            rdmd = "ldc/ldc2-"~ldcVer~"-freebsd-x86_64/bin/rdmd --compiler="~dmd;
             break;
         case OS.linux:
-            dmd = "old-dmd/dmd2/linux/bin64/dmd";
-            rdmd = "old-dmd/dmd2/linux/bin64/rdmd --compiler="~dmd;
+            dmd = "ldc/ldc2-"~ldcVer~"-linux-x86_64/bin/ldmd2";
+            rdmd = "ldc/ldc2-"~ldcVer~"-linux-x86_64/bin/rdmd --compiler="~dmd;
             break;
         case OS.windows:
-            cmd(`copy old-dmd\dmd2\windows\bin\libcurl.dll .`);
             // copy libcurl needed for create_dmd_release
+            cmd("copy ldc/ldc2-"~ldcVer~"-windows-multilib/bin/libcurl.dll .");
 
-            if (ldcVer.empty)
-                dmd = `old-dmd\dmd2\windows\bin\dmd.exe`;
-            else
-                dmd = `ldc\ldc2-`~ldcVer~`-windows-multilib\bin\ldmd2.exe`;
-            rdmd = `old-dmd\dmd2\windows\bin\rdmd.exe`;
+            dmd = "ldc/ldc2-"~ldcVer~"-windows-multilib/bin/ldmd2.exe";
+            rdmd = "ldc/ldc2-"~ldcVer~"-windows-multilib/bin/rdmd.exe --compiler="~dmd;
             break;
         case OS.osx:
-            dmd = "old-dmd/dmd2/osx/bin/dmd";
-            rdmd = "old-dmd/dmd2/osx/bin/rdmd --compiler="~dmd;
+            dmd = "ldc/ldc2-"~ldcVer~"-osx-x86_64/bin/ldmd2";
+            rdmd = "ldc/ldc2-"~ldcVer~"-osx-x86_64/bin/rdmd --compiler="~dmd;
             break;
         }
 
-        auto build = rdmd~" -g create_dmd_release --extras=extraBins --use-clone=clones --host-dmd="~dmd;
+        auto build = rdmd~" -g create_dmd_release --use-clone=clones --host-dmd="~dmd;
+        if (box.os == OS.windows)
+            build ~= " --extras=extraBins";
         if (box.model != Model._both)
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
@@ -502,17 +492,17 @@ int main(string[] args)
         args = args[0..$-1];
     }
     if (args.length != 3)
-        return error("Expected <old-dmd-version> <git-branch-or-tag> [--skip-docs] [--skip-verify] as arguments, e.g. 'rdmd build_all v2.066.0 v2.066.1'.");
+        return error("Expected <ldc-host-version> <git-branch-or-tag> [--skip-docs] [--skip-verify] as arguments, e.g. 'rdmd build_all v1.23.0 v2.066.1'.");
 
     auto workDir = mkdtemp();
     scope (success) rmdirDirectoryNoFail(workDir);
     // Cache huge downloads
     enum cacheDir = "cached_downloads";
 
-    auto oldVer = args[1];
-    if (!oldVer.match(versionRE))
-        return error("Expected a version tag like 'v2.066.0' not '%s'", oldVer);
-    oldVer = oldVer.chompPrefix("v");
+    auto ldcVer = args[1];
+    if (!ldcVer.match(versionRE))
+        return error("Expected a version tag like 'v1.23.0' not '%s'", ldcVer);
+    ldcVer = ldcVer.chompPrefix("v");
 
     immutable gitTag = args[2];
     auto verMatch = gitTag.match(versionRE);
@@ -528,15 +518,20 @@ int main(string[] args)
     enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"640c080e7fb120dd66cdfe18f9c56fe39dd901c24c32347dae57f80dce931b61";
     enum lld = "lld-link-9.0.0-seh.zip";              enum lld_sha   = hexString!"ffde2eb0e0410e6985bbbb44c200b21a2b2dd34d3f8c3411f5ca5beb7f67ba5b";
     enum lld64 = "lld-link-9.0.0-seh-x64.zip";        enum lld64_sha = hexString!"c24f9b8daf7ec49c7bfb96d7c0de4e3ced76f9777114f7601bdd4185a2cc7338";
-    enum ldc = "ldc2-"~ldcVer~"-windows-multilib.7z"; enum ldc_sha   = hexString!"aba9d9eb52372f3a782df172d75518851f38a0e71b81e4bcadbc9c9c26f09ec0";
 
-    auto oldCompilers = platforms
-        .map!(p => "dmd.%1$s.%2$s.%3$s".format(oldVer, p, p.os == OS.windows ? "7z" : "tar.xz"));
+    auto ldcCompilers = platforms
+        .map!(p => "ldc2-%1$s-%2$s-%3$s".format(
+                ldcVer,
+                p.os == OS.freebsd ? p.osS() : p.toString(),
+                p.os == OS.windows ? "multilib.7z" : "x86_64.tar.xz",
+            )
+        );
 
     if (!isBranch)
         getCodesignCerts(workDir~"/codesign");
-    foreach (url; oldCompilers.map!(s => "http://downloads.dlang.org/releases/2.x/"~oldVer~"/"~s))
-        fetchFile(url, cacheDir~"/"~baseName(url), verifySignature);
+    foreach (url; ldcCompilers.map!(s =>
+            "https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~s))
+        fetchFile(url, cacheDir~"/"~baseName(url), !verifySignature);
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
@@ -544,25 +539,10 @@ int main(string[] args)
     fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
     fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
     fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
-    if (!ldcVer.empty)
-        fetchFile("https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~ldc, cacheDir~"/"~ldc, verifySignature, ldc_sha);
 
-    // Unpack previous dmd release
-    foreach (platform, oldCompiler; platforms.zip(oldCompilers))
-        extract(cacheDir~"/"~oldCompiler, workDir~"/"~platform.toString~"/old-dmd");
-
-    if (platforms.canFind!(p => p.os == OS.windows))
-    {
-        // Use latest optlink to build release
-        if (exists(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe"))
-            remove(workDir~"/windows/old-dmd/dmd2/windows/bin/link.exe");
-        if (exists(workDir~"/windows/old-dmd/dmd2/windows/bin/optlink.exe"))
-            remove(workDir~"/windows/old-dmd/dmd2/windows/bin/optlink.exe");
-        extract(cacheDir~"/"~optlink, workDir~"/windows/old-dmd/dmd2/windows/bin/");
-        // Use latest libC (snn.lib) to build release
-        remove(workDir~"/windows/old-dmd/dmd2/windows/lib/snn.lib");
-        copyFile(cacheDir~"/"~libC, workDir~"/windows/old-dmd/dmd2/windows/lib/"~libC);
-    }
+    // Unpack LDC host compiler(s)
+    foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
+        extract(cacheDir~"/"~ldcCompiler, workDir~"/"~platform.toString~"/ldc");
 
     cloneSources(gitTag, dubTag, isBranch, skipDocs, workDir~"/clones");
     immutable dmdVersion = workDir~"/clones/dmd/VERSION";
@@ -594,8 +574,6 @@ int main(string[] args)
     // add lld linker
     extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
     extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
-    // add ldc compiler
-    extract(cacheDir~"/"~ldc, workDir~"/windows/ldc/");
 
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
@@ -608,8 +586,8 @@ int main(string[] args)
     {
         with (Box(p))
         {
-            auto src = [platform~"/old-dmd", "clones", osS~"/extraBins"];
-            if (os == OS.windows) src ~= platform~"/ldc";
+            auto src = [platform~"/ldc", "clones"];
+            if (os == OS.windows) src ~= platform~"/extraBins";
             auto toCopy = src.addPrefix(workDir~"/").join(" ");
             scp(toCopy, "default:");
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
@@ -618,7 +596,7 @@ int main(string[] args)
             if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs);
+            build(ver, isBranch, skipDocs, ldcVer);
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }

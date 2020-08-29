@@ -9,10 +9,11 @@ steps:
   - download: current
     artifact: docs
   - script: |
-      powershell -command "& { iwr http://downloads.dlang.org/releases/2.x/$(HOST_DMD_VERSION)/dmd.$(HOST_DMD_VERSION).windows.7z -OutFile dmd2.7z }"
-      7z x dmd2.7z
-      powershell -command "& { iwr http://downloads.dlang.org/other/dm857c.zip -OutFile dmc.7z }"
-      7z x dmc.7z
+      powershell -command "& { iwr https://github.com/ldc-developers/ldc/releases/download/v$(HOST_LDC_VERSION)/ldc2-$(HOST_LDC_VERSION)-windows-multilib.7z -OutFile ldc.7z }"
+      7z x ldc.7z
+      move ldc2-$(HOST_LDC_VERSION)-windows-multilib ldc2
+      powershell -command "& { iwr http://downloads.dlang.org/other/dm857c.zip -OutFile dmc.zip }"
+      7z x dmc.zip
       powershell -command "& { iwr http://ftp.digitalmars.com/bup.zip -OutFile bup.zip }"
       7z x bup.zip dm/bin/implib.exe
       powershell -command "& { iwr https://www.7-zip.org/a/7z1900-extra.7z -OutFile 7za.7z }"

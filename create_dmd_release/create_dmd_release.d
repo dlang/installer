@@ -228,12 +228,7 @@ int main(string[] args)
     if(!do32Bit && !do64Bit)
         do32Bit = do64Bit = true;
 
-    if(customExtrasDir == "")
-    {
-        fatal("--extras=path is required.");
-        return 1;
-    }
-    else
+    if(customExtrasDir != "")
         customExtrasDir = customExtrasDir.absolutePath().chomp("\\").chomp("/");
 
     if(hostDMD == "")
