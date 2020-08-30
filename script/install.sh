@@ -886,6 +886,9 @@ write_env_vars() {
 
     logV "Writing environment variables to $ROOT/$1/activate"
 {
+    # when activate is called twice, deactivate the prior context first
+    echo "if [ ! -z \${_OLD_D_PATH+x} ] ; then deactivate; fi"
+    echo
     echo "deactivate() {"
     echo "    export PATH=\"\$_OLD_D_PATH\""
     if [ -n "$libpath" ] ; then
@@ -905,7 +908,6 @@ write_env_vars() {
     echo "    unset -f deactivate"
     echo "}"
     echo
-    echo "if [ -v _OLD_D_PATH ] ; then deactivate; fi"
     echo "_OLD_D_PATH=\"\${PATH:-}\""
 
     if [ -n "$libpath" ] ; then
