@@ -16,8 +16,6 @@ steps:
       7z x dmc.zip
       powershell -command "& { iwr http://ftp.digitalmars.com/bup.zip -OutFile bup.zip }"
       7z x bup.zip dm/bin/implib.exe
-      powershell -command "& { iwr https://www.7-zip.org/a/7z1900-extra.7z -OutFile 7za.7z }"
-      7z e 7za.7z 7za.exe -odmd2\windows\bin
       powershell -command "& { iwr https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip -OutFile inetc.zip }"
       7z x inetc.zip -y -bb1 "-oc:\Program Files (x86)\NSIS"
     displayName: Install prerequisites
