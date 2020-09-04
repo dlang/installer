@@ -280,10 +280,6 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
         case OS.windows:
             // copy libcurl needed for create_dmd_release
             cmd("copy ldc/ldc2-"~ldcVer~"-windows-multilib/bin/libcurl.dll .");
-            // force LDC to setup VC environment internally (despite VSINSTALLDIR)
-            // https://github.com/ldc-developers/ldc/blob/3f1a3e683a93e402997c21cbfd92fc1f2039ee89/driver/tool.cpp#L219-L226
-            cmd("$env:LDC_VSDIR_FORCE=1");
-
             dmd = "ldc/ldc2-"~ldcVer~"-windows-multilib/bin/ldmd2.exe";
             rdmd = "ldc/ldc2-"~ldcVer~"-windows-multilib/bin/rdmd.exe --compiler="~dmd;
             break;
@@ -533,7 +529,7 @@ int main(string[] args)
         getCodesignCerts(workDir~"/codesign");
     foreach (url; ldcCompilers.map!(s =>
             "https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~s))
-        fetchFile(url, cacheDir~"/"~baseName(url), !verifySignature);
+        fetchFile(url, cacheDir~"/"~baseName(url));
     fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
     fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
     fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
