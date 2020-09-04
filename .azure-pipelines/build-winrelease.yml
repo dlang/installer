@@ -27,7 +27,12 @@ steps:
       @echo on
       powershell -command "& { iwr https://dlang.org/d-keyring.gpg -OutFile d-keyring.gpg }"
       gpg --import d-keyring.gpg
-      call windows/build_release.bat
+      set PATH=%CD%\dm\bin;%PATH%
+      set LDC_VSDIR_FORCE=1
+      cd create_dmd_release
+      ..\ldc2\bin\ldmd2 -g build_all.d common.d -version=NoVagrant || exit /B 1
+      copy ..\ldc2\bin\libcurl.dll .
+      build_all v%HOST_LDC_VERSION% %BRANCH% || exit /B 1
     displayName: Build release
   - script: |
       7z x create_dmd_release\build\dmd.$(BRANCH).windows.zip -odmd.$(BRANCH).windows
