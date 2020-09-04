@@ -8,11 +8,13 @@ Prerequisites to Run:
 - Git
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
-- Windows: Working DMC and MSVC toolchains. The default make must be DM make.
+- Windows: Working DMC (incl. implib.exe) and 32/64-bit MSVC toolchains.
+  The default make must be DM make, and dmc.exe, DM lib.exe and implib.exe must be
+  found in PATH, so it's recommended to set the DMC bin dir as *first* dir in PATH.
   Also, this environment variable must be set:
-    VSINSTALLDIR:  Visual C directory
+    LDC_VSDIR: Visual Studio directory containing the MSVC toolchains
   Examples:
-    set VSINSTALLDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
+    set LDC_VSDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
 - Windows: A version of OPTLINK with the /LA[RGEADDRESSAWARE] flag:
     <https://github.com/DigitalMars/optlink/commit/475bc5c1fa28eaf899ba4ac1dcfe2ab415db16c6>
 - Windows: Microsoft's HTML Help Workshop on the PATH.
@@ -361,30 +363,16 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     auto msvcVarsX86 = "";
     auto msvcVars = "";
     auto msvcEnv = "";
-    version(Windows)
+    version(Windows) if (bits == Bits.bits64)
     {
-        bool hostIsLDC = hostDMD.endsWith("ldmd2") || hostDMD.endsWith("ldmd2.exe");
-        if(bits == Bits.bits64)
-        {
-            // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
-            msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
-        }
-        else
-        {
-            // use lib.exe from dmc distribution
-            auto dmcPath = environment["PATH"].split(';').find!((p, f) => buildPath(p, f).exists)("dmc.exe").front;
-            msvcEnv = " " ~ quote("AR="~dmcPath~"/lib");
-        }
-        if(bits == Bits.bits64 || hostIsLDC)
-        {
-            // ensure LDC auto-configures proper environment
-            auto ldcVars = hostIsLDC ? "set LDC_VSDIR_FORCE=1 && " : null;
-            // Setup MSVC environment for x64/x86 native builds
-            auto vcVars = quote(environment["VSINSTALLDIR"] ~ `VC\Auxiliary\Build\vcvarsall.bat`);
-            msvcVarsX64 = vcVars~" x64 && " ~ ldcVars;
-            msvcVarsX86 = vcVars~" x86 && " ~ ldcVars;
-            msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
-        }
+        // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
+        msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
+
+        // Setup MSVC environment for x64/x86 native builds
+        auto vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
+        msvcVarsX64 = vcVars~" x64 && ";
+        msvcVarsX86 = vcVars~" x86 && ";
+        msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
     }
 
     auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
