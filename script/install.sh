@@ -549,8 +549,10 @@ resolve_latest() {
             # dmd-nightly, dmd-master, dmd-branch
             # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
             #          dmd-2.068.0 or dmd-2.068.2-5
+            #          dmd-2.064 or dmd-2.064-0
             if [[ ! $input_compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
-               [[ ! $input_compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]]; then
+               [[ ! $input_compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]] &&
+               [[ ! $input_compiler =~ -[0-9][.][0-9]{3}(.[0-9]{1,3})? ]]; then
                 local url=http://downloads.dlang.org/nightlies/$input_compiler/LATEST
                 logV "Determing latest $input_compiler version ($url)."
                 COMPILER="dmd-$(fetch "$url")"
@@ -787,10 +789,10 @@ download_and_unpack() {
         if [[ "${#files[@]}" -eq 1 && -d "${files[0]}" ]]; then
             # Single directory at the top of the archive,
             # as is common with .tar archives. Move it out.
-            find "$tmp"/target -mindepth 2 -maxdepth 2 -exec mv -t "$tmp" {} \+
+            find "$tmp"/target -mindepth 2 -maxdepth 2 -exec sh -c "exec mv "\$@" '$tmp'" sh {} \+
             rmdir "$tmp"/target/*
         else
-            find "$tmp"/target -mindepth 1 -maxdepth 1 -exec mv -t "$tmp" {} \+
+            find "$tmp"/target -mindepth 1 -maxdepth 1 -exec sh -c "exec mv "\$@" '$tmp'" sh {} \+
         fi
         rmdir "$tmp"/target
     fi

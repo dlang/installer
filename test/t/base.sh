@@ -3,6 +3,7 @@
 set -uexo pipefail
 
 compilers=(
+    dmd-2.064
     dmd-2.069.2
     dmd-2.071.2
     dmd-2.077.1
@@ -11,6 +12,7 @@ compilers=(
 )
 
 versions=(
+    'DMD64 D Compiler v2.064'
     'DMD64 D Compiler v2.069.2'
     'DMD64 D Compiler v2.071.2'
     'DMD64 D Compiler v2.077.1'
@@ -19,6 +21,7 @@ versions=(
 )
 
 frontendVersions=(
+    '2064'
     '2069'
     '2071'
     '2077'
@@ -58,8 +61,16 @@ do
     ./script/install.sh $compiler
 
     . ~/dlang/$compiler/activate
-    compilerVersion=$($DC --version | sed -n 1p | tr -d '\r')
+    # test compiler version
+    if [[ "$compiler" == "dmd-2.064" ]] ; then
+        # older dmd versions can't be run on CI
+        deactivate
+        ./script/install.sh uninstall $compiler
+        continue
+    fi
+
     expectedVersion="${versions[$idx]}"
+    compilerVersion=$($DC --version | sed -n 1p | tr -d '\r')
     # We don't ship 64-bit binaries on Windows
     if [[ "$OS" == *_NT-* ]]; then expectedVersion=${expectedVersion/DMD64/DMD32}; fi
     test "$compilerVersion" = "$expectedVersion"
