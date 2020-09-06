@@ -293,48 +293,25 @@ void init(string branch)
 
 void cleanAll(string branch)
 {
-    if(do32Bit)
-        cleanAll(Bits.bits32, branch);
-
-    if(do64Bit)
-        cleanAll(Bits.bits64, branch);
-}
-
-void cleanAll(Bits bits, string branch)
-{
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
-
-    auto targetMakefile = bits == Bits.bits32? makefile : makefile64;
-    auto bitsStr        = bits == Bits.bits32? "32" : "64";
-    auto bitsDisplay = toString(bits);
-    auto makeModel = " MODEL="~bitsStr;
-    auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
-    auto latest = " LATEST="~branch;
-
-    // common make arguments
-    auto makecmd = make~makeModel~hostDMDEnv~latest~" -f"~targetMakefile;
-
-    info("Cleaning DMD "~bitsDisplay);
-    changeDir(cloneDir~"/dmd/src");
-    run(makecmd~" clean");
-
-    info("Cleaning Druntime "~bitsDisplay);
+    
+    info("Cleaning DMD");
+    changeDir(cloneDir~"/dmd");
+    run("git clean -f -x -d"); // remove all untracked/ignored files
+    run("git checkout ."); // undo local changes, e.g. VERSION
+    
+    info("Cleaning Druntime");
     changeDir(cloneDir~"/druntime");
-    run(makecmd~" clean");
+    run("git clean -f -x -d");
 
-    info("Cleaning Phobos "~bitsDisplay);
+    info("Cleaning Phobos");
     changeDir(cloneDir~"/phobos");
-    version(Windows)
-        removeDir(cloneDir~"/phobos/generated");
+    run("git clean -f -x -d");
 
-    // Windows is 32-bit only currently
-    if (targetMakefile != "win64.mak")
-    {
-        info("Cleaning Tools "~bitsDisplay);
-        changeDir(cloneDir~"/tools");
-        run(makecmd~" clean");
-    }
+    info("Cleaning Tools");
+    changeDir(cloneDir~"/tools");
+    run("git clean -f -x -d");
 }
 
 void buildAll(string branch)
