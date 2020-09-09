@@ -297,12 +297,12 @@ void cleanAll(string branch)
 {
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
-    
+
     info("Cleaning DMD");
     changeDir(cloneDir~"/dmd");
     run("git clean -f -x -d"); // remove all untracked/ignored files
     run("git checkout ."); // undo local changes, e.g. VERSION
-    
+
     info("Cleaning Druntime");
     changeDir(cloneDir~"/druntime");
     run("git clean -f -x -d");
@@ -442,7 +442,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     {
         version (linux)
         {
-            if (bits == Bits.bits32)
+            if (bits == Bits.bits64)
             {
                 changeDir(cloneDir~"/dlang.org");
                 run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
