@@ -287,7 +287,7 @@ void archiveLZMA(string inputDir, string archive)
     scope(exit) chdir(saveDir);
     chdir(dirName(inputDir));
 
-    auto cmd = archive.endsWith(".7z") ? ["7za", "a", archive, baseName(inputDir)] :
+    auto cmd = archive.endsWith(".7z") ? ["7z", "a", archive, baseName(inputDir)] :
             ["tar", "-Jcf", archive, baseName(inputDir)];
     auto rc = execute(cmd);
     enforce(!rc.status, rc.output);
@@ -306,7 +306,7 @@ void extract(string archive, string outputDir)
     else if (archive.endsWith(".tar.xz"))
         cmd = ["tar", "-C", outputDir, "-Jxf", archive];
     else if (archive.endsWith(".7z"))
-        cmd = ["7za", "x", "-o"~outputDir, archive];
+        cmd = ["7z", "x", "-o"~outputDir, archive];
     else
         assert(0, "Unsupported archive format "~archive~".");
 

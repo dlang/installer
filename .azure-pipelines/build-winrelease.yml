@@ -9,14 +9,13 @@ steps:
   - download: current
     artifact: docs
   - script: |
-      powershell -command "& { iwr http://downloads.dlang.org/releases/2.x/$(HOST_DMD_VERSION)/dmd.$(HOST_DMD_VERSION).windows.7z -OutFile dmd2.7z }"
-      7z x dmd2.7z
-      powershell -command "& { iwr http://downloads.dlang.org/other/dm857c.zip -OutFile dmc.7z }"
-      7z x dmc.7z
+      powershell -command "& { iwr https://github.com/ldc-developers/ldc/releases/download/v$(HOST_LDC_VERSION)/ldc2-$(HOST_LDC_VERSION)-windows-multilib.7z -OutFile ldc.7z }"
+      7z x ldc.7z
+      move ldc2-$(HOST_LDC_VERSION)-windows-multilib ldc2
+      powershell -command "& { iwr http://downloads.dlang.org/other/dm857c.zip -OutFile dmc.zip }"
+      7z x dmc.zip
       powershell -command "& { iwr http://ftp.digitalmars.com/bup.zip -OutFile bup.zip }"
       7z x bup.zip dm/bin/implib.exe
-      powershell -command "& { iwr https://www.7-zip.org/a/7z1900-extra.7z -OutFile 7za.7z }"
-      7z e 7za.7z 7za.exe -odmd2\windows\bin
       powershell -command "& { iwr https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip -OutFile inetc.zip }"
       7z x inetc.zip -y -bb1 "-oc:\Program Files (x86)\NSIS"
     displayName: Install prerequisites
@@ -28,7 +27,11 @@ steps:
       @echo on
       powershell -command "& { iwr https://dlang.org/d-keyring.gpg -OutFile d-keyring.gpg }"
       gpg --import d-keyring.gpg
-      call windows/build_release.bat
+      set PATH=%CD%\dm\bin;%PATH%
+      cd create_dmd_release
+      ..\ldc2\bin\ldmd2 -g build_all.d common.d -version=NoVagrant || exit /B 1
+      copy ..\ldc2\bin\libcurl.dll .
+      build_all v%HOST_LDC_VERSION% %BRANCH% || exit /B 1
     displayName: Build release
   - script: |
       7z x create_dmd_release\build\dmd.$(BRANCH).windows.zip -odmd.$(BRANCH).windows
