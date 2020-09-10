@@ -169,9 +169,9 @@ do
 		# install binaries
 		mkdir -p usr/bin
 		if test "$ARCH" = "x86_64" ;then
-			cp -f ../$UNZIPDIR/linux/bin64/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} usr/bin
+			cp -f ../$UNZIPDIR/linux/bin64/{dmd,rdmd,ddemangle,dustmite,dub} usr/bin
 		else
-			cp -f ../$UNZIPDIR/linux/bin32/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub} usr/bin
+			cp -f ../$UNZIPDIR/linux/bin32/{dmd,rdmd,ddemangle,dustmite,dub} usr/bin
 		fi
 
 
@@ -208,12 +208,12 @@ do
 
 
 		# install man pages
-		gzip ../$UNZIPDIR/man/man1/{dmd.1,dumpobj.1,obj2asm.1,rdmd.1}
+		gzip ../$UNZIPDIR/man/man1/{dmd.1,rdmd.1}
 		gzip ../$UNZIPDIR/man/man5/dmd.conf.5
-		chmod 0644 ../$UNZIPDIR/man/man1/{dmd.1.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz}
+		chmod 0644 ../$UNZIPDIR/man/man1/{dmd.1.gz,rdmd.1.gz}
 		chmod 0644 ../$UNZIPDIR/man/man5/dmd.conf.5.gz
 		mkdir -p usr/share/man/man1/
-		cp -f ../$UNZIPDIR/man/man1/{dmd.1.gz,dumpobj.1.gz,obj2asm.1.gz,rdmd.1.gz} usr/share/man/man1
+		cp -f ../$UNZIPDIR/man/man1/{dmd.1.gz,rdmd.1.gz} usr/share/man/man1
 		mkdir -p usr/share/man/man5/
 		cp -f ../$UNZIPDIR/man/man5/dmd.conf.5.gz usr/share/man/man5
 
@@ -260,7 +260,7 @@ do
 		# change folders and files permissions
 		chmod -R 0755 *
 		chmod 0644 $(find . ! -type d)
-		chmod 0755 usr/bin/{dmd,dumpobj,obj2asm,rdmd,ddemangle,dustmite,dub}
+		chmod 0755 usr/bin/{dmd,rdmd,ddemangle,dustmite,dub}
 
 
 		# find deb package dependencies
