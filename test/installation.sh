@@ -18,10 +18,10 @@ RPM="dmd-${VERSION/-/\~}-0.fedora.x86_64.rpm"
 # dmd-2.079.1-0.openSUSE.x86_64.rpm, dmd-2.079.1~beta.1-0.openSUSE.x86_64.rpm
 SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 
-DEB_PLATFORMS=(ubuntu:precise ubuntu:trusty ubuntu:xenial ubuntu:bionic)
-DEB_PLATFORMS+=(debian:jessie debian:stretch debian:buster)
-RPM_PLATFORMS=(fedora:27 fedora:28 fedora:29 centos:6 centos:7)
-SUSE_RPM_PLATFORMS=(opensuse:leap opensuse/tumbleweed)
+DEB_PLATFORMS=(ubuntu:xenial ubuntu:bionic ubuntu:focal)
+DEB_PLATFORMS+=(debian:stable debian:testing)
+RPM_PLATFORMS=(fedora:31 fedora:latest centos:7 centos:latest)
+SUSE_RPM_PLATFORMS=(opensuse/leap opensuse/tumbleweed)
 
 # copy pkgs to test folder so that it's part of docker's build context
 cp "$BUILD_DIR/$DEB" .
