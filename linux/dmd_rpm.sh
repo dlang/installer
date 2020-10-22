@@ -244,7 +244,7 @@ do
 		;
 		; The special name %@P% is replaced with the path to this file
 		;
-		
+
 		[Environment32]
 		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib -L--export-dynamic
 		' | sed 's/^\t\t//' > etc/dmd.conf
@@ -355,4 +355,3 @@ do
 		rm -Rf $TEMPDIR
 	fi
 done
-
