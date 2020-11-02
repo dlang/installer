@@ -3,7 +3,7 @@
 set ROOT=%CD%
 mkdir "%ROOT%\artifacts"
 
-set TAG=mingw-libs-%MINGW_VER%-3
+set TAG=mingw-libs-%MINGW_VER%
 set ARTIFACT=%TAG%.zip
 set ARTIFACTPATH=%ROOT%\artifacts\%ARTIFACT%
 set GITHUB_RELEASE=https://github.com/dlang/installer/releases/download/%TAG%/%ARTIFACT%
