@@ -37,7 +37,7 @@ jobs:
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
       # NB: update windows/build_mingw.sha256sums as well
-      MINGW_VER: 7.0.0
+      MINGW_VER: 8.0.0
       D_VERSION: 2.077.1
     steps:
       - template: .azure-pipelines/build-mingw-libs.yml

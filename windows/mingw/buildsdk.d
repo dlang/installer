@@ -164,6 +164,10 @@ void sanitizeDef(string defFile)
         if (line == "ExtractIconW@")
             return ";ExtractIconW@";
 
+        // Apparent bugs in lib32/api-ms-win-*.def - missing stdcall params size suffix.
+        if (line[$-1] == '@' && baseName(defFile).startsWith("api-ms-win-"))
+            return ";" ~ line;
+
         return line;
     });
 }
