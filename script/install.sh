@@ -946,7 +946,7 @@ verify() {
     path="$1"
     urls=("${@:2}")
     : "${GPG:=$(find_gpg)}"
-    if [ "$GPG" = x ]; then
+    if [ -z "$GPG" ]; then
         return
     fi
     if ! $GPG --list-keys >/dev/null; then
