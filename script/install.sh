@@ -808,9 +808,6 @@ install_compiler() {
         if [[ $OS == windows && $vernum -lt 1007 ]]; then
             url="https://github.com/ldc-developers/ldc/releases/download/v$ver/ldc2-$ver-win$MODEL-msvc.zip"
         fi
-        if [ $OS != linux ] && [ $OS != windows ] && [ $OS != osx ]; then
-            fatal "no ldc binaries available for $OS"
-        fi
 
         download_and_unpack_without_verify "$ROOT/$compiler" "$url"
 
@@ -946,7 +943,7 @@ verify() {
     path="$1"
     urls=("${@:2}")
     : "${GPG:=$(find_gpg)}"
-    if [ "$GPG" = x ]; then
+    if [ -z "$GPG" ]; then
         return
     fi
     if ! $GPG --list-keys >/dev/null; then
