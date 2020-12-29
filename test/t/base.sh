@@ -3,12 +3,12 @@
 set -uexo pipefail
 
 compilers=(
-    dmd-2.064
-    dmd-2.069.2
-    dmd-2.071.2
-    dmd-2.077.1
-    dmd-master-2018-10-14
-    ldc-1.4.0
+    dmd-2.094.0
+    dmd-2.089.2
+    dmd-2.091.2
+    dmd-2.087.1
+    dmd-master-2020-05-10
+    ldc-1.24.0
 )
 
 versions=(
@@ -16,17 +16,17 @@ versions=(
     'DMD64 D Compiler v2.069.2'
     'DMD64 D Compiler v2.071.2'
     'DMD64 D Compiler v2.077.1'
-    'DMD64 D Compiler v2.082.1-master-54b676b'
-    'LDC - the LLVM D compiler (1.4.0):'
+    'DMD64 D Compiler v2.090.0-beta.1-master-49dfbe5'
+    'LDC - the LLVM D compiler (1.24.0):'
 )
 
 frontendVersions=(
-    '2064'
-    '2069'
-    '2071'
-    '2077'
-    '2082'
-    '2074'
+    '2094'
+    '2089'
+    '2091'
+    '2087'
+    '2090'
+    '2094'
 )
 
 if [ "${TRAVIS_OS_NAME:-}" = "linux" ]; then
