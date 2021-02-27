@@ -16,8 +16,8 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 /// For each box additional setup steps were performed, afterwards the boxes were repackaged.
 
 /// Name: create_dmd_release-freebsd-64
-/// https://vagrantcloud.com/bento/freebsd-11
-/// URL: https://vagrantcloud.com/bento/boxes/freebsd-11/versions/202006.29.0/providers/virtualbox.box
+/// https://vagrantcloud.com/bento/freebsd-12
+/// URL: https://app.vagrantup.com/bento/boxes/freebsd-12/versions/202010.28.0/providers/virtualbox.box
 /// Setup: sudo pkg install bash curl git gmake rsync llvm90
 enum freebsd_64 = Platform(OS.freebsd, Model._64);
 
