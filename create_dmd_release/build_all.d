@@ -476,21 +476,29 @@ int error(Args...)(string fmt, Args args)
 
 int main(string[] args)
 {
+    import std.getopt;
+
     bool skipDocs = false;
     bool verifySignature = true;
+    bool skipVerify;
 
-    while (args.length > 3)
+    auto helpInformation = getopt(
+        args,
+        std.getopt.config.caseSensitive,
+        "skip-docs",    "Don't generate the documentation",         &skipDocs,
+        "skip-verify",  "Don't verify downloaded files with GPG",   &skipVerify,
+    );
+
+     if (helpInformation.helpWanted)
     {
-        if (args[$-1] == "--skip-docs")
-            skipDocs = true;
-        else if (args[$-1] == "--skip-verify")
-            verifySignature = false;
-        else
-            break;
-        args = args[0..$-1];
+        defaultGetoptPrinter(`Usage: ./build-all.d <ldc-host-version> <git-branch-or-tag>`, helpInformation.options);
+        return 0;
     }
+
     if (args.length != 3)
         return error("Expected <ldc-host-version> <git-branch-or-tag> [--skip-docs] [--skip-verify] as arguments, e.g. 'rdmd build_all v1.23.0 v2.066.1'.");
+
+    verifySignature = !skipVerify;
 
     auto workDir = mkdtemp();
     scope (success) rmdirDirectoryNoFail(workDir);
