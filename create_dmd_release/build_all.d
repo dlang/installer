@@ -37,9 +37,9 @@ enum osx_64 = Platform(OS.osx, Model._64);
 enum windows_both = Platform(OS.windows, Model._both);
 
 version(Windows)
-    enum platforms = [windows_both];
+    __gshared platforms = [windows_both];
 else
-    enum platforms = [linux_both, windows_both, osx_64, freebsd_64];
+    __gshared platforms = [linux_both, windows_both, osx_64, freebsd_64];
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
@@ -481,13 +481,32 @@ int main(string[] args)
     bool skipDocs = false;
     bool verifySignature = true;
     bool skipVerify;
+    string platformStr;
 
     auto helpInformation = getopt(
         args,
         std.getopt.config.caseSensitive,
         "skip-docs",    "Don't generate the documentation",         &skipDocs,
         "skip-verify",  "Don't verify downloaded files with GPG",   &skipVerify,
+        "targets",      "Only build the specified targets",         &platformStr
     );
+
+    // Map OS to the actual configurations defined at the top
+    if (platformStr.length)
+    {
+        platforms = [];
+
+        foreach (const os; platformStr.splitter(',').map!(to!OS))
+        {
+            final switch (os) with (OS)
+            {
+                case windows:   platforms ~= windows_both;  break;
+                case linux:     platforms ~= linux_both;    break;
+                case osx:       platforms ~= osx_64;        break;
+                case freebsd:   platforms ~= freebsd_64;    break;
+            }
+        }
+    }
 
      if (helpInformation.helpWanted)
     {
