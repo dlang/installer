@@ -557,13 +557,18 @@ int main(string[] args)
     foreach (url; ldcCompilers.map!(s =>
             "https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~s))
         fetchFile(url, cacheDir~"/"~baseName(url));
-    fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
-    fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
-    fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
-    fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
+
+    const hasWindows = platforms.any!(p => p.os == OS.windows);
+    if (hasWindows)
+    {
+        fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
+        fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
+        fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
+        fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
+        fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
+        fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
+        fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
+    }
 
     // Unpack LDC host compiler(s)
     foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
@@ -584,21 +589,24 @@ int main(string[] args)
     }
     applyPatches(gitTag, skipDocs, workDir~"/clones");
 
-    // add latest optlink
-    extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
-    if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
-        remove(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe");
-    // add latest dmc libC (snn.lib)
-    copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
-    // add libcurl build for windows
-    extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
-    // add updated OMF import libraries
-    extract(cacheDir~"/"~omflibs, workDir~"/windows/extraBins/dmd2/windows/lib/");
-    // add mingw coff libraries
-    extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
-    // add lld linker
-    extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
-    extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
+    if (hasWindows)
+    {
+        // add latest optlink
+        extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
+        if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
+            remove(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe");
+        // add latest dmc libC (snn.lib)
+        copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
+        // add libcurl build for windows
+        extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
+        // add updated OMF import libraries
+        extract(cacheDir~"/"~omflibs, workDir~"/windows/extraBins/dmd2/windows/lib/");
+        // add mingw coff libraries
+        extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
+        // add lld linker
+        extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
+        extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
+    }
 
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
