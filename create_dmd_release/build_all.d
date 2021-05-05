@@ -352,17 +352,49 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
 import std.regex;
 enum versionRE = regex(`^v(\d+)\.(\d+)\.(\d+)(-.*)?$`);
 
+/// Determines the latest release tagged for the Dub repository
 string getDubTag(bool preRelease)
 {
     import std.net.curl : get;
-    import std.json : parseJSON;
+    import std.json : parseJSON, JSONValue;
 
     // github already sorts tags in descending semantic versioning order
-    foreach (tag; get("https://api.github.com/repos/dlang/dub/tags").parseJSON.array)
+    foreach (tag; get("https://api.github.com/repos/dlang/dub/tags").parseJSON.array.ifThrown(JSONValue[].init))
         if (auto m = tag["name"].str.match(versionRE))
             if (preRelease || m.captures[4].empty)
                 return tag["name"].str;
-    throw new Exception("Failed to get dub tags");
+
+    // Fallback: Use git ls-remote to list all known tags and sort them appropriatly
+    auto re = regex(`v(\d+)\.(\d+)\.(\d+)(-[^\^]*)?$`);
+    auto tagList = runCapture("git ls-remote --tags https://github.com/dlang/dub.git")
+        .lineSplitter
+        .map!(t => t.match(re))
+        .filter!(m => !m.empty && (preRelease || m.captures[4].empty))
+        .array;
+
+    enforce(!tagList.empty, "Failed to get dub tags");
+
+    // Order by version numbers as integers
+    alias lessVer(int idx) = (a, b) => a.captures[idx].to!int < b.captures[idx].to!int;
+
+    // Order by suffix
+    alias lessSuf = (ca, cb) {
+        const a = ca.captures[4];
+        const b = cb.captures[4];
+
+        // Preference: "beta" < "rc" < ""
+        if (a.length != b.length)
+            return a.length > b.length;
+
+        // Lexical order to compare numbers "beta.1" vs "beta.2*"
+        return a < b;
+    };
+
+    // Sort entire list according to the predicates defined above
+    tagList.multiSort!(lessVer!1, lessVer!2, lessVer!3, lessSuf);
+
+    // Maximum element denotes the most recent tag
+    return tagList[$-1].captures[0];
 }
 
 void getCodesignCerts(string tgtDir)
