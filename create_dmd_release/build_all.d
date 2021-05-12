@@ -37,9 +37,9 @@ enum osx_64 = Platform(OS.osx, Model._64);
 enum windows_both = Platform(OS.windows, Model._both);
 
 version(Windows)
-    enum platforms = [windows_both];
+    __gshared platforms = [windows_both];
 else
-    enum platforms = [linux_both, windows_both, osx_64, freebsd_64];
+    __gshared platforms = [linux_both, windows_both, osx_64, freebsd_64];
 
 enum OS { freebsd, linux, osx, windows, }
 enum Model { _both = 0, _32 = 32, _64 = 64 }
@@ -476,21 +476,48 @@ int error(Args...)(string fmt, Args args)
 
 int main(string[] args)
 {
+    import std.getopt;
+
     bool skipDocs = false;
     bool verifySignature = true;
+    bool skipVerify;
+    string platformStr;
 
-    while (args.length > 3)
+    auto helpInformation = getopt(
+        args,
+        std.getopt.config.caseSensitive,
+        "skip-docs",    "Don't generate the documentation",         &skipDocs,
+        "skip-verify",  "Don't verify downloaded files with GPG",   &skipVerify,
+        "targets",      "Only build the specified targets",         &platformStr
+    );
+
+    // Map OS to the actual configurations defined at the top
+    if (platformStr.length)
     {
-        if (args[$-1] == "--skip-docs")
-            skipDocs = true;
-        else if (args[$-1] == "--skip-verify")
-            verifySignature = false;
-        else
-            break;
-        args = args[0..$-1];
+        platforms = [];
+
+        foreach (const os; platformStr.splitter(',').map!(to!OS))
+        {
+            final switch (os) with (OS)
+            {
+                case windows:   platforms ~= windows_both;  break;
+                case linux:     platforms ~= linux_both;    break;
+                case osx:       platforms ~= osx_64;        break;
+                case freebsd:   platforms ~= freebsd_64;    break;
+            }
+        }
     }
+
+     if (helpInformation.helpWanted)
+    {
+        defaultGetoptPrinter(`Usage: ./build-all.d <ldc-host-version> <git-branch-or-tag>`, helpInformation.options);
+        return 0;
+    }
+
     if (args.length != 3)
         return error("Expected <ldc-host-version> <git-branch-or-tag> [--skip-docs] [--skip-verify] as arguments, e.g. 'rdmd build_all v1.23.0 v2.066.1'.");
+
+    verifySignature = !skipVerify;
 
     auto workDir = mkdtemp();
     scope (success) rmdirDirectoryNoFail(workDir);
@@ -530,13 +557,18 @@ int main(string[] args)
     foreach (url; ldcCompilers.map!(s =>
             "https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~s))
         fetchFile(url, cacheDir~"/"~baseName(url));
-    fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
-    fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-    fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
-    fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
-    fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
-    fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
+
+    const hasWindows = platforms.any!(p => p.os == OS.windows);
+    if (hasWindows)
+    {
+        fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
+        fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
+        fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
+        fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
+        fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
+        fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
+        fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
+    }
 
     // Unpack LDC host compiler(s)
     foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
@@ -557,21 +589,24 @@ int main(string[] args)
     }
     applyPatches(gitTag, skipDocs, workDir~"/clones");
 
-    // add latest optlink
-    extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
-    if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
-        remove(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe");
-    // add latest dmc libC (snn.lib)
-    copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
-    // add libcurl build for windows
-    extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
-    // add updated OMF import libraries
-    extract(cacheDir~"/"~omflibs, workDir~"/windows/extraBins/dmd2/windows/lib/");
-    // add mingw coff libraries
-    extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
-    // add lld linker
-    extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
-    extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
+    if (hasWindows)
+    {
+        // add latest optlink
+        extract(cacheDir~"/"~optlink, workDir~"/windows/extraBins/dmd2/windows/bin/");
+        if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
+            remove(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe");
+        // add latest dmc libC (snn.lib)
+        copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
+        // add libcurl build for windows
+        extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
+        // add updated OMF import libraries
+        extract(cacheDir~"/"~omflibs, workDir~"/windows/extraBins/dmd2/windows/lib/");
+        // add mingw coff libraries
+        extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
+        // add lld linker
+        extract(cacheDir~"/"~lld, workDir~"/windows/extraBins/dmd2/windows/bin/");
+        extract(cacheDir~"/"~lld64, workDir~"/windows/extraBins/dmd2/windows/bin64/");
+    }
 
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
