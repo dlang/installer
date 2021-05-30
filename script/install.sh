@@ -675,6 +675,9 @@ resolve_latest() {
             logV "Determing latest dmd-beta version (${mirrors[0]})."
             COMPILER="dmd-$(fetch "${mirrors[@]}")"
             ;;
+        dmd-nightly)
+            COMPILER="dmd-nightly"
+            ;;
         dmd-*) # nightly master or feature branch
             # dmd-nightly, dmd-master, dmd-branch
             # but not: dmd-2016-10-19 or dmd-branch-2016-10-20
@@ -797,6 +800,19 @@ install_compiler() {
         local url="http://downloads.dlang.org/nightlies/$1/$basename$ext"
 
         download_and_unpack_with_verify "$ROOT/$compiler" "$url"
+
+    # Nightlies uploaded to the DMD repo
+    elif [[ $1 == dmd-nightly ]]; then
+        local baseUrl="https://github.com/dlang/dmd/releases/download/nightly/dmd.master"
+        local ext
+        test $OS = windows && ext=7z || ext=tar.xz
+        local mod=
+        test $OS = freebsd && mod=-64
+
+        download_and_unpack_without_verify "$ROOT/$compiler" "$baseUrl.$OS$mod.$ext"
+
+        # Create symlink `dmd-master => dmd-nightly` to be compatible with the old behaviour
+        ln -s "$ROOT/$compiler" "$ROOT/dmd-master"
 
     # ldc-0.12.1 or ldc-0.15.0-alpha1
     elif [[ $1 =~ ^ldc-(([0-9]+)\.([0-9]+)\.[0-9]+(-.*)?)$ ]]; then
@@ -1193,6 +1209,11 @@ uninstall_compiler() {
     fi
     log "Removing $(display_path "$ROOT/$1")"
     rm -rf "${ROOT:?}/$1"
+
+    # Remove the compatibility symlink for the nightlies
+    if [ "$1" == "dmd-nightly" ]; then
+        rm -rf "${ROOT:?}/dmd-master"
+    fi
 }
 
 list_compilers() {

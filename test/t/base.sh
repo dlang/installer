@@ -136,7 +136,7 @@ fi
 
 # test dmd-nightly
 ./script/install.sh install dmd-nightly
-dmd_nightly="$(./script/install.sh list | grep dmd-master)"
+dmd_nightly="$(./script/install.sh list | grep dmd-nightly)"
 ./script/install.sh uninstall "$dmd_nightly"
 
 # test dmd-beta
