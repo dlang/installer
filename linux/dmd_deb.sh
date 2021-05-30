@@ -21,7 +21,7 @@ fi
 
 
 # show help
-if test -z $1 ;then
+if test -z "$1" ;then
 	echo "Script to create dmd v2 binary deb packages."
 	echo
 	echo "Usage:"
@@ -53,10 +53,10 @@ else
 	if [ $VER_TYPE -eq 0 ]
 	then
 		ferror "incorrect version number" "Exiting..."
-	elif test ${VER:0:1} -ne 2
+	elif test "${VER:0:1}" -ne 2
 	then
 		ferror "for dmd v2 only" "Exiting..."
-	elif test ${VER:0:1}${VER:2:3} -lt 2065
+	elif test "${VER:0:1}${VER:2:3}" -lt 2065
 	then
 		ferror "dmd v2.065 and newer only" "Exiting..."
 	fi
@@ -101,13 +101,13 @@ fi
 MAINTAINER="Jordi Sayol <g.sayol@gmail.com>"
 VERSION1=${1:2}
 MAJOR=0
-MINOR=$(awk -F. '{ print $2 +0 }' <<<$VERSION1)
-RELEASE=$(awk -F. '{ print $3 +0 }' <<<$VERSION1)
+MINOR=$(awk -F. '{ print $2 +0 }' <<< "$VERSION1")
+RELEASE=$(awk -F. '{ print $3 +0 }' <<< "$VERSION1")
 if [ "$REVISION" == "" ]
 then
 	REVISION=0
 fi
-DESTDIR=`pwd`
+DESTDIR="$(pwd)"
 TEMPDIR='/tmp/'`date +"%s%N"`
 UNZIPDIR="dmd2"
 DMDURL="http://ftp.digitalmars.com/dmd.$VERSION1.linux.zip"
@@ -117,40 +117,40 @@ if test "$2" = "-m64" ;then
 elif test "$2" = "-m32" ;then
 	ARCH="i386"
 fi
-ZIPFILE=`basename $DMDURL`
-DMDDIR="dmd_"$VERSION2"-"$REVISION"_"$ARCH
+ZIPFILE="$(basename "$DMDURL")"
+DMDDIR="dmd_${VERSION2}-${REVISION}_${ARCH}"
 DIR32="i386-linux-gnu"
 DIR64="x86_64-linux-gnu"
-DEBFILE=$DMDDIR".deb"
+DEBFILE="$DMDDIR.deb"
 
 
 # check if destination deb file already exist
-if `dpkg -I $DESTDIR"/"$DEBFILE &>/dev/null` && test "$3" != "-f" ;then
+if dpkg -I "$DESTDIR/$DEBFILE" &>/dev/null && test "$3" != "-f" ;then
 	echo -e "$DEBFILE - already exist"
 else
 	# remove bad formated deb file
-	rm -f $DESTDIR"/"$DEBFILE
+	rm -f "$DESTDIR/$DEBFILE"
 
 
 	# download zip file if not exist
-	if ! $(unzip -c $DESTDIR"/"$ZIPFILE &>/dev/null)
+	if ! unzip -c "$DESTDIR/$ZIPFILE" &>/dev/null
 	then
-		rm -f $DESTDIR"/"$ZIPFILE
+		rm -f "$DESTDIR/$ZIPFILE"
 		echo "Downloading $ZIPFILE..."
-		curl -fo $DESTDIR"/"$ZIPFILE $DMDURL
+		curl -fo "$DESTDIR/$ZIPFILE" "$DMDURL"
 	fi
 
 
 	# create temp dir
-	mkdir -p $TEMPDIR"/"$DMDDIR
+	mkdir -p "$TEMPDIR/$DMDDIR"
 
 
 	# unpacking sources
-	unzip -q $DESTDIR"/"$ZIPFILE -d $TEMPDIR
+	unzip -q "$DESTDIR/$ZIPFILE" -d "$TEMPDIR"
 
 
 	# change unzipped folders and files permissions
-	chmod -R 0755 $TEMPDIR/$UNZIPDIR/*
+	chmod -R 0755 "$TEMPDIR/$UNZIPDIR/"*
 	chmod 0644 $(find -L $TEMPDIR/$UNZIPDIR ! -type d)
 
 
@@ -277,29 +277,29 @@ else
 	mkdir -p usr/share/doc/dmd
 	for I in ../$UNZIPDIR/license.txt ../$UNZIPDIR/src/druntime/LICENSE.txt
 	do
-		sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
-		if [ $(sed -n '/====/=' $I"_tmp") ]
+		sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > "${I}_tmp"
+		if sed -n '/====/=' "${I}_tmp"
 		then
-			sed -i '1,/====/d' $I"_tmp"
+			sed -i '1,/====/d' "${I}_tmp"
 		fi
-		sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' $I"_tmp"
+		sed -i ':a;$!{N;ba};s/^\( .\s*\n\)*\|\(\s*\n .\)*$//g' "${I}_tmp"
 	done
-	echo 'Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+	echo "Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 	Source: https://github.com/dlang
 
 	Files: usr/bin/*
-	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	Copyright: 1999-$(date +%Y) by Digital Mars written by Walter Bright
 	License: Digital Mars License
 
 	Files: usr/lib/*
-	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	Copyright: 1999-$(date +%Y) by Digital Mars written by Walter Bright
 	License: Boost License 1.0
 
 	Files: usr/include/*
-	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
+	Copyright: 1999-$(date +%Y) by Digital Mars written by Walter Bright
 	License: Boost License 1.0
 
-	License: Digital Mars License' | sed 's/^\t//' > usr/share/doc/dmd/copyright
+	License: Digital Mars License" | sed 's/^\t//' > usr/share/doc/dmd/copyright
 	cat ../$UNZIPDIR/license.txt_tmp >> usr/share/doc/dmd/copyright
 	echo '
 	License: Boost License 1.0' | sed 's/^\t//' >> usr/share/doc/dmd/copyright
@@ -308,7 +308,7 @@ else
 
 	# create shlibs file
 	mkdir -p DEBIAN
-	echo "libphobos2 "$MAJOR.$MINOR" libphobos2-"$MINOR > DEBIAN/shlibs
+	echo "libphobos2 $MAJOR.$MINOR libphobos2-$MINOR" > DEBIAN/shlibs
 
 
 	# create /etc/dmd.conf file
@@ -349,14 +349,14 @@ else
 
 
 	# create control file
-	echo -e 'Package: dmd
-	Version: '$VERSION2-$REVISION'
-	Architecture: '$ARCH'
-	Maintainer: '$MAINTAINER'
-	Installed-Size: '$(du -ks usr/ | awk '{print $1}')'
-	Depends: '$DEPENDS'
-	Suggests: '$SUGGESTS'
-	Provides: '$UNZIPDIR-$MINOR', d-compiler
+	echo -e "Package: dmd
+	Version: ${VERSION2}-${REVISION}
+	Architecture: ${ARCH}
+	Maintainer: ${MAINTAINER}
+	Installed-Size: $(du -ks usr/ | awk '{print $1}')
+	Depends: ${DEPENDS}
+	Suggests: ${SUGGESTS}
+	Provides: ${UNZIPDIR}-${MINOR}, d-compiler
 	Section: devel
 	Priority: optional
 	Homepage: http://dlang.org/
@@ -375,7 +375,7 @@ else
 	 programming. The needs and contributions of the D programming community form
 	 the direction it goes.
 	 .
-	 Main designer: Walter Bright' | sed 's/^\t//' > DEBIAN/control
+	 Main designer: Walter Bright" | sed 's/^\t//' > DEBIAN/control
 
 
 	# create md5sum file
@@ -405,7 +405,7 @@ else
 
 	# create deb package
 	cd ..
-	fakeroot dpkg-deb -b -Zxz -z9 $DMDDIR
+	fakeroot dpkg-deb -b -Zxz -z9 "$DMDDIR"
 
 
 	# disable pushd
@@ -413,10 +413,9 @@ else
 
 
 	# place deb package
-	mv $TEMPDIR"/"$DEBFILE $DESTDIR
+	mv "$TEMPDIR/$DEBFILE" "$DESTDIR"
 
 
 	# delete temp dir
-	rm -Rf $TEMPDIR
+	rm -rf "$TEMPDIR"
 fi
-
