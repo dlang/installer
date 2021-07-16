@@ -295,6 +295,7 @@ SectionGroup /e "D2"
 
   Section "Add to PATH" AddD2ToPath
     ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin"
+    ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin64"
   SectionEnd
 
 
