@@ -328,7 +328,7 @@ else
 	;
 
 	[Environment32]
-	DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib/i386-linux-gnu -L--export-dynamic
+	DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib/i386-linux-gnu -L--export-dynamic -fPIC
 
 	[Environment64]
 	DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib/x86_64-linux-gnu -L--export-dynamic -fPIC
