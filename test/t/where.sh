@@ -5,13 +5,11 @@ set -eux -o pipefail
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/../
 . $DIR/common.sh
 
-OS_NAME="${TRAVIS_OS_NAME:-linux}"
-
 compilers=(
-    dmd-2.078.2
+    dmd-2.088.1
     dmd-master-2020-03-10
-    ldc-1.7.0
-    dmd-2.078.2,dub-1.21.0
+    ldc-1.18.0
+    dmd-2.088.1,dub-1.21.0
 )
 ROOT="$HOME/dlang"
 versions_dmd=()
@@ -24,62 +22,62 @@ if [ "${OS_NAME}" == "linux" ] ; then
         "gdc-4.8.5"
     )
     versions_dmd+=(
-        "$ROOT/dmd-2.078.2/linux/bin64/dmd"
+        "$ROOT/dmd-2.088.1/linux/bin64/dmd"
         "$ROOT/dmd-master-2020-03-10/linux/bin64/dmd"
-        "$ROOT/ldc-1.7.0/bin/ldmd2"
-        "$ROOT/dmd-2.078.2/linux/bin64/dmd"
+        "$ROOT/ldc-1.18.0/bin/ldmd2"
+        "$ROOT/dmd-2.088.1/linux/bin64/dmd"
         "$ROOT/gdc-4.8.5/bin/gdmd"
     )
     versions_dc+=(
-        "$ROOT/dmd-2.078.2/linux/bin64/dmd"
+        "$ROOT/dmd-2.088.1/linux/bin64/dmd"
         "$ROOT/dmd-master-2020-03-10/linux/bin64/dmd"
-        "$ROOT/ldc-1.7.0/bin/ldc2"
-        "$ROOT/dmd-2.078.2/linux/bin64/dmd"
+        "$ROOT/ldc-1.18.0/bin/ldc2"
+        "$ROOT/dmd-2.088.1/linux/bin64/dmd"
         "$ROOT/gdc-4.8.5/bin/gdc"
     )
     versions_dub+=(
-        "$ROOT/dmd-2.078.2/linux/bin64/dub"
+        "$ROOT/dmd-2.088.1/linux/bin64/dub"
         "$ROOT/dmd-master-2020-03-10/linux/bin64/dub"
-        "$ROOT/ldc-1.7.0/bin/dub"
+        "$ROOT/ldc-1.18.0/bin/dub"
         "$ROOT/dub-1.21.0/dub"
         "$ROOT/dub/dub"
     )
 elif [ "${OS_NAME}" == "osx" ]; then
     versions_dmd+=(
-        "$ROOT/dmd-2.078.2/osx/bin/dmd"
+        "$ROOT/dmd-2.088.1/osx/bin/dmd"
         "$ROOT/dmd-master-2020-03-10/osx/bin/dmd"
-        "$ROOT/ldc-1.7.0/bin/ldmd2"
-        "$ROOT/dmd-2.078.2/osx/bin/dmd"
+        "$ROOT/ldc-1.18.0/bin/ldmd2"
+        "$ROOT/dmd-2.088.1/osx/bin/dmd"
     )
     versions_dc+=(
-        "$ROOT/dmd-2.078.2/osx/bin/dmd"
+        "$ROOT/dmd-2.088.1/osx/bin/dmd"
         "$ROOT/dmd-master-2020-03-10/osx/bin/dmd"
-        "$ROOT/ldc-1.7.0/bin/ldc2"
-        "$ROOT/dmd-2.078.2/osx/bin/dmd"
+        "$ROOT/ldc-1.18.0/bin/ldc2"
+        "$ROOT/dmd-2.088.1/osx/bin/dmd"
     )
     versions_dub+=(
-        "$ROOT/dmd-2.078.2/osx/bin/dub"
+        "$ROOT/dmd-2.088.1/osx/bin/dub"
         "$ROOT/dmd-master-2020-03-10/osx/bin/dub"
-        "$ROOT/ldc-1.7.0/bin/dub"
+        "$ROOT/ldc-1.18.0/bin/dub"
         "$ROOT/dub-1.21.0/dub"
     )
 elif [ "${OS_NAME}" == "windows" ]; then
     versions_dmd+=(
-        "$ROOT/dmd-2.078.2/windows/bin/dmd"
+        "$ROOT/dmd-2.088.1/windows/bin/dmd"
         "$ROOT/dmd-master-2020-03-10/windows/bin/dmd"
-        "$ROOT/ldc-1.7.0/bin/ldmd2"
-        "$ROOT/dmd-2.078.2/windows/bin/dmd"
+        "$ROOT/ldc-1.18.0/bin/ldmd2"
+        "$ROOT/dmd-2.088.1/windows/bin/dmd"
     )
     versions_dc+=(
-        "$ROOT/dmd-2.078.2/windows/bin/dmd"
+        "$ROOT/dmd-2.088.1/windows/bin/dmd"
         "$ROOT/dmd-master-2020-03-10/windows/bin/dmd"
-        "$ROOT/ldc-1.7.0/bin/ldc2"
-        "$ROOT/dmd-2.078.2/windows/bin/dmd"
+        "$ROOT/ldc-1.18.0/bin/ldc2"
+        "$ROOT/dmd-2.088.1/windows/bin/dmd"
     )
     versions_dub+=(
-        "$ROOT/dmd-2.078.2/windows/bin/dub"
+        "$ROOT/dmd-2.088.1/windows/bin/dub"
         "$ROOT/dmd-master-2020-03-10/windows/bin/dub"
-        "$ROOT/ldc-1.7.0/bin/dub"
+        "$ROOT/ldc-1.18.0/bin/dub"
         "$ROOT/dub-1.21.0/dub"
     )
 else
