@@ -246,7 +246,7 @@ do
 		;
 		
 		[Environment32]
-		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib -L--export-dynamic
+		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib -L--export-dynamic -fPIC
 		' | sed 's/^\t\t//' > etc/dmd.conf
 		if [ "$ARCH" = "x86_64" ]
 		then
