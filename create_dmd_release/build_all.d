@@ -578,6 +578,7 @@ int main(string[] args)
 
     auto ldcCompilers = platforms
         .map!(p => "ldc2-%1$s-%2$s-%3$s".format(
+                // workaround OSX build problems https://github.com/dlang/installer/pull/487
                 p.os == OS.osx ? "1.26.0" : ldcVer,
                 p.os == OS.freebsd ? p.osS() : p.toString(),
                 p.os == OS.windows ? "multilib.7z" : "x86_64.tar.xz",
