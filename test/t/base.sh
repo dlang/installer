@@ -3,33 +3,30 @@
 set -uexo pipefail
 
 compilers=(
-    dmd-2.064
-    dmd-2.069.2
-    dmd-2.071.2
-    dmd-2.077.1
-    dmd-master-2018-10-14
-    ldc-1.4.0
+    dmd-2.088.1
+    dmd-2.094.2
+    dmd-2.097.2
+    dmd-master-2020-03-10
+    ldc-1.18.0
 )
 
 versions=(
-    'DMD64 D Compiler v2.064'
-    'DMD64 D Compiler v2.069.2'
-    'DMD64 D Compiler v2.071.2'
-    'DMD64 D Compiler v2.077.1'
-    'DMD64 D Compiler v2.082.1-master-54b676b'
-    'LDC - the LLVM D compiler (1.4.0):'
+    'DMD64 D Compiler v2.088.1'
+    'DMD64 D Compiler v2.094.2'
+    'DMD64 D Compiler v2.097.2'
+    'DMD64 D Compiler v2.091.0-beta.2-master-ec39fe5'
+    'LDC - the LLVM D compiler (1.18.0):'
 )
 
 frontendVersions=(
-    '2064'
-    '2069'
-    '2071'
-    '2077'
-    '2082'
-    '2074'
+    '2088'
+    '2094'
+    '2097'
+    '2091'
+    '2088'
 )
 
-if [ "${TRAVIS_OS_NAME:-}" = "linux" ]; then
+if [ "${OS_NAME:-}" = "linux" ]; then
     compilers+=(
         gdc-4.9.3
         gdc-4.8.5
@@ -119,13 +116,13 @@ done
 
 # test that a missing keyring gets restored - https://issues.dlang.org/show_bug.cgi?id=19100
 rm ~/dlang/d-keyring.gpg
-./script/install.sh dmd-2.081.2
+./script/install.sh dmd-2.088.1
 if [ ! $(find ~/dlang/d-keyring.gpg -type f -size +8096c 2>/dev/null) ]; then
     ls -l ~/dlang/d-keyring.gpg
     echo "Invalid keyring got installed."
     exit 1
 fi
-./script/install.sh remove dmd-2.081.2
+./script/install.sh remove dmd-2.088.1
 
 # check whether all installations have been uninstalled successfully
 if bash script/install.sh list
@@ -152,12 +149,12 @@ then
 fi
 
 # test in-place update
-if [ "${TRAVIS_OS_NAME:-}" != "windows" ]; then # needs bootstrapping, TODO remove after merge/deploy
+if [ "${OS_NAME:-}" != "windows" ]; then # needs bootstrapping, TODO remove after merge/deploy
     cp script/install.sh "$testDir"/
     bash "$testDir"/install.sh update --path "$testDir"
     bash "$testDir"/install.sh update -p "$testDir"
 fi
 
-if [ "${TRAVIS_OS_NAME:-}" = "linux" ]; then
+if [ "${OS_NAME:-}" = "linux" ]; then
     shellcheck script/install.sh
 fi
