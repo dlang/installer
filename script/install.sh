@@ -1286,7 +1286,7 @@ parse_args "$@"
 
 case $(uname -m) in
     x86_64|amd64) ARCH=x86_64; MODEL=64;;
-    aarch64) ARCH=aarch64; MODEL=64;;
+    aarch64|arm64) ARCH=aarch64; MODEL=64;;
     i*86) ARCH=x86; MODEL=32;;
     *)
         fatal "Unsupported Arch $(uname -m)"
@@ -1294,6 +1294,9 @@ case $(uname -m) in
 esac
 if [[ $OS-$ARCH = windows-x86_64 && $COMPILER = ldc* ]]; then
     ARCH=x64
+fi
+if [[ $OS-$ARCH = osx-aarch64 && $COMPILER = ldc* ]]; then
+    ARCH=arm64
 fi
 
 resolve_latest "$COMPILER"
