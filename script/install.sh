@@ -1306,14 +1306,14 @@ fi
 if [[ $OS-$ARCH = osx-aarch64 ]]; then
     if [[ $COMPILER == dmd* ]]; then
         log "
-DMD does not have builds for macOS on aarch64/arm64 achitecture (e.g. for the M1 CPU).
+DMD does not have builds for macOS on aarch64/arm64 architecture.
 Switching to x86_64 architecture (requires Rosetta).
 "
         ARCH=x86_64
     fi
     if [[ $COMPILER == ldc* ]]; then
         log "
-LDC has builds for macOS on aarch64/arm64 achitecture (e.g. the M1 CPU) since ldc-1.25.0.
+LDC has builds for macOS on aarch64/arm64 architecture since ldc-1.25.0.
 If you are installing an earlier version and get a download error,
 try '--arch x86_64' to install the x86_64 version instead (requires Rosetta).
 "
