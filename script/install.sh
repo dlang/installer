@@ -400,6 +400,11 @@ parse_args() {
                 _installAction="activate"
                 ;;
 
+            --arch)
+                shift
+                ARCH_OVERRIDE=$1;
+                ;;
+
             --dmd)
                 if [ -n "$_getPathAction" ]; then
                     fatal "$1 conflicts with --${_getPathAction}"
@@ -1292,11 +1297,28 @@ case $(uname -m) in
         fatal "Unsupported Arch $(uname -m)"
         ;;
 esac
+if [[ ${ARCH_OVERRIDE:+1} ]]; then
+    ARCH=$ARCH_OVERRIDE
+fi
 if [[ $OS-$ARCH = windows-x86_64 && $COMPILER = ldc* ]]; then
     ARCH=x64
 fi
-if [[ $OS-$ARCH = osx-aarch64 && $COMPILER = ldc* ]]; then
-    ARCH=arm64
+if [[ $OS-$ARCH = osx-aarch64 ]]; then
+    if [[ $COMPILER == dmd* ]]; then
+        log "
+DMD does not have builds for macOS on aarch64/arm64 achitecture (e.g. for the M1 CPU).
+Switching to x86_64 architecture (requires Rosetta).
+"
+        ARCH=x86_64
+    fi
+    if [[ $COMPILER == ldc* ]]; then
+        log "
+LDC has builds for macOS on aarch64/arm64 achitecture (e.g. the M1 CPU) since ldc-1.25.0.
+If you are installing an earlier version and get a download error,
+try '--arch x86_64' to install the x86_64 version instead (requires Rosetta).
+"
+        ARCH=arm64
+    fi
 fi
 
 resolve_latest "$COMPILER"
