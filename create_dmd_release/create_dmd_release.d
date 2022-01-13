@@ -371,6 +371,8 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto isRelease = " ENABLE_RELEASE=1";
+    //Enable lto for everything.
+    auto ltoOption = " ENABLE_LTO=1";
     auto latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
@@ -379,7 +381,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         auto pic = "";
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~latest~" -f "~targetMakefile;
+    auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~ltoOption~latest~" -f "~targetMakefile;
 
     info("Building DMD "~bitsDisplay);
     changeDir(cloneDir~"/dmd/src");
