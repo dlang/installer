@@ -1,0 +1,155 @@
+# Github Action to verify the releases build by the current repo / the workflow
+# defined in build_release_template.yml.
+
+name: test_release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  build_release:
+    name: "Default release build"
+    if: ${{ github.repository == 'dlang/installer' }}
+    uses: ./.github/workflows/build_release_template.yml
+    with:
+      # Test master for now, could also be safe with stable
+      release_branch: master
+
+  validate_build:
+    name: Validate results of build_release_template.yml
+    needs: build_release
+
+    strategy:
+      fail-fast: false
+      matrix:
+
+        target:
+          - {
+            host: windows-latest,
+            os: windows,
+            build: dmd.master.windows.7z
+          }
+          - {
+            host: macos-latest,
+            os: osx,
+            build: dmd.master.osx.tar.xz
+          }
+          - {
+            host: ubuntu-latest,
+            os: linux,
+            build: dmd.master.linux.tar.xz
+          }
+          - {
+            host: macos-10.15,
+            os: freebsd,
+            build: dmd.master.freebsd-64.tar.xz
+          }
+
+    runs-on: ${{ matrix.target.host }}
+
+    steps:
+      - name: Download generated releases from the artifacts
+        id: download-release
+        uses: actions/download-artifact@v2
+        with:
+          name: dmd-release
+
+      # Check whether the generated compiler is included in the artifacts and
+      # contains everything needed to compile & execute D programms.
+      - name: Check ${{ matrix.target.os }} artifacts
+        id: check
+        if: ${{ matrix.target.os != 'freebsd' }}
+        shell: bash
+        run: |
+          set -eux
+
+          # Extract the release and determine the targets to test (primarily -m64 except for Windows)
+          if [ "${{ matrix.target.os }}" == "windows" ]
+          then
+            7z x -y ${{ matrix.target.build }}
+            TARGETS="-m32 -m32mscoff -m64"
+
+            # FIXME: -m32/-m32mscoff currently broken, tries to run Optlink using MSCOFF files
+            TARGETS="-m32omf -m64"
+          else
+            tar xf ${{ matrix.target.build }}
+            TARGETS="-m64"
+          fi
+
+          cat - > hello.d <<-EOF
+            import std.stdio;
+
+            void main()
+            {
+              writeln("Hello, World!");
+            }
+          EOF
+
+          for DMD in dmd2/${{ matrix.target.os }}/bin*/dmd
+          do
+            $DMD --version
+
+            # FIXME: Windows sc.ini currently broken, remove once fixed upstream
+            if [ "${{ matrix.target.os }}" == "windows" ]; then
+              # Extend path s.t. Optlink can always be found
+              export PATH="$PATH:$(dirname $DMD)"
+            fi
+
+            for TARGET in $TARGETS
+            do
+              $DMD $TARGET -of=hello hello.d
+              ./hello
+            done
+          done
+
+      - name: Check ${{ matrix.target.os }} artifacts in a VM
+        if: ${{ matrix.target.os == 'freebsd' }}
+        uses: cross-platform-actions/action@v0.3.1
+        with:
+          operating_system: freebsd
+          version: 12.2
+          shell: bash
+          run: |
+            set -eux
+
+            tar xf ${{ matrix.target.build }}
+
+            DMD="dmd2/${{ matrix.target.os }}/bin64/dmd"
+            $DMD --version
+            $DMD -of=hello - <<-EOF
+              import std.stdio;
+
+              void main()
+              {
+                writeln("Hello, World!");
+              }
+            EOF
+            ./hello
+
+            # Don't need to sink back these files
+            rm -rf dmd* hello*
+
+  validate_build_metadata:
+    name: Validate outputs of build_release_template.yml
+    runs-on: ubuntu-latest
+    needs: build_release
+
+    # Revisions built above
+    env:
+      DMD_REF: ${{ needs.build_release.outputs.dmd-revision }}
+      DRUNTIME_REF: ${{ needs.build_release.outputs.druntime-revision }}
+      PHOBOS_REF: ${{ needs.build_release.outputs.phobos-revision }}
+
+    steps:
+      - name: Check outputs
+        shell: bash
+        run: |
+          set -eux
+
+          # Check that revisions are set
+          [ "$DMD_REF" != "" ]
+          [ "$DRUNTIME_REF" != "" ]
+          [ "$PHOBOS_REF" != "" ]
