@@ -371,8 +371,11 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto isRelease = " ENABLE_RELEASE=1";
-    //Enable lto for everything.
-    auto ltoOption = " ENABLE_LTO=1";
+    //Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
+    version (FreeBSD)
+        auto ltoOption = " ENABLE_LTO=0";
+    else
+        auto ltoOption = " ENABLE_LTO=1";
     auto latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
