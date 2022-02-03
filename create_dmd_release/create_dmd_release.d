@@ -390,17 +390,30 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     else
         run(makecmd);
 
-    // Generate temporary sc.ini
+    // Add libraries to the LIB variable in sc.ini
     version(Windows)
-    {
-        std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
-            [Environment]
-            LIB=%@P%\..\..\..\..\..\phobos;`~customExtrasDir~`\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib
-            DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
-            [Environment32]
-            LINKCMD=%@P%\optlink.exe
-        `).outdent().strip());
-    }
+    {{
+        // WORKAROUND: Explicitly build dmd.conf because win32.mak invokes build.d explicitly for the executable ($G\dmd.exe)
+        run(`..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
+
+        // Path sc.ini by appending to the existing LIB entries
+        const iniPath = cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`;
+        const content = readText(iniPath);
+        File scIni = File(iniPath, "w");
+        foreach (const line; content.lineSplitter)
+        {
+            if (line.startsWith("LIB"))
+            {
+                const quoted = line.endsWith(`"`);
+                scIni.write(line[0 .. $ - quoted]);
+                scIni.write(`;` ~ customExtrasDir ~ `\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib`);
+                if (quoted) scIni.write('"');
+                scIni.writeln();
+            }
+            else
+                scIni.writeln(line);
+        }
+    }}
 
     // Copy OPTLINK to same directory as the sc.ini we want it to read
     version(Windows)
