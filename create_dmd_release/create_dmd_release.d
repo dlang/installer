@@ -476,6 +476,10 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         // Build the tools using the host compiler
         makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
 
+        // Override DFLAGS because we're using the host compiler rather than
+        // the freshly built one (posix.mak defaults to the generated dmd)
+        makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ '"';
+
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
         run(makecmd~" rdmd");
