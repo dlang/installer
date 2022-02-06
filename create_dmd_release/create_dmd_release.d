@@ -469,6 +469,10 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     if(build64BitTools || bits == Bits.bits32)
     {
+
+        // Build the tools using the host compiler
+        makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
+
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
         run(makecmd~" rdmd");
