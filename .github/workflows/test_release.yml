@@ -50,6 +50,10 @@ jobs:
 
     runs-on: ${{ matrix.target.host }}
 
+    env:
+      OS: ${{ matrix.target.os }}
+      BUILD: ${{ matrix.target.build }}
+
     steps:
       - name: Download generated releases from the artifacts
         id: download-release
@@ -57,44 +61,16 @@ jobs:
         with:
           name: dmd-release
 
-      # Check whether the generated compiler is included in the artifacts and
-      # contains everything needed to compile & execute D programms.
+      - name: Clone installer repo
+        uses: actions/checkout@v2
+        with:
+          path: installer
+
       - name: Check ${{ matrix.target.os }} artifacts
         id: check
         if: ${{ matrix.target.os != 'freebsd' }}
         shell: bash
-        run: |
-          set -eux
-
-          # Extract the release and determine the targets to test (primarily -m64 except for Windows)
-          if [ "${{ matrix.target.os }}" == "windows" ]
-          then
-            7z x -y ${{ matrix.target.build }}
-            TARGETS="-m32 -m32mscoff -m64"
-          else
-            tar xf ${{ matrix.target.build }}
-            TARGETS="-m64"
-          fi
-
-          cat - > hello.d <<-EOF
-            import std.stdio;
-
-            void main()
-            {
-              writeln("Hello, World!");
-            }
-          EOF
-
-          for DMD in dmd2/${{ matrix.target.os }}/bin*/dmd
-          do
-            $DMD --version
-
-            for TARGET in $TARGETS
-            do
-              $DMD $TARGET -of=hello hello.d
-              ./hello
-            done
-          done
+        run: source ./installer/test/release/validate_release.sh
 
       - name: Check ${{ matrix.target.os }} artifacts in a VM
         if: ${{ matrix.target.os == 'freebsd' }}
@@ -102,26 +78,9 @@ jobs:
         with:
           operating_system: freebsd
           version: 12.2
+          environment_variables: OS BUILD
           shell: bash
-          run: |
-            set -eux
-
-            tar xf ${{ matrix.target.build }}
-
-            DMD="dmd2/${{ matrix.target.os }}/bin64/dmd"
-            $DMD --version
-            $DMD -of=hello - <<-EOF
-              import std.stdio;
-
-              void main()
-              {
-                writeln("Hello, World!");
-              }
-            EOF
-            ./hello
-
-            # Don't need to sink back these files
-            rm -rf dmd* hello*
+          run: source ./installer/test/release/validate_release.sh
 
   validate_build_metadata:
     name: Validate outputs of build_release_template.yml
