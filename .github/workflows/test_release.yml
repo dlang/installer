@@ -71,9 +71,6 @@ jobs:
           then
             7z x -y ${{ matrix.target.build }}
             TARGETS="-m32 -m32mscoff -m64"
-
-            # FIXME: -m32/-m32mscoff currently broken, tries to run Optlink using MSCOFF files
-            TARGETS="-m32omf -m64"
           else
             tar xf ${{ matrix.target.build }}
             TARGETS="-m64"
@@ -91,12 +88,6 @@ jobs:
           for DMD in dmd2/${{ matrix.target.os }}/bin*/dmd
           do
             $DMD --version
-
-            # FIXME: Windows sc.ini currently broken, remove once fixed upstream
-            if [ "${{ matrix.target.os }}" == "windows" ]; then
-              # Extend path s.t. Optlink can always be found
-              export PATH="$PATH:$(dirname $DMD)"
-            fi
 
             for TARGET in $TARGETS
             do
