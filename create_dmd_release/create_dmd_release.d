@@ -478,7 +478,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
         // Override DFLAGS because we're using the host compiler rather than
         // the freshly built one (posix.mak defaults to the generated dmd)
-        makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ '"';
+        makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ ` -version=DefaultCompiler_DMD"`;
 
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");

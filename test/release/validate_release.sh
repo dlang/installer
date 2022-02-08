@@ -46,7 +46,7 @@ done
 
 for RDMD in $GEN/dmd2/$OS/bin*/rdmd$EXE
 do
-	$RDMD --compiler=$DMD -m64 $DIR/hello.d
+	$RDMD -m64 $DIR/hello.d
 done
 
 for DDEMANGLE in $GEN/dmd2/$OS/bin*/ddemangle$EXE
