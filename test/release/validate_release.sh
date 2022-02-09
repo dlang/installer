@@ -41,6 +41,31 @@ do
 done
 
 ###############################################################################
+# Validate that the bundled tools work
+
+
+for RDMD in $GEN/dmd2/$OS/bin*/rdmd$EXE
+do
+	$RDMD --compiler=$DMD -m64 $DIR/hello.d
+done
+
+for DDEMANGLE in $GEN/dmd2/$OS/bin*/ddemangle$EXE
+do
+	echo "_D5hello3fooFZv" | $DDEMANGLE | grep "hello.foo"
+done
+
+for DUSTMITE in $GEN/dmd2/$OS/bin*/dustmite$EXE
+do
+	$DUSTMITE --version
+done
+
+for DUB in $GEN/dmd2/$OS/bin*/dub$EXE
+do
+	$DUB run -n --arch=x86_64 --single $DIR/dub_example.d
+	rm -r $DIR/.dub $DIR/dub_example$EXE
+done
+
+###############################################################################
 # Remove all temporary files / changes
 
 rm -r $GEN/*
