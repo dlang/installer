@@ -20,6 +20,16 @@ on:
         required: true
         description: Revision to build as a new release
 
+      installer_repo:
+        type: string
+        default: 'dlang/installer'
+        description: dlang/installer or any fork hosting installer_branch
+
+      installer_branch:
+        type: string
+        default: 'master'
+        description: Branch providing the build scripts
+
     # Expose the commit hash of the built revisions for dmd / druntime / phobos
     # (useful for error reporting / logs / ...)
     outputs:
@@ -193,6 +203,9 @@ jobs:
       #
       - name: Clone installer repo
         uses: actions/checkout@v2
+        with:
+          repository: ${{ inputs.installer_repo }}
+          ref: ${{ inputs.installer_branch }}
 
       #################################################################
       # Load the generated documentation in the create_dmd_release folder

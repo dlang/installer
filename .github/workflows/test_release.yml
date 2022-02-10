@@ -18,6 +18,10 @@ jobs:
       # Test master for now, could also be safe with stable
       release_branch: master
 
+      # Empty = use the repository/branch that triggered the build
+      installer_repo:
+      installer_branch:
+
   validate_build:
     name: Validate results of build_release_template.yml
     needs: build_release
