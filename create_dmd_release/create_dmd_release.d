@@ -371,6 +371,11 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
     auto isRelease = " ENABLE_RELEASE=1";
+    //Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
+    version (FreeBSD)
+        auto ltoOption = " ENABLE_LTO=0";
+    else
+        auto ltoOption = " ENABLE_LTO=1";
     auto latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
@@ -379,7 +384,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
         auto pic = "";
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~latest~" -f "~targetMakefile;
+    auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~ltoOption~latest~" -f "~targetMakefile;
 
     info("Building DMD "~bitsDisplay);
     changeDir(cloneDir~"/dmd/src");
@@ -388,17 +393,30 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     else
         run(makecmd);
 
-    // Generate temporary sc.ini
+    // Add libraries to the LIB variable in sc.ini
     version(Windows)
-    {
-        std.file.write(cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`, (`
-            [Environment]
-            LIB=%@P%\..\..\..\..\..\phobos;`~customExtrasDir~`\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib
-            DFLAGS="-I%@P%\..\..\..\..\..\phobos" "-I%@P%\..\..\..\..\..\druntime\import"
-            [Environment32]
-            LINKCMD=%@P%\optlink.exe
-        `).outdent().strip());
-    }
+    {{
+        // WORKAROUND: Explicitly build dmd.conf because win32.mak invokes build.d explicitly for the executable ($G\dmd.exe)
+        run(`..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
+
+        // Path sc.ini by appending to the existing LIB entries
+        const iniPath = cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`;
+        const content = readText(iniPath);
+        File scIni = File(iniPath, "w");
+        foreach (const line; content.lineSplitter)
+        {
+            if (line.startsWith("LIB"))
+            {
+                const quoted = line.endsWith(`"`);
+                scIni.write(line[0 .. $ - quoted]);
+                scIni.write(`;` ~ customExtrasDir ~ `\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib`);
+                if (quoted) scIni.write('"');
+                scIni.writeln();
+            }
+            else
+                scIni.writeln(line);
+        }
+    }}
 
     // Copy OPTLINK to same directory as the sc.ini we want it to read
     version(Windows)
@@ -454,6 +472,14 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
     if(build64BitTools || bits == Bits.bits32)
     {
+
+        // Build the tools using the host compiler
+        makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
+
+        // Override DFLAGS because we're using the host compiler rather than
+        // the freshly built one (posix.mak defaults to the generated dmd)
+        makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ ` -version=DefaultCompiler_DMD"`;
+
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
         run(makecmd~" rdmd");
