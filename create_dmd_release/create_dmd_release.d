@@ -482,9 +482,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" rdmd");
-        run(makecmd~" ddemangle");
-        run(makecmd~" dustmite");
+        run(makecmd~" rdmd ddemangle dustmite");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
