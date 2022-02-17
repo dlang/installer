@@ -191,9 +191,9 @@ private:
         return res.outdent();
     }
 
-    auto build(string ver, bool isBranch, bool skipDocs, string ldcVer)
+    auto build(string ver, bool isBranch, bool skipDocs, string ldcVer, int jobs)
     {
-        return runBuild(this, ver, isBranch, skipDocs, ldcVer);
+        return runBuild(this, ver, isBranch, skipDocs, ldcVer, jobs);
     }
 
     ~this()
@@ -262,7 +262,7 @@ auto addPrefix(R)(R rng, string prefix)
 //------------------------------------------------------------------------------
 // builds a dmd.VERSION.OS.MODEL.zip on the vanilla VirtualBox image
 
-void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcVer)
+void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcVer, int jobs)
 {
     with (box.shell())
     {
@@ -289,7 +289,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
             break;
         }
 
-        auto build = rdmd~" -g create_dmd_release --use-clone=clones --host-dmd="~dmd;
+        auto build = text(rdmd, " -g create_dmd_release --use-clone=clones --host-dmd=", dmd, " --jobs=", jobs);
         if (box.os == OS.windows)
             build ~= " --extras=extraBins";
         if (box.model != Model._both)
@@ -514,13 +514,15 @@ int main(string[] args)
     bool verifySignature = true;
     bool skipVerify;
     string platformStr;
+    int jobs = 4; // Keep the old default
 
     auto helpInformation = getopt(
         args,
         std.getopt.config.caseSensitive,
         "skip-docs",    "Don't generate the documentation",         &skipDocs,
         "skip-verify",  "Don't verify downloaded files with GPG",   &skipVerify,
-        "targets",      "Only build the specified targets",         &platformStr
+        "targets",      "Only build the specified targets",         &platformStr,
+        "j|jobs",       "Run <N> jobs in parallel",                 &jobs,
     );
 
     // Map OS to the actual configurations defined at the top
@@ -664,7 +666,7 @@ int main(string[] args)
             if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs, os == OS.osx ? "1.26.0" : ldcVer);
+            build(ver, isBranch, skipDocs, os == OS.osx ? "1.26.0" : ldcVer, jobs);
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }

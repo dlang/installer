@@ -185,6 +185,7 @@ int main(string[] args)
 
     bool help;
     bool clean;
+    int jobs;
 
     getopt(
         args,
@@ -194,6 +195,7 @@ int main(string[] args)
         "clean",        &clean,
         "extras",       &customExtrasDir,
         "host-dmd",     &hostDMD,
+        "jobs",         &jobs,
         "only-32",      &do32Bit,
         "only-64",      &do64Bit,
         "codesign",     &codesign,
@@ -254,7 +256,7 @@ int main(string[] args)
         init(branch);
 
         cleanAll(branch);
-        buildAll(branch);
+        buildAll(branch, jobs);
         createRelease(branch);
         createZip(branch);
 
@@ -316,22 +318,22 @@ void cleanAll(string branch)
     run("git clean -f -x -d");
 }
 
-void buildAll(string branch)
+void buildAll(string branch, int jobs)
 {
     if(do32Bit)
-        buildAll(Bits.bits32, branch);
+        buildAll(Bits.bits32, branch, jobs);
 
     if(do64Bit)
     {
         if(!do32Bit && lib64RequiresDmd32)
-            buildAll(Bits.bits32, branch, true);
+            buildAll(Bits.bits32, branch, jobs, true);
 
-        buildAll(Bits.bits64, branch);
+        buildAll(Bits.bits64, branch, jobs);
     }
 }
 
 /// dmdOnly is part of the lib64RequiresDmd32 hack.
-void buildAll(Bits bits, string branch, bool dmdOnly=false)
+void buildAll(Bits bits, string branch, int jobCount, bool dmdOnly=false)
 {
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
@@ -365,7 +367,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     }
     else
     {
-        auto jobs = " -j4";
+        auto jobs = text(" -j", jobCount);
         auto dmdEnv = " DMD=../dmd/generated/"~osDirName~"/release/"~bitsStr~"/dmd"~exe;
         enum dmdConf = "dmd.conf";
     }
