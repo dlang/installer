@@ -1,7 +1,6 @@
 D installers
 ============
 
-[![CI status](https://travis-ci.org/dlang/installer.svg?branch=master)](https://travis-ci.org/dlang/installer/)
 [![Bugzilla Issues](https://img.shields.io/badge/issues-Bugzilla-green.svg)](https://issues.dlang.org/buglist.cgi?component=installer&list_id=220147&product=D&resolution=---)
 
 This repository hosts scripts to build DMD installers and packages.
