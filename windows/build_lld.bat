@@ -27,11 +27,11 @@ powershell -Command "Invoke-WebRequest %LLVM_URL%/llvm-%LLVM_VER%.src.tar.xz -Ou
 dos2unix "%ROOT%\windows\build_lld.sha256sums"
 sha256sum -c "%ROOT%\windows\build_lld.sha256sums" || exit /B 1
 
-7z x "llvm.src.tar.xz" || exit /B 1
-7z x "lld.src.tar.xz"  || exit /B 1
+7z x "llvm.src.tar.xz" -y || exit /B 1
+7z x "lld.src.tar.xz"  -y || exit /B 1
 
-7z x "llvm.src.tar" || exit /B 1
-7z x "lld.src.tar"  || exit /B 1
+7z x "llvm.src.tar" -y || exit /B 1
+7z x "lld.src.tar"  -y || exit /B 1
 
 move "llvm-%LLVM_VER%.src" llvm
 move "lld-%LLVM_VER%.src" llvm\tools\lld
