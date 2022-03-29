@@ -16,7 +16,10 @@ call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
 cd %ROOT%
 @echo on
 
-set LLVM_URL=http://releases.llvm.org/%LLVM_VER%
+
+:: LLVM releases are now done with github so need to match https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lld-14.0.0.src.tar.xz
+
+set LLVM_URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-%LLVM_VER%
 powershell -Command "Invoke-WebRequest %LLVM_URL%/lld-%LLVM_VER%.src.tar.xz -OutFile lld.src.tar.xz" || exit /B 1
 powershell -Command "Invoke-WebRequest %LLVM_URL%/llvm-%LLVM_VER%.src.tar.xz -OutFile llvm.src.tar.xz" || exit /B 1
 
