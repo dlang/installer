@@ -7,9 +7,9 @@ jobs:
     timeoutInMinutes: 120
     condition: true
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-2019'
     variables:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
       # NB: update windows/build_lld.sha256sums as well
       LLVM_VER: 14.0.0
       ARCH: x86
@@ -20,9 +20,9 @@ jobs:
     timeoutInMinutes: 120
     condition: true
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-2019'
     variables:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
       # NB: update windows/build_lld.sha256sums as well
       LLVM_VER: 14.0.0
       ARCH: x64
@@ -33,9 +33,9 @@ jobs:
     timeoutInMinutes: 120
     condition: true
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-2019'
     variables:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
       # NB: update windows/build_mingw.sha256sums as well
       MINGW_VER: 8.0.0
       D_VERSION: 2.077.1
@@ -46,9 +46,9 @@ jobs:
     timeoutInMinutes: 120
     condition: true
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-2019'
     variables:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
       # NB: update windows/build_curl.sha256sums as well
       CURL_VER: 7.68.0
       ZLIB_VER: 1.2.11
@@ -68,9 +68,9 @@ jobs:
     dependsOn: Build_Docs
     timeoutInMinutes: 120
     pool:
-      vmImage: 'vs2017-win2016'
+      vmImage: 'windows-2019'
     variables:
-      LDC_VSDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
+      LDC_VSDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
       HOST_LDC_VERSION: 1.23.0
     steps:
       - template: .azure-pipelines/build-winrelease.yml
