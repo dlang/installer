@@ -11,7 +11,7 @@ jobs:
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
       # NB: update windows/build_lld.sha256sums as well
-      LLVM_VER: 9.0.0
+      LLVM_VER: 14.0.0
       ARCH: x86
     steps:
       - template: .azure-pipelines/build-lld.yml
@@ -24,7 +24,7 @@ jobs:
     variables:
       VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\
       # NB: update windows/build_lld.sha256sums as well
-      LLVM_VER: 9.0.0
+      LLVM_VER: 14.0.0
       ARCH: x64
     steps:
       - template: .azure-pipelines/build-lld.yml
