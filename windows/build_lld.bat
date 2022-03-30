@@ -40,14 +40,16 @@ rem patch lld to not emit "No structured exception handler"
 sed -e s/IMAGE_DLL_CHARACTERISTICS_NO_SEH/0/ llvm\tools\lld\COFF\Writer.cpp >Writer.tmp
 move /Y Writer.tmp llvm\tools\lld\COFF\Writer.cpp
 
+choco install visualstudio2019-workload-nativedesktop
+
 set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_CXX_FLAGS="/DIMAGE_DLL_CHARACTERISTICS_NO_SEH=0"
 
 set lld_build_dir=build-lld
 if not exist "%lld_build_dir%\nul" md "%lld_build_dir%"
 cd "%lld_build_dir%"
 
-set CMAKE_OPT=-G "Visual Studio 19"
-if "%ARCH%" == "x64" set CMAKE_OPT=-G "Visual Studio 19 Win64"
+set CMAKE_OPT=-G "Visual Studio 15"
+if "%ARCH%" == "x64" set CMAKE_OPT=-G "Visual Studio 15 Win64"
 
 set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_BUILD_TYPE=Release
 set CMAKE_OPT=%CMAKE_OPT% -DLLVM_TARGETS_TO_BUILD=X86
