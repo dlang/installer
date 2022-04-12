@@ -274,7 +274,7 @@ jobs:
       #
       - name: Run build_all.d for FreeBSD in a dedicated VM
         if: matrix.target == 'freebsd'
-        uses: vmactions/freebsd-vm@v0.1.3
+        uses: vmactions/freebsd-vm@v0.1.6
         with:
           usesh: true
           # Need more RAM than the default 1G
