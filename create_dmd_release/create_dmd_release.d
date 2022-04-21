@@ -88,10 +88,6 @@ version(Windows)
     immutable libPhobos64   = "phobos64";
     immutable build64BitTools = false;
 
-    // Building Win64 druntime/phobos relies on an existing DMD, but there's no
-    // official Win64 build/makefile of DMD. This is a hack to work around that.
-    immutable lib64RequiresDmd32 = true;
-
     immutable osDirName     = "windows";
     immutable make          = "make";
     immutable suffix32      = "";   // bin/lib  TODO: adapt scripts to use 32
@@ -108,7 +104,6 @@ else version(Posix)
     immutable libPhobos32   = "libphobos2";
     immutable libPhobos64   = "libphobos2";
     immutable build64BitTools    = true;
-    immutable lib64RequiresDmd32 = false;
 
     version(FreeBSD)
         immutable osDirName = "freebsd";
@@ -322,16 +317,10 @@ void buildAll(string branch)
         buildAll(Bits.bits32, branch);
 
     if(do64Bit)
-    {
-        if(!do32Bit && lib64RequiresDmd32)
-            buildAll(Bits.bits32, branch, true);
-
         buildAll(Bits.bits64, branch);
-    }
 }
 
-/// dmdOnly is part of the lib64RequiresDmd32 hack.
-void buildAll(Bits bits, string branch, bool dmdOnly=false)
+void buildAll(Bits bits, string branch)
 {
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
@@ -422,9 +411,6 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
     version(Windows)
         copyFile(customExtrasDir~"/dmd2/windows/bin/optlink.exe", cloneDir~"/dmd/generated/"~osDirName~"/release/"~bitsStr~"/optlink.exe");
 
-    if(dmdOnly)
-        return;
-
     string makeTargetDruntime;
     version(Windows)
         if (bits == Bits.bits32)
@@ -482,9 +468,7 @@ void buildAll(Bits bits, string branch, bool dmdOnly=false)
 
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" rdmd");
-        run(makecmd~" ddemangle");
-        run(makecmd~" dustmite");
+        run(makecmd~" rdmd ddemangle dustmite");
 
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
