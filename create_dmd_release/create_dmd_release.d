@@ -363,6 +363,8 @@ void buildAll(Bits bits, string branch)
     //Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
     version (FreeBSD)
         auto ltoOption = " ENABLE_LTO=0";
+    else version (linux)
+        auto ltoOption = " ENABLE_LTO=" ~ (bits == Bits.bits32 ? "0" : "1");
     else
         auto ltoOption = " ENABLE_LTO=1";
     auto latest = " LATEST="~branch;
