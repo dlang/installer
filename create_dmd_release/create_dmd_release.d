@@ -298,10 +298,6 @@ void cleanAll(string branch)
     run("git clean -f -x -d"); // remove all untracked/ignored files
     run("git checkout ."); // undo local changes, e.g. VERSION
 
-    info("Cleaning Druntime");
-    changeDir(cloneDir~"/druntime");
-    run("git clean -f -x -d");
-
     info("Cleaning Phobos");
     changeDir(cloneDir~"/phobos");
     run("git clean -f -x -d");
@@ -415,9 +411,9 @@ void buildAll(Bits bits, string branch)
             makeTargetDruntime = " target implibs";
 
     info("Building Druntime "~bitsDisplay);
-    changeDir(cloneDir~"/druntime");
+    changeDir(cloneDir~"/dmd/druntime");
     run(msvcVars~makecmd~pic~makeTargetDruntime);
-    removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
+    removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
@@ -428,9 +424,9 @@ void buildAll(Bits bits, string branch)
     version (Windows) if (bits == Bits.bits64)
     {
         info("Building Druntime 32mscoff");
-        changeDir(cloneDir~"/druntime");
+        changeDir(cloneDir~"/dmd/druntime");
         run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
-        removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
+        removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
                     file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
@@ -515,14 +511,14 @@ void createRelease(string branch)
 
     // Copy sources
     copyDirVersioned(cloneDir~"/dmd", "src", releaseDir~"/dmd2/src/dmd");
-    copyDirVersioned(cloneDir~"/druntime", null, releaseDir~"/dmd2/src/druntime");
+    copyDirVersioned(cloneDir~"/dmd/druntime", null, releaseDir~"/dmd2/src/druntime");
     copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
     copyDirVersioned(cloneDir~"/dmd", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
-    if(exists(cloneDir~"/druntime/doc"))
-        copyDir(cloneDir~"/druntime/doc", releaseDir~"/dmd2/src/druntime/doc");
-    copyDir(cloneDir~"/druntime/import", releaseDir~"/dmd2/src/druntime/import");
+    if(exists(cloneDir~"/dmd/druntime/doc"))
+        copyDir(cloneDir~"/dmd/druntime/doc", releaseDir~"/dmd2/src/druntime/doc");
+    copyDir(cloneDir~"/dmd/druntime/import", releaseDir~"/dmd2/src/druntime/import");
     copyFile(cloneDir~"/dmd/VERSION",    releaseDir~"/dmd2/src/VERSION");
 
     // Copy documentation
@@ -555,7 +551,7 @@ void createRelease(string branch)
         if(do32Bit)
         {
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
-            copyDir(cloneDir~"/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
+            copyDir(cloneDir~"/dmd/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {

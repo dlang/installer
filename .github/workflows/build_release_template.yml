@@ -36,9 +36,6 @@ on:
       dmd-revision:
         value: ${{ jobs.build-docs.outputs.dmd-revision }}
 
-      druntime-revision:
-        value: ${{ jobs.build-docs.outputs.druntime-revision }}
-
       phobos-revision:
         value: ${{ jobs.build-docs.outputs.phobos-revision }}
 
@@ -49,7 +46,6 @@ jobs:
 
     outputs:
       dmd-revision: ${{ steps.get-revisions.outputs.dmd-revision }}
-      druntime-revision: ${{ steps.get-revisions.outputs.druntime-revision }}
       phobos-revision: ${{ steps.get-revisions.outputs.phobos-revision }}
 
     steps:
@@ -60,13 +56,6 @@ jobs:
           repository: 'dlang/dmd'
           ref: ${{ inputs.release_branch }}
           path: 'dmd'
-
-      - name: Clone druntime
-        uses: actions/checkout@v2
-        with:
-          repository: 'dlang/druntime'
-          ref: ${{ inputs.release_branch }}
-          path: 'druntime'
 
       - name: Clone phobos
         uses: actions/checkout@v2
@@ -96,7 +85,7 @@ jobs:
           N=$(( 2 * $(nproc) ))
 
           # Build minimal host compiler (sometimes not triggered by dlang.org/posix.mak)
-          make -f posix.mak -j$N -C druntime
+          make -f posix.mak -j$N -C dmd/druntime
 
           # Build docs and include the man pages
           make -f posix.mak -j$N -C dlang.org release
@@ -117,7 +106,7 @@ jobs:
         run: |
           set -euox pipefail
 
-          for REPO in dmd druntime phobos
+          for REPO in dmd phobos
           do
             REV=$( git -C $REPO rev-parse HEAD )
             echo "::set-output name=$REPO-revision::$REV"
