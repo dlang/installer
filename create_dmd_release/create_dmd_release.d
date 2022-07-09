@@ -328,12 +328,8 @@ void buildAll(Bits bits, string branch)
     auto msvcVarsX64 = "";
     auto msvcVarsX86 = "";
     auto msvcVars = "";
-    auto msvcEnv = "";
     version(Windows) if (bits == Bits.bits64)
     {
-        // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
-        msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
-
         // Setup MSVC environment for x64/x86 native builds
         auto vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
         msvcVarsX64 = vcVars~" x64 && ";
@@ -418,26 +414,26 @@ void buildAll(Bits bits, string branch)
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/druntime");
-    run(msvcVars~makecmd~pic~msvcEnv~makeTargetDruntime);
+    run(msvcVars~makecmd~pic~makeTargetDruntime);
     removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(msvcVars~makecmd~pic~msvcEnv);
+    run(msvcVars~makecmd~pic);
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     version (Windows) if (bits == Bits.bits64)
     {
         info("Building Druntime 32mscoff");
         changeDir(cloneDir~"/druntime");
-        run(msvcVarsX86~makecmd~msvcEnv~" druntime32mscoff");
+        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
         removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
                     file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
         changeDir(cloneDir~"/phobos");
-        run(msvcVarsX86~makecmd~msvcEnv~" phobos32mscoff");
+        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
         removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
     }
 
