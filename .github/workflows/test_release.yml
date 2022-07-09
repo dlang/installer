@@ -94,7 +94,6 @@ jobs:
     # Revisions built above
     env:
       DMD_REF: ${{ needs.build_release.outputs.dmd-revision }}
-      DRUNTIME_REF: ${{ needs.build_release.outputs.druntime-revision }}
       PHOBOS_REF: ${{ needs.build_release.outputs.phobos-revision }}
 
     steps:
@@ -105,5 +104,4 @@ jobs:
 
           # Check that revisions are set
           [ "$DMD_REF" != "" ]
-          [ "$DRUNTIME_REF" != "" ]
           [ "$PHOBOS_REF" != "" ]
