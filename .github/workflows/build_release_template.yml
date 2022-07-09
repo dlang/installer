@@ -242,9 +242,11 @@ jobs:
           if [[ "${{ matrix.target }}" == "windows" ]]
           then
 
-            # Fetch DM make
+            # Fetch DMC (incl. DM make and sppn.exe)
             curl http://downloads.dlang.org/other/dm857c.zip -o dmc.zip
             7z x dmc.zip
+            curl http://ftp.digitalmars.com/sppn.zip -o sppn.zip
+            7z x -odm/bin sppn.zip
 
             # Fetch implib
             curl http://ftp.digitalmars.com/bup.zip -o bup.zip
