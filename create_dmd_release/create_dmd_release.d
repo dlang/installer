@@ -370,7 +370,7 @@ void buildAll(Bits bits, string branch)
     auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~ltoOption~latest~" -f "~targetMakefile;
 
     info("Building DMD "~bitsDisplay);
-    changeDir(cloneDir~"/dmd/src");
+    changeDir(cloneDir~"/dmd/compiler/src");
     version (Windows)
         run(msvcVars~makecmd~" dmd");
     else
@@ -380,7 +380,7 @@ void buildAll(Bits bits, string branch)
     version(Windows)
     {{
         // WORKAROUND: Explicitly build dmd.conf because win32.mak invokes build.d explicitly for the executable ($G\dmd.exe)
-        run(`..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
+        run(`..\..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
 
         // Path sc.ini by appending to the existing LIB entries
         const iniPath = cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`;
@@ -510,10 +510,10 @@ void createRelease(string branch)
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
     // Copy sources
-    copyDirVersioned(cloneDir~"/dmd", "src", releaseDir~"/dmd2/src/dmd");
+    copyDirVersioned(cloneDir~"/dmd/compiler", "src", releaseDir~"/dmd2/src/dmd");
     copyDirVersioned(cloneDir~"/dmd/druntime", null, releaseDir~"/dmd2/src/druntime");
     copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
-    copyDirVersioned(cloneDir~"/dmd", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
+    copyDirVersioned(cloneDir~"/dmd/compiler", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
     if(exists(cloneDir~"/dmd/druntime/doc"))
@@ -530,7 +530,7 @@ void createRelease(string branch)
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-        copyDirVersioned(cloneDir~"/dmd", "samples", releaseDir~"/dmd2/samples/d");
+        copyDirVersioned(cloneDir~"/dmd/compiler", "samples", releaseDir~"/dmd2/samples/d");
         version (Windows) {} else
         {
             copyDirVersioned(cloneDir~"/tools", "man", releaseDir~"/dmd2/man");
