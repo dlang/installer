@@ -341,13 +341,13 @@ void buildAll(Bits bits, string branch)
     version (Windows)
     {
         auto jobs = "";
-        auto dmdEnv = ` DMD=..\dmd\generated\`~osDirName~`\release\32\dmd`~exe;
+        auto dmdEnv = ` "DMD=`~cloneDir~`\dmd\generated\`~osDirName~`\release\32\dmd`~exe~`"`;
         enum dmdConf = "sc.ini";
     }
     else
     {
         auto jobs = " -j4";
-        auto dmdEnv = " DMD=../dmd/generated/"~osDirName~"/release/"~bitsStr~"/dmd"~exe;
+        auto dmdEnv = ` DMD="`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
         enum dmdConf = "dmd.conf";
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
