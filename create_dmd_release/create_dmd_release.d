@@ -599,7 +599,7 @@ void createRelease(string branch)
         version(Windows)
         {
             // patch sc.ini to point to optlink.exe in bin folder
-            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/ini/windows/bin/sc.ini");
+            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/compiler/ini/windows/bin/sc.ini");
             sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
             std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
         }
