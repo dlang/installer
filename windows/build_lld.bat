@@ -13,8 +13,8 @@ powershell -Command "Invoke-WebRequest downloads.dlang.org/other/%ARTIFACT% -Out
 
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
-cd %ROOT%
 @echo on
+cd %ROOT%
 
 set LLVM_URL=http://releases.llvm.org/%LLVM_VER%
 powershell -Command "Invoke-WebRequest %LLVM_URL%/lld-%LLVM_VER%.src.tar.xz -OutFile lld.src.tar.xz" || exit /B 1

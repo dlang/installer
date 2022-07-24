@@ -1,4 +1,5 @@
 @setlocal
+@echo on
 
 set ROOT=%CD%
 mkdir "%ROOT%\artifacts"
@@ -32,11 +33,13 @@ sha256sum -c "%ROOT%\windows\build_mingw.sha256sums" || exit /B 1
 move mingw-w64-v%MINGW_VER% mingw-w64
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+@echo on
 rem CWD might be changed by vcvars64.bat
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x64 %ROOT%\mingw-w64 dmd2\windows\lib64\mingw || exit /B 1
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
+@echo on
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x86 %ROOT%\mingw-w64 dmd2\windows\lib32mscoff\mingw || exit /B 1
 
