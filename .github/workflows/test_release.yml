@@ -15,8 +15,8 @@ jobs:
     if: ${{ github.repository == 'dlang/installer' }}
     uses: ./.github/workflows/build_release_template.yml
     with:
-      # Test master for now, could also be safe with stable
-      release_branch: master
+      # Use the same branch/tag, or the targeted branch for PRs
+      release_branch: ${{ github.base_ref || github.ref_name }}
 
       # Empty = use the repository/branch that triggered the build
       installer_repo:
@@ -30,33 +30,25 @@ jobs:
       fail-fast: false
       matrix:
 
-        target:
-          - {
-            host: windows-latest,
-            os: windows,
-            build: dmd.master.windows.7z
-          }
-          - {
-            host: macos-latest,
-            os: osx,
-            build: dmd.master.osx.tar.xz
-          }
-          - {
-            host: ubuntu-latest,
-            os: linux,
-            build: dmd.master.linux.tar.xz
-          }
-          - {
-            host: macos-10.15,
-            os: freebsd,
-            build: dmd.master.freebsd-64.tar.xz
-          }
+        include:
+          - host: windows-latest
+            os: windows
+            build: dmd.${{ github.base_ref || github.ref_name }}.windows.7z
+          - host: macos-latest
+            os: osx
+            build: dmd.${{ github.base_ref || github.ref_name }}.osx.tar.xz
+          - host: ubuntu-latest
+            os: linux
+            build: dmd.${{ github.base_ref || github.ref_name }}.linux.tar.xz
+          - host: macos-10.15
+            os: freebsd
+            build: dmd.${{ github.base_ref || github.ref_name }}.freebsd-64.tar.xz
 
-    runs-on: ${{ matrix.target.host }}
+    runs-on: ${{ matrix.host }}
 
     env:
-      OS: ${{ matrix.target.os }}
-      BUILD: ${{ matrix.target.build }}
+      OS: ${{ matrix.os }}
+      BUILD: ${{ matrix.build }}
 
     steps:
       - name: Download generated releases from the artifacts
@@ -70,14 +62,14 @@ jobs:
         with:
           path: installer
 
-      - name: Check ${{ matrix.target.os }} artifacts
+      - name: Check ${{ matrix.os }} artifacts
         id: check
-        if: ${{ matrix.target.os != 'freebsd' }}
+        if: ${{ matrix.os != 'freebsd' }}
         shell: bash
         run: source ./installer/test/release/validate_release.sh
 
-      - name: Check ${{ matrix.target.os }} artifacts in a VM
-        if: ${{ matrix.target.os == 'freebsd' }}
+      - name: Check ${{ matrix.os }} artifacts in a VM
+        if: ${{ matrix.os == 'freebsd' }}
         uses: cross-platform-actions/action@v0.3.1
         with:
           operating_system: freebsd

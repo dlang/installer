@@ -421,7 +421,8 @@ void getCodesignCerts(string tgtDir)
     {
         writeln("Getting fingerprint for codesign cert " ~ de.name);
         auto content = runCapture(
-            "openssl pkcs12 -in "~escapeShellFileName(de.name)~" -nodes"~
+            "openssl pkcs12 -provider default -provider legacy"~
+              " -in "~escapeShellFileName(de.name)~" -nodes"~
               " -password file:"~escapeShellFileName(de.name.setExtension(".pass"))~
             "| openssl x509 -noout -fingerprint"
         );
