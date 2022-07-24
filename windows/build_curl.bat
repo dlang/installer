@@ -44,8 +44,8 @@ SET ZLIB_PATH=%ROOT%\zlib
 :: Build x64 DLL and import libs
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
+@echo on
 cd %ROOT%
-echo on
 
 mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
 mingw32-make -C curl\lib -f Makefile.m32 CFG=mingw32-winssl-zlib-ipv6 "LDFLAGS=-static -m64" ARCH=w64 CURL_CFLAG_EXTRAS=-DDONT_USE_RECV_BEFORE_SEND_WORKAROUND || exit /B 1
@@ -64,8 +64,8 @@ mingw32-make -C curl\lib -f Makefile.m32 clean
 :: Build x86 DLL and import libs
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
+@echo on
 cd %ROOT%
-echo on
 set PATH=%ROOT%\mingw32\bin;%PATH%
 
 mingw32-make -C zlib -f win32\Makefile.gcc || exit /B 1
