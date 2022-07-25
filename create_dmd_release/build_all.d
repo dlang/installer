@@ -320,7 +320,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
             cmd(`./build_all.sh -v`~ver);
             cmd(`ls *.deb`);
         }
-        box.scp("'default:clones/installer/linux/*.{rpm,deb}'", "build/");
+        box.scp("'default:clones/installer/linux/*.deb'", "build/");
+        box.scp("'default:clones/installer/linux/*.rpm'", "build/");
         break;
 
     case OS.windows:
