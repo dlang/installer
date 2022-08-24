@@ -8,6 +8,7 @@ Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-bo
 import std.algorithm, std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
 import common;
 
+// version = CodeSign;
 version (NoVagrant) {} else
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzilla 8269.");
@@ -296,7 +297,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
             build ~= " --skip-docs";
-        if (!isBranch)
+        version (CodeSign) if (!isBranch)
             build ~= " --codesign";
         build ~= " " ~ ver;
 
@@ -333,7 +334,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
                 ` '/DVersion2=`~ver~`' d2-installer.nsi`);
             cmd(`move dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
             // sign installer
-            cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
+            version (CodeSign)
+                cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
         }
         box.scp("default:dmd-"~ver~".exe", "build/");
         break;
@@ -587,7 +589,7 @@ int main(string[] args)
             )
         );
 
-    if (!isBranch)
+    version (CodeSign) if (!isBranch)
         getCodesignCerts(workDir~"/codesign");
     foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
     {
