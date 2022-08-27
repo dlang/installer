@@ -114,6 +114,8 @@ struct Box
 
             // save the ssh config file
             run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
+            if (platform.os == OS.osx)
+                run("cd "~_tmpdir~"; echo -e '  HostKeyAlgorithms +ssh-rsa\n  PubkeyAcceptedKeyTypes +ssh-rsa' >> ssh.cfg;");
         }
     }
 
