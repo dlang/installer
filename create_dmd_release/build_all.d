@@ -665,7 +665,7 @@ int main(string[] args)
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
             scp("create_dmd_release.d common.d", "default:");
-            if (!isBranch)
+            version (CodeSign) if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
             build(ver, isBranch, skipDocs, os == OS.osx ? "1.26.0" : ldcVer);
