@@ -365,6 +365,8 @@ void buildAll(Bits bits, string branch)
         auto ltoOption = " ENABLE_LTO=0";
     else version (linux)
         auto ltoOption = " ENABLE_LTO=" ~ (bits == Bits.bits32 ? "0" : "1");
+    else version (OSX)
+        auto ltoOption = " ENABLE_LTO=0";
     else
         auto ltoOption = " ENABLE_LTO=1";
     auto latest = " LATEST="~branch;

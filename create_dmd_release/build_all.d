@@ -114,6 +114,8 @@ struct Box
 
             // save the ssh config file
             run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
+            if (platform.os == OS.osx)
+                run("cd "~_tmpdir~"; echo -e '  HostKeyAlgorithms +ssh-rsa\n  PubkeyAcceptedKeyTypes +ssh-rsa' >> ssh.cfg;");
         }
     }
 
@@ -150,8 +152,11 @@ struct Box
         }
         else
         {
-            // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
-            auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            immutable cmd = os == OS.osx ?
+                // scp with OSX requires target folders to exist before recursive copy
+                "rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt~" > /dev/null" :
+                "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            // run scp with retry as fetching st. fails (Windows OpenSSH-server)
             if (runStatus(cmd) && runStatus(cmd))
                 run(cmd);
         }
