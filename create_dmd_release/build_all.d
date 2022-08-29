@@ -152,8 +152,11 @@ struct Box
         }
         else
         {
-            // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
-            auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            immutable cmd = os == OS.osx ?
+                // scp with OSX requires target folders to exist before recursive copy
+                "rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt~" > /dev/null" :
+                "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            // run scp with retry as fetching st. fails (Windows OpenSSH-server)
             if (runStatus(cmd) && runStatus(cmd))
                 run(cmd);
         }
