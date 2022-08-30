@@ -8,6 +8,7 @@ Install VirtualBox (https://learnchef.opscode.com/screencasts/install-virtual-bo
 import std.algorithm, std.conv, std.exception, std.file, std.path, std.process, std.stdio, std.string, std.range;
 import common;
 
+// version = CodeSign;
 version (NoVagrant) {} else
 version (Posix) {} else { static assert(0, "This must be run on a Posix machine."); }
 static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzilla 8269.");
@@ -113,6 +114,8 @@ struct Box
 
             // save the ssh config file
             run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
+            if (platform.os == OS.osx)
+                run("cd "~_tmpdir~"; echo -e '  HostKeyAlgorithms +ssh-rsa\n  PubkeyAcceptedKeyTypes +ssh-rsa' >> ssh.cfg;");
         }
     }
 
@@ -149,8 +152,11 @@ struct Box
         }
         else
         {
-            // run scp with retry as fetching sth. fails (Windows OpenSSH-server)
-            auto cmd = "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            immutable cmd = os == OS.osx ?
+                // scp with OSX requires target folders to exist before recursive copy
+                "rsync -a -e 'ssh -F "~sshcfg~"' "~src~" "~tgt~" > /dev/null" :
+                "scp -r -F "~sshcfg~" "~src~" "~tgt~" > /dev/null";
+            // run scp with retry as fetching st. fails (Windows OpenSSH-server)
             if (runStatus(cmd) && runStatus(cmd))
                 run(cmd);
         }
@@ -296,7 +302,7 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
             build ~= " --only-" ~ box.modelS;
         if (skipDocs)
             build ~= " --skip-docs";
-        if (!isBranch)
+        version (CodeSign) if (!isBranch)
             build ~= " --codesign";
         build ~= " " ~ ver;
 
@@ -320,7 +326,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
             cmd(`./build_all.sh -v`~ver);
             cmd(`ls *.deb`);
         }
-        box.scp("'default:clones/installer/linux/*.{rpm,deb}'", "build/");
+        box.scp("'default:clones/installer/linux/*.deb'", "build/");
+        box.scp("'default:clones/installer/linux/*.rpm'", "build/");
         break;
 
     case OS.windows:
@@ -332,7 +339,8 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
                 ` '/DVersion2=`~ver~`' d2-installer.nsi`);
             cmd(`move dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
             // sign installer
-            cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
+            version (CodeSign)
+                cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
         }
         box.scp("default:dmd-"~ver~".exe", "build/");
         break;
@@ -586,7 +594,7 @@ int main(string[] args)
             )
         );
 
-    if (!isBranch)
+    version (CodeSign) if (!isBranch)
         getCodesignCerts(workDir~"/codesign");
     foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
     {
@@ -662,7 +670,7 @@ int main(string[] args)
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
             scp("create_dmd_release.d common.d", "default:");
-            if (!isBranch)
+            version (CodeSign) if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
             build(ver, isBranch, skipDocs, os == OS.osx ? "1.26.0" : ldcVer);
