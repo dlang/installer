@@ -16,7 +16,10 @@ call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
 cd %ROOT%
 @echo on
 
-set LLVM_URL=http://releases.llvm.org/%LLVM_VER%
+
+:: LLVM releases are now done with github so need to match https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.0/lld-14.0.0.src.tar.xz
+
+set LLVM_URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-%LLVM_VER%
 powershell -Command "Invoke-WebRequest %LLVM_URL%/lld-%LLVM_VER%.src.tar.xz -OutFile lld.src.tar.xz" || exit /B 1
 powershell -Command "Invoke-WebRequest %LLVM_URL%/llvm-%LLVM_VER%.src.tar.xz -OutFile llvm.src.tar.xz" || exit /B 1
 
@@ -24,11 +27,11 @@ powershell -Command "Invoke-WebRequest %LLVM_URL%/llvm-%LLVM_VER%.src.tar.xz -Ou
 dos2unix "%ROOT%\windows\build_lld.sha256sums"
 sha256sum -c "%ROOT%\windows\build_lld.sha256sums" || exit /B 1
 
-7z x "llvm.src.tar.xz" || exit /B 1
-7z x "lld.src.tar.xz"  || exit /B 1
+7z x "llvm.src.tar.xz" -y || exit /B 1
+7z x "lld.src.tar.xz"  -y || exit /B 1
 
-7z x "llvm.src.tar" || exit /B 1
-7z x "lld.src.tar"  || exit /B 1
+7z x "llvm.src.tar" -y || exit /B 1
+7z x "lld.src.tar"  -y || exit /B 1
 
 move "llvm-%LLVM_VER%.src" llvm
 move "lld-%LLVM_VER%.src" llvm\tools\lld
@@ -36,6 +39,8 @@ move "lld-%LLVM_VER%.src" llvm\tools\lld
 rem patch lld to not emit "No structured exception handler"
 sed -e s/IMAGE_DLL_CHARACTERISTICS_NO_SEH/0/ llvm\tools\lld\COFF\Writer.cpp >Writer.tmp
 move /Y Writer.tmp llvm\tools\lld\COFF\Writer.cpp
+
+choco install visualstudio2019-workload-nativedesktop
 
 set CMAKE_OPT=%CMAKE_OPT% -DCMAKE_CXX_FLAGS="/DIMAGE_DLL_CHARACTERISTICS_NO_SEH=0"
 
