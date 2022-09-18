@@ -7,7 +7,6 @@ steps:
   - script: |
       git clone --branch $(BRANCH) https://github.com/dlang/dlang.org.git work/dlang.org
       git clone --branch $(BRANCH) https://github.com/dlang/dmd.git work/dmd
-      git clone --branch $(BRANCH) https://github.com/dlang/druntime.git work/druntime
       git clone --branch $(BRANCH) https://github.com/dlang/phobos.git work/phobos
     displayName: clone repos
   - script: |

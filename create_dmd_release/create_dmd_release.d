@@ -298,10 +298,6 @@ void cleanAll(string branch)
     run("git clean -f -x -d"); // remove all untracked/ignored files
     run("git checkout ."); // undo local changes, e.g. VERSION
 
-    info("Cleaning Druntime");
-    changeDir(cloneDir~"/druntime");
-    run("git clean -f -x -d");
-
     info("Cleaning Phobos");
     changeDir(cloneDir~"/phobos");
     run("git clean -f -x -d");
@@ -328,12 +324,8 @@ void buildAll(Bits bits, string branch)
     auto msvcVarsX64 = "";
     auto msvcVarsX86 = "";
     auto msvcVars = "";
-    auto msvcEnv = "";
     version(Windows) if (bits == Bits.bits64)
     {
-        // Just overwrite any logic in makefiles and leave setup to vcvarsall.bat
-        msvcEnv = ` "VCDIR=" "SDKDIR=" "CC=cl" "CC32=cl" "LD=link" "AR=lib"`;
-
         // Setup MSVC environment for x64/x86 native builds
         auto vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
         msvcVarsX64 = vcVars~" x64 && ";
@@ -349,13 +341,13 @@ void buildAll(Bits bits, string branch)
     version (Windows)
     {
         auto jobs = "";
-        auto dmdEnv = ` DMD=..\dmd\generated\`~osDirName~`\release\32\dmd`~exe;
+        auto dmdEnv = ` "DMD=`~cloneDir~`\dmd\generated\`~osDirName~`\release\32\dmd`~exe~`"`;
         enum dmdConf = "sc.ini";
     }
     else
     {
         auto jobs = " -j4";
-        auto dmdEnv = " DMD=../dmd/generated/"~osDirName~"/release/"~bitsStr~"/dmd"~exe;
+        auto dmdEnv = ` DMD="`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
         enum dmdConf = "dmd.conf";
     }
     auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
@@ -380,7 +372,7 @@ void buildAll(Bits bits, string branch)
     auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~ltoOption~latest~" -f "~targetMakefile;
 
     info("Building DMD "~bitsDisplay);
-    changeDir(cloneDir~"/dmd/src");
+    changeDir(cloneDir~"/dmd/compiler/src");
     version (Windows)
         run(msvcVars~makecmd~" dmd");
     else
@@ -390,7 +382,7 @@ void buildAll(Bits bits, string branch)
     version(Windows)
     {{
         // WORKAROUND: Explicitly build dmd.conf because win32.mak invokes build.d explicitly for the executable ($G\dmd.exe)
-        run(`..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
+        run(`..\..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
 
         // Path sc.ini by appending to the existing LIB entries
         const iniPath = cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`;
@@ -421,27 +413,27 @@ void buildAll(Bits bits, string branch)
             makeTargetDruntime = " target implibs";
 
     info("Building Druntime "~bitsDisplay);
-    changeDir(cloneDir~"/druntime");
-    run(msvcVars~makecmd~pic~msvcEnv~makeTargetDruntime);
-    removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
+    changeDir(cloneDir~"/dmd/druntime");
+    run(msvcVars~makecmd~pic~makeTargetDruntime);
+    removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
         file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
-    run(msvcVars~makecmd~pic~msvcEnv);
+    run(msvcVars~makecmd~pic);
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     version (Windows) if (bits == Bits.bits64)
     {
         info("Building Druntime 32mscoff");
-        changeDir(cloneDir~"/druntime");
-        run(msvcVarsX86~makecmd~msvcEnv~" druntime32mscoff");
-        removeFiles(cloneDir~"/druntime", "*{"~obj~"}", SpanMode.depth,
+        changeDir(cloneDir~"/dmd/druntime");
+        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
+        removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
                     file => !file.baseName.startsWith("minit"));
 
         info("Building Phobos 32mscoff");
         changeDir(cloneDir~"/phobos");
-        run(msvcVarsX86~makecmd~msvcEnv~" phobos32mscoff");
+        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
         removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
     }
 
@@ -520,15 +512,15 @@ void createRelease(string branch)
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
     // Copy sources
-    copyDirVersioned(cloneDir~"/dmd", "src", releaseDir~"/dmd2/src/dmd");
-    copyDirVersioned(cloneDir~"/druntime", null, releaseDir~"/dmd2/src/druntime");
+    copyDirVersioned(cloneDir~"/dmd/compiler", "src", releaseDir~"/dmd2/src/dmd");
+    copyDirVersioned(cloneDir~"/dmd/druntime", null, releaseDir~"/dmd2/src/druntime");
     copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
-    copyDirVersioned(cloneDir~"/dmd", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
+    copyDirVersioned(cloneDir~"/dmd/compiler", "ini/" ~ osDirName, releaseDir~"/dmd2/" ~ osDirName);
 
     // druntime/doc doesn't get generated on Windows with --only-64, I don't know why.
-    if(exists(cloneDir~"/druntime/doc"))
-        copyDir(cloneDir~"/druntime/doc", releaseDir~"/dmd2/src/druntime/doc");
-    copyDir(cloneDir~"/druntime/import", releaseDir~"/dmd2/src/druntime/import");
+    if(exists(cloneDir~"/dmd/druntime/doc"))
+        copyDir(cloneDir~"/dmd/druntime/doc", releaseDir~"/dmd2/src/druntime/doc");
+    copyDir(cloneDir~"/dmd/druntime/import", releaseDir~"/dmd2/src/druntime/import");
     copyFile(cloneDir~"/dmd/VERSION",    releaseDir~"/dmd2/src/VERSION");
 
     // Copy documentation
@@ -540,7 +532,7 @@ void createRelease(string branch)
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-        copyDirVersioned(cloneDir~"/dmd", "samples", releaseDir~"/dmd2/samples/d");
+        copyDirVersioned(cloneDir~"/dmd/compiler", "samples", releaseDir~"/dmd2/samples/d");
         version (Windows) {} else
         {
             copyDirVersioned(cloneDir~"/tools", "man", releaseDir~"/dmd2/man");
@@ -561,7 +553,7 @@ void createRelease(string branch)
         if(do32Bit)
         {
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
-            copyDir(cloneDir~"/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
+            copyDir(cloneDir~"/dmd/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {
@@ -609,7 +601,7 @@ void createRelease(string branch)
         version(Windows)
         {
             // patch sc.ini to point to optlink.exe in bin folder
-            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/ini/windows/bin/sc.ini");
+            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/compiler/ini/windows/bin/sc.ini");
             sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
             std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
         }
