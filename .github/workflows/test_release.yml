@@ -40,7 +40,7 @@ jobs:
           - host: ubuntu-latest
             os: linux
             build: dmd.${{ github.base_ref || github.ref_name }}.linux.tar.xz
-          - host: macos-10.15
+          - host: macos-12
             os: freebsd
             build: dmd.${{ github.base_ref || github.ref_name }}.freebsd-64.tar.xz
 
@@ -70,7 +70,7 @@ jobs:
 
       - name: Check ${{ matrix.os }} artifacts in a VM
         if: ${{ matrix.os == 'freebsd' }}
-        uses: cross-platform-actions/action@v0.3.1
+        uses: cross-platform-actions/action@v0.6.2
         with:
           operating_system: freebsd
           version: 12.2
