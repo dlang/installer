@@ -635,11 +635,11 @@ install_dlang_installer() {
     tmp=$(mkdtemp)
     local mirrors=(
         "https://dlang.org/install.sh"
-        "https://s3-us-west-2.amazonaws.com/downloads.dlang.org/other/install.sh"
+        "https://downloads.dlang.org/other/install.sh"
     )
     local keyring_mirrors=(
         "https://dlang.org/d-keyring.gpg"
-        "https://s3-us-west-2.amazonaws.com/downloads.dlang.org/other/d-keyring.gpg"
+        "https://downloads.dlang.org/other/d-keyring.gpg"
     )
 
     mkdir -p "$ROOT"
