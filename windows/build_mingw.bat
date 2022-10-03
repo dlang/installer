@@ -11,7 +11,7 @@ set GITHUB_RELEASE=https://github.com/dlang/installer/releases/download/%TAG%/%A
 REM Stop early if the artifact already exists
 powershell -Command "Invoke-WebRequest %GITHUB_RELEASE% -OutFile %ARTIFACTPATH%" && exit /B 0
 
-set DMD_URL=http://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
+set DMD_URL=https://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
 echo DMD_URL=%DMD_URL%
 powershell -Command "Invoke-WebRequest %DMD_URL% -OutFile dmd2.7z" || exit /B 1
 7z x dmd2.7z || exit /B 1

@@ -607,10 +607,10 @@ int main(string[] args)
     {
         fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
         fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
-        fetchFile("http://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
-        fetchFile("http://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
-        fetchFile("http://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
-        fetchFile("http://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
+        fetchFile("https://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
+        fetchFile("https://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
+        fetchFile("https://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
+        fetchFile("https://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
         fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
     }
 
