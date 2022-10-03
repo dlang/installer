@@ -666,7 +666,7 @@ resolve_latest() {
     case $input_compiler in
         dmd)
             local mirrors=(
-                "http://downloads.dlang.org/releases/LATEST"
+                "https://downloads.dlang.org/releases/LATEST"
                 "http://ftp.digitalmars.com/LATEST"
             )
             logV "Determing latest dmd version (${mirrors[0]})."
@@ -674,7 +674,7 @@ resolve_latest() {
             ;;
         dmd-beta)
             local mirrors=(
-                "http://downloads.dlang.org/pre-releases/LATEST"
+                "https://downloads.dlang.org/pre-releases/LATEST"
                 "http://ftp.digitalmars.com/LATEST_BETA"
             )
             logV "Determing latest dmd-beta version (${mirrors[0]})."
@@ -691,7 +691,7 @@ resolve_latest() {
             if [[ ! $input_compiler =~ -[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] &&
                [[ ! $input_compiler =~ -[0-9][.][0-9]{3}[.][0-9]{1,3}(-[0-9]{1,3})? ]] &&
                [[ ! $input_compiler =~ -[0-9][.][0-9]{3}(.[0-9]{1,3})? ]]; then
-                local url=http://downloads.dlang.org/nightlies/$input_compiler/LATEST
+                local url=https://downloads.dlang.org/nightlies/$input_compiler/LATEST
                 logV "Determing latest $input_compiler version ($url)."
                 COMPILER="dmd-$(fetch "$url")"
             # rewrite dmd-2016-10-19 -> dmd-master-2016-10-19 (default branch for nightlies)
@@ -778,12 +778,12 @@ install_compiler() {
         local mirrors
         if [ -n "${BASH_REMATCH[3]}" ]; then # pre-release
             mirrors=(
-                "http://downloads.dlang.org/pre-releases/2.x/$ver/$basename$ext"
+                "https://downloads.dlang.org/pre-releases/2.x/$ver/$basename$ext"
                 "http://ftp.digitalmars.com/$basename$ext"
             )
         else
             mirrors=(
-                "http://downloads.dlang.org/releases/2.x/$ver/$basename$ext"
+                "https://downloads.dlang.org/releases/2.x/$ver/$basename$ext"
                 "http://ftp.digitalmars.com/$basename$ext"
             )
         fi
@@ -802,7 +802,7 @@ install_compiler() {
         fi
         local ext
         test $OS = windows && ext=.7z || ext=.tar.xz
-        local url="http://downloads.dlang.org/nightlies/$1/$basename$ext"
+        local url="https://downloads.dlang.org/nightlies/$1/$basename$ext"
 
         download_and_unpack_with_verify "$ROOT/$compiler" "$url"
 

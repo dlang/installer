@@ -12,7 +12,7 @@ steps:
       powershell -command "& { iwr https://github.com/ldc-developers/ldc/releases/download/v$(HOST_LDC_VERSION)/ldc2-$(HOST_LDC_VERSION)-windows-multilib.7z -OutFile ldc.7z }"
       7z x ldc.7z
       move ldc2-$(HOST_LDC_VERSION)-windows-multilib ldc2
-      powershell -command "& { iwr http://downloads.dlang.org/other/dm857c.zip -OutFile dmc.zip }"
+      powershell -command "& { iwr https://downloads.dlang.org/other/dm857c.zip -OutFile dmc.zip }"
       7z x dmc.zip
       powershell -command "& { iwr http://ftp.digitalmars.com/sppn.zip -OutFile sppn.zip }"
       7z x -odm/bin sppn.zip

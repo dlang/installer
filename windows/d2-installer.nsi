@@ -58,7 +58,7 @@
 !define VCRedistx64Filename "vcredist_x64.exe"
 
 ; URLs
-!define BaseURL "http://downloads.dlang.org"
+!define BaseURL "https://downloads.dlang.org"
 !define BaseURLAlt "http://ftp.digitalmars.com"
 !define VisualDBaseURL "https://github.com/dlang/visuald/releases/download"
 
