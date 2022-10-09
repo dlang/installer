@@ -131,7 +131,7 @@ jobs:
           - os: windows-2019
             target: windows
           # FreeBSD is built on an additional VM
-          - os: macos-10.15
+          - os: macos-12
             target: freebsd
 
     steps:
@@ -232,7 +232,7 @@ jobs:
           then
 
             # Fetch DMC (incl. DM make and sppn.exe)
-            curl http://downloads.dlang.org/other/dm857c.zip -o dmc.zip
+            curl https://downloads.dlang.org/other/dm857c.zip -o dmc.zip
             7z x dmc.zip
             curl http://ftp.digitalmars.com/sppn.zip -o sppn.zip
             7z x -odm/bin sppn.zip
@@ -266,7 +266,7 @@ jobs:
       #
       - name: Run build_all.d for FreeBSD in a dedicated VM
         if: matrix.target == 'freebsd'
-        uses: vmactions/freebsd-vm@v0.1.6
+        uses: vmactions/freebsd-vm@v0.2.9
         with:
           usesh: true
           # Need more RAM than the default 1G

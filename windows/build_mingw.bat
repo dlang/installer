@@ -1,4 +1,5 @@
 @setlocal
+@echo on
 
 set ROOT=%CD%
 mkdir "%ROOT%\artifacts"
@@ -11,7 +12,7 @@ set GITHUB_RELEASE=https://github.com/dlang/installer/releases/download/%TAG%/%A
 REM Stop early if the artifact already exists
 powershell -Command "Invoke-WebRequest %GITHUB_RELEASE% -OutFile %ARTIFACTPATH%" && exit /B 0
 
-set DMD_URL=http://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
+set DMD_URL=https://downloads.dlang.org/releases/2.x/%D_VERSION%/dmd.%D_VERSION%.windows.7z
 echo DMD_URL=%DMD_URL%
 powershell -Command "Invoke-WebRequest %DMD_URL% -OutFile dmd2.7z" || exit /B 1
 7z x dmd2.7z || exit /B 1
@@ -32,11 +33,13 @@ sha256sum -c "%ROOT%\windows\build_mingw.sha256sums" || exit /B 1
 move mingw-w64-v%MINGW_VER% mingw-w64
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+@echo on
 rem CWD might be changed by vcvars64.bat
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x64 %ROOT%\mingw-w64 dmd2\windows\lib64\mingw || exit /B 1
 
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
+@echo on
 cd %ROOT%\windows\mingw
 dmd -run buildsdk.d x86 %ROOT%\mingw-w64 dmd2\windows\lib32mscoff\mingw || exit /B 1
 
