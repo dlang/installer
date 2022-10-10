@@ -8,9 +8,10 @@ Prerequisites to Run:
 - Git
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
-- Windows: Working DMC (incl. implib.exe) and 32/64-bit MSVC toolchains.
-  The default make must be DM make, and dmc.exe, DM lib.exe and implib.exe must be
-  found in PATH, so it's recommended to set the DMC bin dir as *first* dir in PATH.
+- Windows: Working DMC (incl. sppn.exe and implib.exe) and 32/64-bit MSVC
+  toolchains. The default make must be DM make, and dmc.exe, DM lib.exe,
+  sppn.exe and implib.exe must be found in PATH, so it's recommended to set the
+  DMC bin dir as *first* dir in PATH.
   Also, this environment variable must be set:
     LDC_VSDIR: Visual Studio directory containing the MSVC toolchains
   Examples:
