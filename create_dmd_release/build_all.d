@@ -23,8 +23,8 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 enum freebsd_64 = Platform(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
-/// https://vagrantcloud.com/debian/stretch64
-/// Setup: sudo dpkg --add-architecture i386; sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm fakeroot rsync unzip curl libcurl3 libcurl3:i386 --no-install-recommends; sudo apt-get clean
+/// https://vagrantcloud.com/debian/bullseye64
+/// Setup: sudo dpkg --add-architecture i386; sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm fakeroot rsync unzip curl libcurl4 libcurl4:i386 --no-install-recommends; sudo apt-get clean
 enum linux_both = Platform(OS.linux, Model._both);
 
 /// OSes that require licenses must be setup manually
