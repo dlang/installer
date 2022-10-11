@@ -30,7 +30,7 @@ enum linux_both = Platform(OS.linux, Model._both);
 /// OSes that require licenses must be setup manually
 
 /// Name: create_dmd_release-osx
-/// Setup: Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
+/// Setup: Preparing OSX-10.13 box, https://gist.github.com/ibuclaw/4272119259b835672962e2b07bc35cd3
 enum osx_64 = Platform(OS.osx, Model._64);
 
 /// Name: create_dmd_release-windows
