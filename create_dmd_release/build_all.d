@@ -114,8 +114,6 @@ struct Box
 
             // save the ssh config file
             run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
-            if (platform.os == OS.osx)
-                run("cd "~_tmpdir~"; echo -e '  HostKeyAlgorithms +ssh-rsa\n  PubkeyAcceptedKeyTypes +ssh-rsa' >> ssh.cfg;");
         }
     }
 
@@ -587,8 +585,7 @@ int main(string[] args)
 
     auto ldcCompilers = platforms
         .map!(p => "ldc2-%1$s-%2$s-%3$s".format(
-                // workaround OSX build problems https://github.com/dlang/installer/pull/487
-                p.os == OS.osx ? "1.26.0" : ldcVer,
+                ldcVer,
                 p.os == OS.freebsd ? p.osS() : p.toString(),
                 p.os == OS.windows ? "multilib.7z" : "x86_64.tar.xz",
             )
@@ -596,11 +593,9 @@ int main(string[] args)
 
     version (CodeSign) if (!isBranch)
         getCodesignCerts(workDir~"/codesign");
-    foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
-    {
-        immutable url = "https://github.com/ldc-developers/ldc/releases/download/v"~(platform.os == OS.osx ? "1.26.0" : ldcVer)~"/"~ldcCompiler;
+    foreach (url; ldcCompilers.map!(s =>
+            "https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~s))
         fetchFile(url, cacheDir~"/"~baseName(url));
-    }
 
     const hasWindows = platforms.any!(p => p.os == OS.windows);
     if (hasWindows)
@@ -673,7 +668,7 @@ int main(string[] args)
             version (CodeSign) if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs, os == OS.osx ? "1.26.0" : ldcVer);
+            build(ver, isBranch, skipDocs, ldcVer);
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }
