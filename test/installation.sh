@@ -20,7 +20,7 @@ SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 
 DEB_PLATFORMS=(ubuntu:xenial ubuntu:bionic ubuntu:focal ubuntu:jammy ubuntu:latest)
 DEB_PLATFORMS+=(debian:stable debian:testing debian:latest)
-RPM_PLATFORMS=(fedora:31 fedora:latest centos:7 centos:latest)
+RPM_PLATFORMS=(fedora:31 fedora:latest centos:7 quay.io/centos/centos:stream)
 SUSE_RPM_PLATFORMS=(opensuse/leap opensuse/tumbleweed)
 
 # copy pkgs to test folder so that it's part of docker's build context
