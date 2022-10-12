@@ -330,7 +330,10 @@ void buildAll(Bits bits, string branch)
         // Setup MSVC environment for x64/x86 native builds
         auto vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
         msvcVarsX64 = vcVars~" x64 && ";
-        msvcVarsX86 = vcVars~" x86 && ";
+        version (Win64)
+            msvcVarsX86 = vcVars~" amd64_x86 && ";
+        else
+            msvcVarsX86 = vcVars~" x86 && ";
         msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
     }
 
