@@ -18,7 +18,7 @@ RPM="dmd-${VERSION/-/\~}-0.fedora.x86_64.rpm"
 # dmd-2.079.1-0.openSUSE.x86_64.rpm, dmd-2.079.1~beta.1-0.openSUSE.x86_64.rpm
 SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 
-DEB_PLATFORMS=(ubuntu:xenial ubuntu:bionic ubuntu:focal)
+DEB_PLATFORMS=(ubuntu:xenial ubuntu:bionic ubuntu:focal ubuntu:jammy)
 DEB_PLATFORMS+=(debian:stable debian:testing)
 RPM_PLATFORMS=(fedora:31 fedora:latest centos:7 centos:latest)
 SUSE_RPM_PLATFORMS=(opensuse/leap opensuse/tumbleweed)
