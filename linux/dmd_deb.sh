@@ -275,7 +275,7 @@ else
 
 	# generate copyright file
 	mkdir -p usr/share/doc/dmd
-	for I in ../$UNZIPDIR/license.txt ../$UNZIPDIR/src/druntime/LICENSE.txt
+	for I in ../$UNZIPDIR/license.txt
 	do
 		sed 's/\r//;s/^[ \t]\+$//;s/^$/./;s/^/ /' $I > $I"_tmp"
 		if [ $(sed -n '/====/=' $I"_tmp") ]
@@ -289,7 +289,7 @@ else
 
 	Files: usr/bin/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
-	License: Digital Mars License
+	License: Boost License 1.0
 
 	Files: usr/lib/*
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
@@ -299,11 +299,8 @@ else
 	Copyright: 1999-'$(date +%Y)' by Digital Mars written by Walter Bright
 	License: Boost License 1.0
 
-	License: Digital Mars License' | sed 's/^\t//' > usr/share/doc/dmd/copyright
-	cat ../$UNZIPDIR/license.txt_tmp >> usr/share/doc/dmd/copyright
-	echo '
 	License: Boost License 1.0' | sed 's/^\t//' >> usr/share/doc/dmd/copyright
-	cat ../$UNZIPDIR/src/druntime/LICENSE.txt_tmp >> usr/share/doc/dmd/copyright
+	cat ../$UNZIPDIR/license.txt_tmp >> usr/share/doc/dmd/copyright
 
 
 	# create shlibs file
