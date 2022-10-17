@@ -41,7 +41,7 @@ if test $# -eq 0 ;then
 	echo "Script to build all dmd v2 deb/rpm/exe packages at once"
 	echo
 	echo "Usage:"
-	echo "  build_all.sh -v\"version\" [-f] [-r\"release\"] [-h]" 
+	echo "  build_all.sh -v\"version\" [-f] [-r\"release\"] [-h]"
 	echo
 	echo "Options:"
 	echo "  -v\"version\"      dmd version (mandatory)"
@@ -76,7 +76,7 @@ do
 		VER="${I:2}"
 		;;
 	*)
-		ferror "unknown argument '$I'" "try '`basename $0` -h' for more information."
+		ferror "unknown argument '$I'" "try '${0##*/} -h' for more information."
 	esac
 done
 
@@ -84,7 +84,7 @@ done
 # version is mandatory
 if [ -z "$VER" ]
 then
-	ferror "missing version" "try '`basename $0` -h' for more information."
+	ferror "missing version" "try '${0##*/} -h' for more information."
 fi
 
 
@@ -95,13 +95,13 @@ VER_TYPE=0
 [[ $VER =~ ^[0-9]"."[0-9][0-9][0-9]"."[0-9]+$ ]] && VER_TYPE=10
 if [ $VER_TYPE -eq 0 ]
 then
-	ferror "incorrect version number" "try '`basename $0` -h' for more information."
-elif test ${VER:0:1} -ne 2
+	ferror "incorrect version number" "try '${0##*/} -h' for more information."
+elif test "${VER:0:1}" -ne 2
 then
-	ferror "for dmd v2 only" "try '`basename $0` -h' for more information."
-elif test ${VER:0:1}${VER:2:3} -lt 2065
+	ferror "for dmd v2 only" "try '${0##*/} -h' for more information."
+elif test "${VER:0:1}${VER:2:3}" -lt 2065
 then
-	ferror "dmd v2.065 and newer only" "try '`basename $0` -h' for more information."
+	ferror "dmd v2.065 and newer only" "try '${0##*/} -h' for more information."
 fi
 
 
@@ -110,7 +110,7 @@ unset LIST
 fcheck()
 {
 	T="install ok installed"
-	if dpkg -s $1 2>/dev/null | grep "$T" &>/dev/null
+	if dpkg -s "$1" 2>/dev/null | grep "$T" &>/dev/null
 	then
 		echo "Found package $1..."
 	else
@@ -177,4 +177,3 @@ echo -e "\n\033[32;40;7;1m Everything properly built! \033[0m"
 
 # remove log file
 rm -f $LOGFILE
-
