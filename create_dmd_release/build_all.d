@@ -23,14 +23,14 @@ static assert(__VERSION__ >= 2067, "Requires dmd >= 2.067 with a fix for Bugzill
 enum freebsd_64 = Platform(OS.freebsd, Model._64);
 
 /// Name: create_dmd_release-linux
-/// https://vagrantcloud.com/debian/stretch64
-/// Setup: sudo dpkg --add-architecture i386; sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm fakeroot rsync unzip curl libcurl3 libcurl3:i386 --no-install-recommends; sudo apt-get clean
+/// https://vagrantcloud.com/debian/bullseye64
+/// Setup: sudo dpkg --add-architecture i386; sudo apt-get -y update; sudo apt-get -y install git g++-multilib dpkg-dev rpm fakeroot rsync unzip curl libcurl4 libcurl4:i386 --no-install-recommends; sudo apt-get clean
 enum linux_both = Platform(OS.linux, Model._both);
 
 /// OSes that require licenses must be setup manually
 
 /// Name: create_dmd_release-osx
-/// Setup: Preparing OSX-10.8 box, https://gist.github.com/MartinNowak/8156507
+/// Setup: Preparing OSX-10.13 box, https://gist.github.com/ibuclaw/4272119259b835672962e2b07bc35cd3
 enum osx_64 = Platform(OS.osx, Model._64);
 
 /// Name: create_dmd_release-windows
@@ -114,8 +114,6 @@ struct Box
 
             // save the ssh config file
             run("cd "~_tmpdir~"; vagrant ssh-config > ssh.cfg;");
-            if (platform.os == OS.osx)
-                run("cd "~_tmpdir~"; echo -e '  HostKeyAlgorithms +ssh-rsa\n  PubkeyAcceptedKeyTypes +ssh-rsa' >> ssh.cfg;");
         }
     }
 
@@ -177,7 +175,7 @@ private:
                 config.ssh.insert_key = false
 
                 config.vm.provider :virtualbox do |vb|
-                  vb.customize ["modifyvm", :id, "--memory", "4096"]
+                  vb.customize ["modifyvm", :id, "--memory", "6144"]
                   vb.customize ["modifyvm", :id, "--cpus", "4"]
                   vb.customize ["modifyvm", :id, "--accelerate3d", "off"]
                   vb.customize ["modifyvm", :id, "--audio", "none"]
@@ -587,8 +585,7 @@ int main(string[] args)
 
     auto ldcCompilers = platforms
         .map!(p => "ldc2-%1$s-%2$s-%3$s".format(
-                // workaround OSX build problems https://github.com/dlang/installer/pull/487
-                p.os == OS.osx ? "1.26.0" : ldcVer,
+                ldcVer,
                 p.os == OS.freebsd ? p.osS() : p.toString(),
                 p.os == OS.windows ? "multilib.7z" : "x86_64.tar.xz",
             )
@@ -596,11 +593,9 @@ int main(string[] args)
 
     version (CodeSign) if (!isBranch)
         getCodesignCerts(workDir~"/codesign");
-    foreach (platform, ldcCompiler; platforms.zip(ldcCompilers))
-    {
-        immutable url = "https://github.com/ldc-developers/ldc/releases/download/v"~(platform.os == OS.osx ? "1.26.0" : ldcVer)~"/"~ldcCompiler;
+    foreach (url; ldcCompilers.map!(s =>
+            "https://github.com/ldc-developers/ldc/releases/download/v"~ldcVer~"/"~s))
         fetchFile(url, cacheDir~"/"~baseName(url));
-    }
 
     const hasWindows = platforms.any!(p => p.os == OS.windows);
     if (hasWindows)
@@ -673,7 +668,7 @@ int main(string[] args)
             version (CodeSign) if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
-            build(ver, isBranch, skipDocs, os == OS.osx ? "1.26.0" : ldcVer);
+            build(ver, isBranch, skipDocs, ldcVer);
             if (os == OS.linux && !skipDocs) scp("default:docs", workDir);
         }
     }

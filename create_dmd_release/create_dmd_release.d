@@ -8,9 +8,10 @@ Prerequisites to Run:
 - Git
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
-- Windows: Working DMC (incl. implib.exe) and 32/64-bit MSVC toolchains.
-  The default make must be DM make, and dmc.exe, DM lib.exe and implib.exe must be
-  found in PATH, so it's recommended to set the DMC bin dir as *first* dir in PATH.
+- Windows: Working DMC (incl. sppn.exe and implib.exe) and 32/64-bit MSVC
+  toolchains. The default make must be DM make, and dmc.exe, DM lib.exe,
+  sppn.exe and implib.exe must be found in PATH, so it's recommended to set the
+  DMC bin dir as *first* dir in PATH.
   Also, this environment variable must be set:
     LDC_VSDIR: Visual Studio directory containing the MSVC toolchains
   Examples:
@@ -329,7 +330,10 @@ void buildAll(Bits bits, string branch)
         // Setup MSVC environment for x64/x86 native builds
         auto vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
         msvcVarsX64 = vcVars~" x64 && ";
-        msvcVarsX86 = vcVars~" x86 && ";
+        version (Win64)
+            msvcVarsX86 = vcVars~" amd64_x86 && ";
+        else
+            msvcVarsX86 = vcVars~" x86 && ";
         msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
     }
 
@@ -357,8 +361,6 @@ void buildAll(Bits bits, string branch)
         auto ltoOption = " ENABLE_LTO=0";
     else version (linux)
         auto ltoOption = " ENABLE_LTO=" ~ (bits == Bits.bits32 ? "0" : "1");
-    else version (OSX)
-        auto ltoOption = " ENABLE_LTO=0";
     else
         auto ltoOption = " ENABLE_LTO=1";
     auto latest = " LATEST="~branch;
