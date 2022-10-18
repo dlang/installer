@@ -18,9 +18,9 @@ RPM="dmd-${VERSION/-/\~}-0.fedora.x86_64.rpm"
 # dmd-2.079.1-0.openSUSE.x86_64.rpm, dmd-2.079.1~beta.1-0.openSUSE.x86_64.rpm
 SUSE_RPM="dmd-${VERSION/-/\~}-0.openSUSE.x86_64.rpm"
 
-DEB_PLATFORMS=(ubuntu:xenial ubuntu:bionic ubuntu:focal)
-DEB_PLATFORMS+=(debian:stable debian:testing)
-RPM_PLATFORMS=(fedora:31 fedora:latest centos:7 centos:latest)
+DEB_PLATFORMS=(ubuntu:xenial ubuntu:bionic ubuntu:focal ubuntu:jammy ubuntu:latest)
+DEB_PLATFORMS+=(debian:stable debian:testing debian:latest)
+RPM_PLATFORMS=(fedora:31 fedora:latest centos:7 quay.io/centos/centos:stream)
 SUSE_RPM_PLATFORMS=(opensuse/leap opensuse/tumbleweed)
 
 # copy pkgs to test folder so that it's part of docker's build context
@@ -107,8 +107,8 @@ set -euo pipefail
 trap 'echo -e "\e[1;31mInner script failed at line \$LINENO.\e[0m"' ERR
 set -x
 
-zypper --quiet --non-interactive removerepo 'NON OSS'
-zypper --quiet --non-interactive install curl >/dev/null
+zypper --quiet --non-interactive removerepo repo-non-oss repo-update-non-oss
+zypper --quiet --non-interactive install curl findutils >/dev/null
 zypper --quiet --non-interactive --no-gpg-checks install $SUSE_RPM >/dev/null
 curl --version >/dev/null
 # run a complex D hello world (using libcurl)
