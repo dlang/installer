@@ -53,12 +53,12 @@ jobs:
     steps:
       - name: Download generated releases from the artifacts
         id: download-release
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dmd-release
 
       - name: Clone installer repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: installer
 
