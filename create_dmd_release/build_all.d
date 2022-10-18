@@ -574,7 +574,7 @@ int main(string[] args)
     auto verMatch = gitTag.match(versionRE);
     immutable isBranch = !verMatch;
     immutable isPreRelease = isBranch || !verMatch.captures[4].empty;
-    immutable dubTag = getDubTag(isPreRelease);
+    immutable dubTag = isBranch ? gitTag : getDubTag(isPreRelease);
 
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
