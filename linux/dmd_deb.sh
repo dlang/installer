@@ -253,21 +253,21 @@ else
 			<comment>D source code</comment>
 			<sub-class-of type="text/x-csrc"/>
 			<glob pattern="*.d"/>
-			<icon name="dmd-source"/>
+			<generic-icon name="dmd-source"/>
 		</mime-type>
 
 		<mime-type type="application/x-ddsrc">
 			<comment>Ddoc source code</comment>
 			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.dd"/>
-			<icon name="dmd-source"/>
+			<generic-icon name="dmd-source"/>
 		</mime-type>
 
 		<mime-type type="application/x-disrc">
 			<comment>D interface code</comment>
 			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.di"/>
-			<icon name="dmd-source"/>
+			<generic-icon name="dmd-source"/>
 		</mime-type>
 
 	</mime-info>' | sed 's/^\t//' > usr/share/mime/packages/dmd.xml
