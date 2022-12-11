@@ -165,7 +165,9 @@ else
 	for I in 16 22 24 32 48 256
 	do
 		mkdir -p "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
-		cp -f "$(dirname $0)/icons/${I}/dmd-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/d-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/dd-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/di-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
 	done
 
 
