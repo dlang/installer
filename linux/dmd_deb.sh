@@ -165,7 +165,9 @@ else
 	for I in 16 22 24 32 48 256
 	do
 		mkdir -p "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
-		cp -f "$(dirname $0)/icons/${I}/dmd-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/d-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/dd-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
+		cp -f "$(dirname $0)/icons/${I}/di-source.png" "$TEMPDIR/$DMDDIR/usr/share/icons/hicolor/${I}x${I}/mimetypes"
 	done
 
 
@@ -253,21 +255,21 @@ else
 			<comment>D source code</comment>
 			<sub-class-of type="text/x-csrc"/>
 			<glob pattern="*.d"/>
-			<generic-icon name="dmd-source"/>
+			<generic-icon name="d-source"/>
 		</mime-type>
 
 		<mime-type type="application/x-ddsrc">
 			<comment>Ddoc source code</comment>
 			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.dd"/>
-			<generic-icon name="dmd-source"/>
+			<generic-icon name="dd-source"/>
 		</mime-type>
 
 		<mime-type type="application/x-disrc">
 			<comment>D interface code</comment>
 			<sub-class-of type="application/x-dsrc"/>
 			<glob pattern="*.di"/>
-			<generic-icon name="dmd-source"/>
+			<generic-icon name="di-source"/>
 		</mime-type>
 
 	</mime-info>' | sed 's/^\t//' > usr/share/mime/packages/dmd.xml
