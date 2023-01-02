@@ -26,7 +26,7 @@ do
     fi
 
     echo "Testing: $compiler"
-    "$INSTALLER" $compiler
+    "$INSTALLER" $INSTALLER_ARGS $compiler
     . $("$INSTALLER" $compiler -a)
 
     compilerVersion=$(dub --version | sed -n 1p | tr -d '\r')
