@@ -37,12 +37,11 @@ task:
 # OSX
 task:
   name: dlang.installer (osx)
-  osx_instance:
-    image: catalina-xcode
+  macos_instance:
+    image: ghcr.io/cirruslabs/macos-monterey-xcode:latest
   timeout_in: 60m
   environment:
     OS_NAME: osx
   install_gnupg_script: |
-    brew update-reset
     brew install gnupg
   test_installer_script: ./test/all.sh

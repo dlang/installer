@@ -89,10 +89,10 @@ for idx in "${!compilers[@]}"
 do
     compiler="${compilers[$idx]}"
     echo "Testing: $compiler"
-    assert "$("$INSTALLER" get-path --dmd "$compiler" --install)" "${versions_dmd[$idx]}"
-    assert "$("$INSTALLER" get-path "$compiler" --dmd)" "${versions_dmd[$idx]}"
-    assert "$("$INSTALLER" get-path "$compiler")" "${versions_dc[$idx]}"
-    assert "$("$INSTALLER" get-path --dub "$compiler")" "${versions_dub[$idx]}"
+    assert "$("$INSTALLER" $INSTALLER_ARGS get-path --dmd "$compiler" --install)" "${versions_dmd[$idx]}"
+    assert "$("$INSTALLER" $INSTALLER_ARGS get-path "$compiler" --dmd)" "${versions_dmd[$idx]}"
+    assert "$("$INSTALLER" $INSTALLER_ARGS get-path "$compiler")" "${versions_dc[$idx]}"
+    assert "$("$INSTALLER" $INSTALLER_ARGS get-path --dub "$compiler")" "${versions_dub[$idx]}"
     $INSTALLER uninstall "$compiler"
 done
 
@@ -116,7 +116,7 @@ done
 ################################################################################
 # assert error without --install
 ################################################################################
-out=$(! "$INSTALLER" get-path dmd-2.077.0 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path dmd-2.077.0 2>&1)
 echo "$out" | grep -q "not installed"
 
 ################################################################################
@@ -125,7 +125,7 @@ echo "$out" | grep -q "not installed"
 
 $INSTALLER install dmd-2.066.0
 rm -rf ~/dlang/dub # manually uninstall dub
-out=$(! "$INSTALLER" get-path --dub dmd-2.066.0 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path --dub dmd-2.066.0 2>&1)
 echo "$out" | grep -q "DUB is not installed"
 $INSTALLER uninstall dmd-2.066.0
 
@@ -135,30 +135,30 @@ $INSTALLER uninstall dmd-2.066.0
 
 # check errors if dub is installed
 $INSTALLER uninstall dub-1.22.0 || echo "dub-1.22.0 wasn't installed"
-out=$(! "$INSTALLER" get-path dub-1.22.0 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path dub-1.22.0 2>&1)
 echo "$out" | grep -q "not installed"
 
-out=$(! "$INSTALLER" get-path --dmd dub-1.22.0 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path --dmd dub-1.22.0 2>&1)
 echo "$out" | grep -q "not installed"
 
-out=$(! "$INSTALLER" get-path dub-1.22.0 --dub 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path dub-1.22.0 --dub 2>&1)
 echo "$out" | grep -q "not installed"
 
 # dmd is installed, but not dub
 $INSTALLER install dmd-2.079.0
-out=$(! "$INSTALLER" get-path dmd-2.079.0,dub-1.22.0 --dub 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path dmd-2.079.0,dub-1.22.0 --dub 2>&1)
 echo "$out" | grep -q "not installed"
 $INSTALLER uninstall dmd-2.079.0
 
 # errors when requesting a compiler with dub
-out=$(! "$INSTALLER" get-path --install dub-1.22.0 2>&1 | tail -n1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path --install dub-1.22.0 2>&1 | tail -n1)
 assert "$out" "ERROR: DUB is not a compiler."
 
-out=$(! "$INSTALLER" get-path --dmd dub-1.22.0 2>&1)
+out=$(! "$INSTALLER" $INSTALLER_ARGS get-path --dmd dub-1.22.0 2>&1)
 assert "$out" "ERROR: DUB is not a compiler."
 
 # dub with --dub
-out=$("$INSTALLER" get-path dub-1.22.0 --dub 2>&1)
+out=$("$INSTALLER" $INSTALLER_ARGS get-path dub-1.22.0 --dub 2>&1)
 assert "$out" "$ROOT/dub-1.22.0/dub"
 
 $INSTALLER uninstall dub-1.22.0

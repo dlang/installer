@@ -2,43 +2,79 @@
 
 set -uexo pipefail
 
-compilers=(
-    dmd-2.088.1
-    dmd-2.094.2
-    dmd-2.097.2
-    dmd-master-2020-03-10
-    ldc-1.18.0
-)
-
-versions=(
-    'DMD64 D Compiler v2.088.1'
-    'DMD64 D Compiler v2.094.2'
-    'DMD64 D Compiler v2.097.2'
-    'DMD64 D Compiler v2.091.0-beta.2-master-ec39fe5'
-    'LDC - the LLVM D compiler (1.18.0):'
-)
-
-frontendVersions=(
-    '2088'
-    '2094'
-    '2097'
-    '2091'
-    '2088'
-)
-
 if [ "${OS_NAME:-}" = "linux" ]; then
-    compilers+=(
+    compilers=(
+        dmd-2.088.1
+        dmd-2.094.2
+        dmd-2.097.2
+        dmd-master-2020-03-10
+        ldc-1.18.0
         gdc-4.9.3
         gdc-4.8.5
     )
 
-    versions+=(
+    versions=(
+        'DMD64 D Compiler v2.088.1'
+        'DMD64 D Compiler v2.094.2'
+        'DMD64 D Compiler v2.097.2'
+        'DMD64 D Compiler v2.091.0-beta.2-master-ec39fe5'
+        'LDC - the LLVM D compiler (1.18.0):'
         'gdc (crosstool-NG crosstool-ng-1.20.0-232-gc746732 - 20150825-2.066.1-58ec4c13ec) 4.9.3'
         'gdc (gdcproject.org 20161225-v2.068.2_gcc4.8) 4.8.5'
     )
-    frontendVersions+=(
+    frontendVersions=(
+        '2088'
+        '2094'
+        '2097'
+        '2091'
+        '2088'
         '2066'
         '2068'
+    )
+elif [ "${OS_NAME:-}" = "osx" ]; then
+    # Since macOS 12.x, versions of DMD older than 2.099.1 do not work.
+    # https://github.com/dlang/dmd/pull/13890
+    compilers=(
+        dmd-2.099.1
+        dmd-2.100.0
+        dmd-2.101.2
+        ldc-1.30.0
+    )
+
+    versions=(
+        'DMD64 D Compiler v2.099.1'
+        'DMD64 D Compiler v2.100.0'
+        'DMD64 D Compiler v2.101.2'
+        'LDC - the LLVM D compiler (1.30.0):'
+    )
+    frontendVersions=(
+        '2099'
+        '2100'
+        '2101'
+        '2100'
+    )
+else
+    compilers=(
+        dmd-2.088.1
+        dmd-2.094.2
+        dmd-2.097.2
+        dmd-master-2020-03-10
+        ldc-1.18.0
+    )
+
+    versions=(
+        'DMD64 D Compiler v2.088.1'
+        'DMD64 D Compiler v2.094.2'
+        'DMD64 D Compiler v2.097.2'
+        'DMD64 D Compiler v2.091.0-beta.2-master-ec39fe5'
+        'LDC - the LLVM D compiler (1.18.0):'
+    )
+    frontendVersions=(
+        '2088'
+        '2094'
+        '2097'
+        '2091'
+        '2088'
     )
 fi
 
