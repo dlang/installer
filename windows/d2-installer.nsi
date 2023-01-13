@@ -106,6 +106,8 @@ Unicode True
 !include "FileFunc.nsh"
 !include "TextFunc.nsh"
 !include "Sections.nsh"
+!include "LogicLib.nsh"
+!include "x64.nsh"
 
 ;------------------------------------------------------------
 ; Variables
@@ -294,6 +296,9 @@ SectionGroup /e "D2"
 
 
   Section "Add to PATH" AddD2ToPath
+    ${If} ${RunningX64}
+      ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin64"
+    ${EndIf}
     ${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\dmd2\windows\bin"
   SectionEnd
 
@@ -544,6 +549,7 @@ FunctionEnd
 
 Section "Uninstall"
   ; Remove directories from PATH (for all users)
+  ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin64"
   ${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR\dmd2\windows\bin"
 
   ; Remove stuff from registry

@@ -1,0 +1,5 @@
+Prefer 64 bit over 32 bit DMD on Windows 64 bit.
+
+The NSIS installer for Windows has the option "Add to PATH". Previously, only
+the 32 bit version of DMD was added to the PATH environment variable. Now, on
+Windows 64 bit, the 64 bit version of DMD will be selected from PATH.
