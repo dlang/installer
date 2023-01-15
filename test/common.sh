@@ -4,6 +4,11 @@ set -eu -o pipefail
 
 ROOT="$DIR/../"
 INSTALLER="$ROOT/script/install.sh"
+INSTALLER_ARGS=""
+if [ "${OS_NAME}" == "osx" ] ; then
+    INSTALLER_ARGS="--arch x86_64"
+fi
+
 
 assert() {
     actual="$1"
