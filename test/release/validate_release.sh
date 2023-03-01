@@ -62,7 +62,7 @@ done
 for DUB in $GEN/dmd2/$OS/bin*/dub$EXE
 do
 	$DUB run -n --arch=x86_64 --single $DIR/dub_example.d
-	rm -r $DIR/.dub $DIR/dub_example$EXE
+	rm -rf $DIR/.dub $DIR/dub_example$EXE
 done
 
 ###############################################################################
