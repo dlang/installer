@@ -271,7 +271,7 @@ jobs:
           usesh: true
           # Need more RAM than the default 1G
           mem: 4096
-          prepare: pkg install -y bash curl curlpp git gmake pkgconf gnupg rsync llvm90
+          prepare: pkg install -y bash curl curlpp git gmake pkgconf gnupg rsync llvm
           run: |
             set -eux
 
