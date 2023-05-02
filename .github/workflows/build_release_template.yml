@@ -271,7 +271,7 @@ jobs:
           usesh: true
           # Need more RAM than the default 1G
           mem: 4096
-          prepare: pkg install -y bash curl curlpp git gmake pkgconf gnupg rsync llvm
+          prepare: pkg install -y bash curl curlpp git gmake pkgconf gnupg rsync ldc
           run: |
             set -eux
 
@@ -279,22 +279,15 @@ jobs:
             curl https://dlang.org/d-keyring.gpg -o d-keyring.gpg
             gpg d-keyring.gpg
 
-            # Install ldc
-            curl https://dlang.org/install.sh -o install.sh
-            bash install.sh ldc -p .
-
-            # Use absolute paths because activate doesn't work correctly
-            LDC_BIN=$PWD/ldc-*/bin
-
             # Determine installed LDC version
-            LDC=$($LDC_BIN/ldc2 --version | head -n 1 | cut -d'(' -f2 | cut -d')' -f1)
+            LDC=$(ldc2 --version | head -n 1 | cut -d'(' -f2 | cut -d')' -f1)
 
             # Determine additional linker flags to make -lcurl work
             EXTRA_FLAGS="-L$(pkg-config --libs-only-L libcurl)"
 
             # Actually build the release
             cd create_dmd_release
-            $LDC_BIN/ldmd2 -g -m64 --link-defaultlib-debug -version=NoVagrant -i build_all.d $EXTRA_FLAGS
+            ldmd2 -g -m64 --link-defaultlib-debug -version=NoVagrant -i build_all.d $EXTRA_FLAGS
             ./build_all --targets=${{ matrix.target }} "v$LDC" ${{ inputs.release_branch }}
 
       #################################################################
