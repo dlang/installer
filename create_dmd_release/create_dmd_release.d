@@ -374,19 +374,17 @@ void buildAll(Bits bits, string branch)
     auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~ltoOption~latest~" -f "~targetMakefile;
 
     info("Building DMD "~bitsDisplay);
-    changeDir(cloneDir~"/dmd/compiler/src");
-    version (Windows)
-        run(msvcVars~makecmd~" dmd");
+    changeDir(cloneDir~"/dmd");
+    run(hostDMD~" -g compiler/src/build.d -ofgenerated/build"~exe);
+    version(Windows)
+        run(msvcVars~`generated\build.exe`~jobs~makeModel~hostDMDEnv~isRelease~ltoOption~latest~" dmd");
     else
-        run(makecmd);
+        run("generated/build"~jobs~makeModel~hostDMDEnv~isRelease~ltoOption~latest~" dmd");
 
     // Add libraries to the LIB variable in sc.ini
     version(Windows)
     {{
-        // WORKAROUND: Explicitly build dmd.conf because win32.mak invokes build.d explicitly for the executable ($G\dmd.exe)
-        run(`..\..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
-
-        // Path sc.ini by appending to the existing LIB entries
+        // Patch sc.ini by appending to the existing LIB entries
         const iniPath = cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`;
         const content = readText(iniPath);
         File scIni = File(iniPath, "w");
