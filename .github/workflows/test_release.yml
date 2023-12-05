@@ -70,10 +70,12 @@ jobs:
 
       - name: Check ${{ matrix.os }} artifacts in a VM
         if: ${{ matrix.os == 'freebsd' }}
-        uses: cross-platform-actions/action@v0.6.2
+        uses: cross-platform-actions/action@v0.21.1
         with:
           operating_system: freebsd
-          version: 12.2
+          hypervisor: qemu
+          memory: 8G
+          version: '12.2'
           environment_variables: OS BUILD
           shell: bash
           run: source ./installer/test/release/validate_release.sh
