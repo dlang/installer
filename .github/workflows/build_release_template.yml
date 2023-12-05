@@ -266,14 +266,17 @@ jobs:
       #
       - name: Run build_all.d for FreeBSD in a dedicated VM
         if: matrix.target == 'freebsd'
-        uses: vmactions/freebsd-vm@v0.2.9
+        uses: cross-platform-actions/action@v0.21.1
         with:
-          usesh: true
-          # Need more RAM than the default 1G
-          mem: 4096
-          prepare: pkg install -y bash curl curlpp git gmake pkgconf gnupg rsync llvm90
+          operating_system: freebsd
+          hypervisor: qemu
+          memory: 8G
+          version: '12.2'
+          shell: bash
           run: |
             set -eux
+
+            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm
 
             # Import key used to sign binaries
             curl https://dlang.org/d-keyring.gpg -o d-keyring.gpg
