@@ -6,8 +6,6 @@ name: test_release
 on:
   pull_request:
   push:
-    branches:
-      - master
 
 jobs:
   build_release:
