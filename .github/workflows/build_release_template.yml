@@ -85,7 +85,7 @@ jobs:
           N=$(( 2 * $(nproc) ))
 
           # Build minimal host compiler (sometimes not triggered by dlang.org/posix.mak)
-          make -f posix.mak -j$N -C dmd/druntime
+          make -j$N -C dmd
 
           # Build docs and include the man pages
           make -f posix.mak -j$N -C dlang.org release

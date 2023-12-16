@@ -459,7 +459,7 @@ void cloneSources(string gitTag, string dubTag, bool isBranch, bool skipDocs, st
             run(fmt.format(gitTag, proj));
     }
     enforce(nfallback < allProjects.length, "Branch " ~ gitTag ~ " not found in any dlang repo.");
-    run(fmt.format(dubTag, "dub"));
+    run(fmt.format(isBranch && !branchExists(prefix ~ "dub", dubTag) ? "master" : dubTag, "dub"));
 }
 
 bool branchExists(string gitRepo, string branch)
