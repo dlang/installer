@@ -85,7 +85,6 @@ version(Windows)
     immutable dll           = ".dll";
     immutable libPhobos32   = "phobos";
     immutable libPhobos64   = "phobos64";
-    immutable build64BitTools = false;
 
     immutable osDirName     = "windows";
     immutable make          = "mingw32-make";
@@ -100,7 +99,6 @@ else version(Posix)
     immutable obj           = ".o";
     immutable libPhobos32   = "libphobos2";
     immutable libPhobos64   = "libphobos2";
-    immutable build64BitTools    = true;
 
     version(FreeBSD)
         immutable osDirName = "freebsd";
@@ -401,7 +399,6 @@ void buildAll(Bits bits, string branch)
         }
     }
 
-    if(build64BitTools || is32)
     {
         // Build the tools using the host compiler
         auto tools_makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
@@ -414,8 +411,6 @@ void buildAll(Bits bits, string branch)
         run(tools_makecmd~" rdmd ddemangle dustmite");
     }
 
-    bool buildDub = true; // build64BitTools || is32;
-    if(buildDub)
     {
         // build dub with stable (host) compiler, b/c it breaks
         // too easily with the latest compiler, e.g. for nightlies
@@ -560,10 +555,7 @@ void createRelease(string branch)
             sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
             std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
         }
-        else // Win doesn't include 64-bit tools
-        {
-            copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
-        }
+        copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
         copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         if (codesign)
             signBinaries(releaseBin64Dir);
