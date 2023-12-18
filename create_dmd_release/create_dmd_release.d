@@ -364,13 +364,10 @@ void buildAll(Bits bits, string branch)
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/dmd/druntime");
     run(msvcVars~makecmd~pic);
-    removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
-        file => !file.baseName.startsWith("minit"));
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
     run(msvcVars~makecmd~pic);
-    removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
     version(Windows) if (is32)
     {
@@ -379,8 +376,6 @@ void buildAll(Bits bits, string branch)
         info("Building Druntime 32omf");
         changeDir(cloneDir~"/dmd/druntime");
         run(makecmd_omf);
-        removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
-                    file => !file.baseName.startsWith("minit"));
 
         info("Building OMF import libraries");
         changeDir(cloneDir~"/dmd/druntime/def");
@@ -389,7 +384,6 @@ void buildAll(Bits bits, string branch)
         info("Building Phobos 32omf");
         changeDir(cloneDir~"/phobos");
         run(makecmd_omf);
-        removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
     }
 
     // Build docs
@@ -418,8 +412,6 @@ void buildAll(Bits bits, string branch)
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
         run(tools_makecmd~" rdmd ddemangle dustmite");
-
-        removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 
     bool buildDub = true; // build64BitTools || is32;
@@ -464,7 +456,16 @@ void createRelease(string branch)
     if(exists(allExtrasDir)) copyDir(allExtrasDir, releaseDir);
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
+    static void ensureIsClean(string repoDir)
+    {
+        const output = runCapture("cd "~quote(repoDir)~" && git status --porcelain");
+        if (output.length)
+            fail("Repo '"~repoDir~"' is dirty:\n" ~ output);
+    }
+
     // Copy sources
+    ensureIsClean(cloneDir~"/dmd");
+    ensureIsClean(cloneDir~"/phobos");
     copyDirVersioned(cloneDir~"/dmd/compiler", "src", releaseDir~"/dmd2/src/dmd");
     copyDirVersioned(cloneDir~"/dmd/druntime", null, releaseDir~"/dmd2/src/druntime");
     copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
@@ -524,14 +525,14 @@ void createRelease(string branch)
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~lib, releaseLib32Dir~"/"~libPhobos32~lib);
             // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
             copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/32/", releaseLib32Dir~"/",
-                    file => file.startsWith(chain(libPhobos32, dll)));
+                    file => file.startsWith(chain(libPhobos32, dll)) && !file.endsWith(obj));
         }
         if(do64Bit)
         {
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~lib, releaseLib64Dir~"/"~libPhobos64~lib);
             // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
             copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/64/", releaseLib64Dir~"/",
-                    file => file.startsWith(chain(libPhobos64, dll)));
+                    file => file.startsWith(chain(libPhobos64, dll)) && !file.endsWith(obj));
         }
     }
 
@@ -651,50 +652,6 @@ string releaseBitSuffix(bool has32, bool has64)
 }
 
 // Filesystem Utils -----------------------
-
-/// Removes a file if it exists, otherwise do nothing
-void removeFile(string path)
-{
-    if(exists(path))
-        std.file.remove(path);
-}
-
-void removeFiles(string path, string pattern, SpanMode mode,
-    bool delegate(string) filter)
-{
-    removeFiles(path, pattern, mode, true, filter);
-}
-
-void removeFiles(string path, string pattern, SpanMode mode,
-    bool followSymlink = true, bool delegate(string) filter = null)
-{
-    if(mode == SpanMode.breadth)
-        throw new Exception("removeFiles can only take SpanMode of 'depth' or 'shallow'");
-
-    auto displaySuffix = mode==SpanMode.shallow? "" : "/*";
-    trace("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
-
-    // Needed to generate 'relativePath' correctly.
-    path = path.replace("\\", "/");
-    if(!path.endsWith("/", "\\"))
-        path ~= "/";
-
-    foreach(DirEntry entry; dirEntries(path[0..$-1], pattern, mode, false))
-    {
-        if(entry.isFile)
-        {
-            auto relativePath = entry.replace("\\", "/").chompPrefix(path);
-
-            if(!filter || filter(relativePath))
-            {
-                trace("    " ~ displayPath(relativePath));
-                entry.remove();
-            }
-            else if(filter)
-                trace("    Skipping: " ~ displayPath(relativePath));
-        }
-    }
-}
 
 /// Remove entire directory tree. If it doesn't exist, do nothing.
 void removeDir(string path)
