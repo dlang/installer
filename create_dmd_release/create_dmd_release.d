@@ -318,86 +318,48 @@ void buildAll(Bits bits, string branch)
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
 
-    version (Windows)
-    {
-        const isWinOMF = bits == Bits.bits32;
-        const isWinCOFF = bits == Bits.bits64; // incl. 32-bit COFF
-    }
-    else
-    {
-        enum isWinOMF = false;
-        enum isWinCOFF = false;
-    }
+    const is32 = bits == Bits.bits32;
 
-    auto msvcVars = "";
-    auto msvcVarsX86 = "";
-    if (isWinCOFF)
+    version (Windows)
     {
         // Setup MSVC environment for x64/x86 native builds
         const vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
-        msvcVars = vcVars~" x64 && ";
         version (Win64)
-            msvcVarsX86 = vcVars~" amd64_x86 && ";
+            enum arch32 = "amd64_x86";
         else
-            msvcVarsX86 = vcVars~" x86 && ";
-    }
+            enum arch32 = "x86";
 
-    const bitsStr = bits == Bits.bits32? "32" : "64";
+        const msvcVars = vcVars~" "~(is32 ? arch32 : "x64")~" && ";
+    }
+    else
+        enum msvcVars = "";
+
+    const bitsStr = is32 ? "32" : "64";
     const bitsDisplay = toString(bits);
-    const makeModel = isWinOMF ? " MODEL=32omf" : " MODEL="~bitsStr;
+    const makeModel = " MODEL="~bitsStr;
     const jobs = " -j4";
-    const dmdResultsDir = cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr;
-    const dmdEnv = ` "DMD=`~dmdResultsDir~`/dmd`~exe~`"`;
+    const dmdEnv = ` "DMD=`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
     const isRelease = " ENABLE_RELEASE=1";
     //Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
     version (FreeBSD)
         const ltoOption = " ENABLE_LTO=0";
     else version (linux)
-        const ltoOption = " ENABLE_LTO=" ~ (bits == Bits.bits32 ? "0" : "1");
+        const ltoOption = " ENABLE_LTO=" ~ (is32 ? "0" : "1");
     else
         const ltoOption = " ENABLE_LTO=1";
     const latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
-        const pic = bits == Bits.bits64 ? " PIC=1" : "";
+        const pic = is32 ? "" : " PIC=1";
     else
         const pic = "";
 
     // common make arguments
     const makecmd = make~jobs~makeModel~dmdEnv~isRelease~latest;
-    const makecmd_no_omf = isWinOMF ? makecmd.replace(" MODEL=32omf", " MODEL=32") : makecmd;
 
     info("Building DMD "~bitsDisplay);
     changeDir(cloneDir~"/dmd");
-    run(msvcVars~makecmd_no_omf~ltoOption~" HOST_DMD="~hostDMD~" dmd");
-
-    if (isWinOMF)
-    {
-        // Patch sc.ini by appending extra library paths to the existing LIB entries
-        const iniPath = dmdResultsDir~`/sc.ini`;
-        const content = readText(iniPath);
-        File scIni = File(iniPath, "w");
-        foreach (const line; content.lineSplitter)
-        {
-            if (line.startsWith("LIB"))
-            {
-                const quoted = line.endsWith(`"`);
-                scIni.write(line[0 .. $ - quoted]);
-                scIni.write(`;` ~ customExtrasDir ~ `\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib`);
-                if (quoted) scIni.write('"');
-                scIni.writeln();
-            }
-            else
-                scIni.writeln(line);
-        }
-
-        // Copy OPTLINK to same directory as the sc.ini we want it to read
-        copyFile(customExtrasDir~"/dmd2/windows/bin/optlink.exe", dmdResultsDir~"/optlink.exe");
-
-        info("Building OMF import libraries");
-        changeDir(cloneDir~"/dmd/druntime/def");
-        run(make~jobs);
-    }
+    run(msvcVars~makecmd~ltoOption~" HOST_DMD="~hostDMD~" dmd");
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/dmd/druntime");
@@ -410,17 +372,23 @@ void buildAll(Bits bits, string branch)
     run(msvcVars~makecmd~pic);
     removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
-    if (isWinCOFF)
+    version(Windows) if (is32)
     {
-        info("Building Druntime 32mscoff");
+        const makecmd_omf = makecmd.replace(makeModel, " MODEL=32omf");
+
+        info("Building Druntime 32omf");
         changeDir(cloneDir~"/dmd/druntime");
-        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32"));
+        run(makecmd_omf);
         removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
                     file => !file.baseName.startsWith("minit"));
 
-        info("Building Phobos 32mscoff");
+        info("Building OMF import libraries");
+        changeDir(cloneDir~"/dmd/druntime/def");
+        run(make~jobs);
+
+        info("Building Phobos 32omf");
         changeDir(cloneDir~"/phobos");
-        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32"));
+        run(makecmd_omf);
         removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
     }
 
@@ -429,7 +397,7 @@ void buildAll(Bits bits, string branch)
     {
         version (linux)
         {
-            if (bits == Bits.bits64)
+            if (!is32)
             {
                 changeDir(cloneDir~"/dlang.org");
                 run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs -f posix.mak release");
@@ -439,10 +407,10 @@ void buildAll(Bits bits, string branch)
         }
     }
 
-    if(build64BitTools || bits == Bits.bits32)
+    if(build64BitTools || is32)
     {
         // Build the tools using the host compiler
-        auto tools_makecmd = makecmd_no_omf.replace(dmdEnv, " DMD=" ~ hostDMD);
+        auto tools_makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
 
         // Override DFLAGS for a release build defaulting to DMD.
         tools_makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ ` -version=DefaultCompiler_DMD"`;
@@ -454,7 +422,7 @@ void buildAll(Bits bits, string branch)
         removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
     }
 
-    bool buildDub = true; // build64BitTools || bits == Bits.bits32;
+    bool buildDub = true; // build64BitTools || is32;
     if(buildDub)
     {
         // build dub with stable (host) compiler, b/c it breaks
@@ -537,13 +505,14 @@ void createRelease(string branch)
     {
         if(do32Bit)
         {
+            copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
+            // OMF:
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
             copyDir(cloneDir~"/dmd/druntime/def/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {
             copyFile(cloneDir~"/phobos/phobos64.lib", osDir~"/lib64/phobos64.lib");
-            copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
         }
     }
     else
