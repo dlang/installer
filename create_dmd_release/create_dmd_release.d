@@ -417,21 +417,10 @@ void buildAll(Bits bits, string branch)
         info("Building Dub "~bitsDisplay);
         changeDir(cloneDir~"/dub");
 
-        if (exists("build.d"))
-        {
-            // v1.20+
-            version (Windows)
-                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
-            else
-                run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
-        }
+        version (Windows)
+            run(msvcVars~"set DMD="~hostDMD~"&& "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
         else
-        {
-            version (Windows)
-                run(msvcVars~"SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
-            else
-                run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
-        }
+            run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
         rename(cloneDir~"/dub/bin/dub"~exe, cloneDir~"/dub/bin/dub"~bitsStr~exe);
     }
 }
