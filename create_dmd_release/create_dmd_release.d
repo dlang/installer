@@ -298,14 +298,20 @@ void cleanAll(string branch)
     changeDir(cloneDir~"/dmd");
     run("git clean -f -x -d"); // remove all untracked/ignored files
     run("git checkout ."); // undo local changes, e.g. VERSION
+    version (Windows)
+        run("git config core.fileMode false"); // ignore executable bit of files
 
     info("Cleaning Phobos");
     changeDir(cloneDir~"/phobos");
     run("git clean -f -x -d");
+    version (Windows)
+        run("git config core.fileMode false");
 
     info("Cleaning Tools");
     changeDir(cloneDir~"/tools");
     run("git clean -f -x -d");
+    version (Windows)
+        run("git config core.fileMode false");
 }
 
 void buildAll(string branch)
