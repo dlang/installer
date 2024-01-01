@@ -9,13 +9,13 @@ Prerequisites to Run:
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
 - Windows: Working DMC (incl. sppn.exe and implib.exe) and 32/64-bit MSVC
-  toolchains. The default make must be DM make, and dmc.exe, DM lib.exe,
-  sppn.exe and implib.exe must be found in PATH, so it's recommended to set the
-  DMC bin dir as *first* dir in PATH.
+  toolchains. dmc.exe, DM lib.exe, sppn.exe and implib.exe must be found in PATH,
+  so it's recommended to set the DMC bin dir as *first* dir in PATH.
   Also, this environment variable must be set:
     LDC_VSDIR: Visual Studio directory containing the MSVC toolchains
   Examples:
     set LDC_VSDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
+- Windows: A GNU make, found in PATH as mingw32-make (to avoid DM make.exe bundled with DMC).
 - Windows: A version of OPTLINK with the /LA[RGEADDRESSAWARE] flag:
     <https://github.com/DigitalMars/optlink/commit/475bc5c1fa28eaf899ba4ac1dcfe2ab415db16c6>
 - Windows: Microsoft's HTML Help Workshop on the PATH.
@@ -79,32 +79,26 @@ version(Windows)
     // Cannot start with a period or MS's HTML Help Workshop will fail
     immutable defaultWorkDirName = "create_dmd_release";
 
-    immutable makefile      = "win32.mak";
-    immutable makefile64    = "win64.mak";
     immutable exe           = ".exe";
     immutable lib           = ".lib";
     immutable obj           = ".obj";
     immutable dll           = ".dll";
     immutable libPhobos32   = "phobos";
     immutable libPhobos64   = "phobos64";
-    immutable build64BitTools = false;
 
     immutable osDirName     = "windows";
-    immutable make          = "make";
+    immutable make          = "mingw32-make";
     immutable suffix32      = "";   // bin/lib  TODO: adapt scripts to use 32
     immutable suffix64      = "64"; // bin64/lib64
 }
 else version(Posix)
 {
     immutable defaultWorkDirName = ".create_dmd_release";
-    immutable makefile      = "posix.mak";
-    immutable makefile64    = "posix.mak";
     immutable exe           = "";
     immutable lib           = ".a";
     immutable obj           = ".o";
     immutable libPhobos32   = "libphobos2";
     immutable libPhobos64   = "libphobos2";
-    immutable build64BitTools    = true;
 
     version(FreeBSD)
         immutable osDirName = "freebsd";
@@ -328,121 +322,72 @@ void buildAll(Bits bits, string branch)
     auto saveDir = getcwd();
     scope(exit) changeDir(saveDir);
 
-    auto msvcVarsX64 = "";
-    auto msvcVarsX86 = "";
-    auto msvcVars = "";
-    version(Windows) if (bits == Bits.bits64)
+    const is32 = bits == Bits.bits32;
+
+    version (Windows)
     {
         // Setup MSVC environment for x64/x86 native builds
-        auto vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
-        msvcVarsX64 = vcVars~" x64 && ";
+        const vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
         version (Win64)
-            msvcVarsX86 = vcVars~" amd64_x86 && ";
+            enum arch32 = "amd64_x86";
         else
-            msvcVarsX86 = vcVars~" x86 && ";
-        msvcVars = bits == Bits.bits64 ? msvcVarsX64 : msvcVarsX86;
-    }
+            enum arch32 = "x86";
 
-    auto targetMakefile = bits == Bits.bits32? makefile    : makefile64;
-    auto libPhobos      = bits == Bits.bits32? libPhobos32 : libPhobos64;
-    auto bitsStr = bits == Bits.bits32? "32" : "64";
-    auto bitsDisplay = toString(bits);
-    auto makeModel = " MODEL="~bitsStr;
-    version (Windows)
-    {
-        auto jobs = "";
-        auto dmdEnv = ` "DMD=`~cloneDir~`\dmd\generated\`~osDirName~`\release\32\dmd`~exe~`"`;
-        enum dmdConf = "sc.ini";
+        const msvcVars = vcVars~" "~(is32 ? arch32 : "x64")~" && ";
     }
     else
-    {
-        auto jobs = " -j4";
-        auto dmdEnv = ` DMD="`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
-        enum dmdConf = "dmd.conf";
-    }
-    auto hostDMDEnv = " HOST_DC="~hostDMD~" HOST_DMD="~hostDMD;
-    auto isRelease = " ENABLE_RELEASE=1";
+        enum msvcVars = "";
+
+    const bitsStr = is32 ? "32" : "64";
+    const bitsDisplay = toString(bits);
+    const makeModel = " MODEL="~bitsStr;
+    const jobs = " -j4";
+    const dmdEnv = ` "DMD=`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
+    const isRelease = " ENABLE_RELEASE=1";
     //Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
     version (FreeBSD)
-        auto ltoOption = " ENABLE_LTO=0";
+        const ltoOption = " ENABLE_LTO=0";
     else version (linux)
-        auto ltoOption = " ENABLE_LTO=" ~ (bits == Bits.bits32 ? "0" : "1");
+        const ltoOption = " ENABLE_LTO=" ~ (is32 ? "0" : "1");
     else
-        auto ltoOption = " ENABLE_LTO=1";
-    auto latest = " LATEST="~branch;
+        const ltoOption = " ENABLE_LTO=1";
+    const latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
-        auto pic = bits == Bits.bits64 ? " PIC=1" : "";
+        const pic = is32 ? "" : " PIC=1";
     else
-        auto pic = "";
+        const pic = "";
 
     // common make arguments
-    auto makecmd = make~jobs~makeModel~dmdEnv~hostDMDEnv~isRelease~ltoOption~latest~" -f "~targetMakefile;
+    const makecmd = make~jobs~makeModel~dmdEnv~isRelease~latest;
 
     info("Building DMD "~bitsDisplay);
-    changeDir(cloneDir~"/dmd/compiler/src");
-    version (Windows)
-        run(msvcVars~makecmd~" dmd");
-    else
-        run(makecmd);
-
-    // Add libraries to the LIB variable in sc.ini
-    version(Windows)
-    {{
-        // WORKAROUND: Explicitly build dmd.conf because win32.mak invokes build.d explicitly for the executable ($G\dmd.exe)
-        run(`..\..\generated\build.exe ` ~ jobs ~ makeModel ~ dmdEnv ~ hostDMDEnv ~ isRelease ~ ltoOption ~ latest ~ " dmdconf");
-
-        // Path sc.ini by appending to the existing LIB entries
-        const iniPath = cloneDir~`\dmd\generated\`~osDirName~`\release\`~bitsStr~`\sc.ini`;
-        const content = readText(iniPath);
-        File scIni = File(iniPath, "w");
-        foreach (const line; content.lineSplitter)
-        {
-            if (line.startsWith("LIB"))
-            {
-                const quoted = line.endsWith(`"`);
-                scIni.write(line[0 .. $ - quoted]);
-                scIni.write(`;` ~ customExtrasDir ~ `\dmd2\windows\lib;%@P%\..\..\..\..\..\installer\create_dmd_release\extras\windows\dmd2\windows\lib`);
-                if (quoted) scIni.write('"');
-                scIni.writeln();
-            }
-            else
-                scIni.writeln(line);
-        }
-    }}
-
-    // Copy OPTLINK to same directory as the sc.ini we want it to read
-    version(Windows)
-        copyFile(customExtrasDir~"/dmd2/windows/bin/optlink.exe", cloneDir~"/dmd/generated/"~osDirName~"/release/"~bitsStr~"/optlink.exe");
-
-    string makeTargetDruntime;
-    version(Windows)
-        if (bits == Bits.bits32)
-            makeTargetDruntime = " target implibs";
+    changeDir(cloneDir~"/dmd");
+    run(msvcVars~makecmd~ltoOption~" HOST_DMD="~hostDMD~" dmd");
 
     info("Building Druntime "~bitsDisplay);
     changeDir(cloneDir~"/dmd/druntime");
-    run(msvcVars~makecmd~pic~makeTargetDruntime);
-    removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
-        file => !file.baseName.startsWith("minit"));
+    run(msvcVars~makecmd~pic);
 
     info("Building Phobos "~bitsDisplay);
     changeDir(cloneDir~"/phobos");
     run(msvcVars~makecmd~pic);
-    removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
 
-    version (Windows) if (bits == Bits.bits64)
+    version(Windows) if (is32)
     {
-        info("Building Druntime 32mscoff");
-        changeDir(cloneDir~"/dmd/druntime");
-        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
-        removeFiles(cloneDir~"/dmd/druntime", "*{"~obj~"}", SpanMode.depth,
-                    file => !file.baseName.startsWith("minit"));
+        const makecmd_omf = makecmd.replace(makeModel, " MODEL=32omf");
 
-        info("Building Phobos 32mscoff");
+        info("Building Druntime 32omf");
+        changeDir(cloneDir~"/dmd/druntime");
+        run(makecmd_omf);
+
+        info("Building OMF import libraries");
+        changeDir(cloneDir~"/dmd/druntime/def");
+        run(make~jobs);
+
+        info("Building Phobos 32omf");
         changeDir(cloneDir~"/phobos");
-        run(msvcVarsX86~makecmd.replace(makeModel, " MODEL=32mscoff"));
-        removeFiles(cloneDir~"/phobos", "*{"~obj~"}", SpanMode.depth);
+        run(makecmd_omf);
     }
 
     // Build docs
@@ -450,56 +395,38 @@ void buildAll(Bits bits, string branch)
     {
         version (linux)
         {
-            if (bits == Bits.bits64)
+            if (!is32)
             {
                 changeDir(cloneDir~"/dlang.org");
-                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs release");
+                run(makecmd~" DOC_OUTPUT_DIR="~origDir~"/docs -f posix.mak release");
                 // copy generated man pages to docs/man which gets copied to all other platforms
                 copyDir(cloneDir~"/dmd/generated/docs/man", origDir~"/docs/man");
             }
         }
     }
 
-    if(build64BitTools || bits == Bits.bits32)
     {
-
         // Build the tools using the host compiler
-        makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
+        auto tools_makecmd = makecmd.replace(dmdEnv, " DMD=" ~ hostDMD);
 
-        // Override DFLAGS because we're using the host compiler rather than
-        // the freshly built one (posix.mak defaults to the generated dmd)
-        makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ ` -version=DefaultCompiler_DMD"`;
+        // Override DFLAGS for a release build defaulting to DMD.
+        tools_makecmd ~= ` DFLAGS="-O -release -m` ~ bitsStr ~ ` -version=DefaultCompiler_DMD"`;
 
         info("Building Tools "~bitsDisplay);
         changeDir(cloneDir~"/tools");
-        run(makecmd~" rdmd ddemangle dustmite");
-
-        removeFiles(cloneDir~"/tools", "*.{"~obj~"}", SpanMode.depth);
+        run(tools_makecmd~" rdmd ddemangle dustmite");
     }
 
-    bool buildDub = true; // build64BitTools || bits == Bits.bits32;
-    if(buildDub)
     {
         // build dub with stable (host) compiler, b/c it breaks
         // too easily with the latest compiler, e.g. for nightlies
         info("Building Dub "~bitsDisplay);
         changeDir(cloneDir~"/dub");
 
-        if (exists("build.d"))
-        {
-            // v1.20+
-            version (Windows)
-                run(msvcVars~"SET DMD="~hostDMD~" && "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
-            else
-                run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
-        }
+        version (Windows)
+            run(msvcVars~"set DMD="~hostDMD~"&& "~hostDMD~" -m"~bitsStr~" -run build.d -O -w -m"~bitsStr);
         else
-        {
-            version (Windows)
-                run(msvcVars~"SET DC="~hostDMD~" && build.cmd -m"~bitsStr); // TODO: replace DC with DMD
-            else
-                run("DMD="~hostDMD~" ./build.sh -m"~bitsStr);
-        }
+            run("DMD="~hostDMD~" "~hostDMD~" -run build.d -O -w -m"~bitsStr);
         rename(cloneDir~"/dub/bin/dub"~exe, cloneDir~"/dub/bin/dub"~bitsStr~exe);
     }
 }
@@ -519,7 +446,16 @@ void createRelease(string branch)
     if(exists(allExtrasDir)) copyDir(allExtrasDir, releaseDir);
     if(exists( osExtrasDir)) copyDir( osExtrasDir, releaseDir);
 
+    static void ensureIsClean(string repoDir)
+    {
+        const output = runCapture("cd "~quote(repoDir)~" && git status --porcelain");
+        if (output.length)
+            fail("Repo '"~repoDir~"' is dirty:\n" ~ output);
+    }
+
     // Copy sources
+    ensureIsClean(cloneDir~"/dmd");
+    ensureIsClean(cloneDir~"/phobos");
     copyDirVersioned(cloneDir~"/dmd/compiler", "src", releaseDir~"/dmd2/src/dmd");
     copyDirVersioned(cloneDir~"/dmd/druntime", null, releaseDir~"/dmd2/src/druntime");
     copyDirVersioned(cloneDir~"/phobos", null, releaseDir~"/dmd2/src/phobos");
@@ -560,13 +496,14 @@ void createRelease(string branch)
     {
         if(do32Bit)
         {
+            copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
+            // OMF:
             copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
-            copyDir(cloneDir~"/dmd/druntime/lib/win32/", osDir~"/lib/", file => file.endsWith(".lib"));
+            copyDir(cloneDir~"/dmd/druntime/def/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {
             copyFile(cloneDir~"/phobos/phobos64.lib", osDir~"/lib64/phobos64.lib");
-            copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
         }
     }
     else
@@ -578,14 +515,14 @@ void createRelease(string branch)
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/32/"~libPhobos32~lib, releaseLib32Dir~"/"~libPhobos32~lib);
             // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
             copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/32/", releaseLib32Dir~"/",
-                    file => file.startsWith(chain(libPhobos32, dll)));
+                    file => file.startsWith(chain(libPhobos32, dll)) && !file.endsWith(obj));
         }
         if(do64Bit)
         {
             copyFile(cloneDir~"/phobos/generated/"~osDirName~"/release/64/"~libPhobos64~lib, releaseLib64Dir~"/"~libPhobos64~lib);
             // libphobos2.so.0.68.0, libphobos2.so.0.68, libphobos2.so
             copyDir(cloneDir~"/phobos/generated/"~osDirName~"/release/64/", releaseLib64Dir~"/",
-                    file => file.startsWith(chain(libPhobos64, dll)));
+                    file => file.startsWith(chain(libPhobos64, dll)) && !file.endsWith(obj));
         }
     }
 
@@ -613,10 +550,7 @@ void createRelease(string branch)
             sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
             std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
         }
-        else // Win doesn't include 64-bit tools
-        {
-            copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
-        }
+        copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
         copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         if (codesign)
             signBinaries(releaseBin64Dir);
@@ -705,50 +639,6 @@ string releaseBitSuffix(bool has32, bool has64)
 }
 
 // Filesystem Utils -----------------------
-
-/// Removes a file if it exists, otherwise do nothing
-void removeFile(string path)
-{
-    if(exists(path))
-        std.file.remove(path);
-}
-
-void removeFiles(string path, string pattern, SpanMode mode,
-    bool delegate(string) filter)
-{
-    removeFiles(path, pattern, mode, true, filter);
-}
-
-void removeFiles(string path, string pattern, SpanMode mode,
-    bool followSymlink = true, bool delegate(string) filter = null)
-{
-    if(mode == SpanMode.breadth)
-        throw new Exception("removeFiles can only take SpanMode of 'depth' or 'shallow'");
-
-    auto displaySuffix = mode==SpanMode.shallow? "" : "/*";
-    trace("Deleting '"~pattern~"' from '"~displayPath(path~displaySuffix)~"'");
-
-    // Needed to generate 'relativePath' correctly.
-    path = path.replace("\\", "/");
-    if(!path.endsWith("/", "\\"))
-        path ~= "/";
-
-    foreach(DirEntry entry; dirEntries(path[0..$-1], pattern, mode, false))
-    {
-        if(entry.isFile)
-        {
-            auto relativePath = entry.replace("\\", "/").chompPrefix(path);
-
-            if(!filter || filter(relativePath))
-            {
-                trace("    " ~ displayPath(relativePath));
-                entry.remove();
-            }
-            else if(filter)
-                trace("    Skipping: " ~ displayPath(relativePath));
-        }
-    }
-}
 
 /// Remove entire directory tree. If it doesn't exist, do nothing.
 void removeDir(string path)
