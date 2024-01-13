@@ -266,12 +266,12 @@ jobs:
       #
       - name: Run build_all.d for FreeBSD in a dedicated VM
         if: matrix.target == 'freebsd'
-        uses: cross-platform-actions/action@v0.21.1
+        uses: cross-platform-actions/action@v0.22.0
         with:
           operating_system: freebsd
           hypervisor: qemu
           memory: 8G
-          version: '12.2'
+          version: '13.2'
           shell: bash
           run: |
             set -eux
