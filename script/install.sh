@@ -168,6 +168,22 @@ display_path() {
         echo "$1"
     fi
 }
+abspath() {
+    if [[ -d "$1" ]]
+    then
+        pushd "$1" >/dev/null
+        pwd
+        popd >/dev/null
+    elif [[ -e "$1" ]]
+    then
+        pushd "$(dirname "$1")" >/dev/null
+        echo "$(pwd)/$(basename "$1")"
+        popd >/dev/null
+    else
+        echo "$1" does not exist! >&2
+        return 127
+    fi
+}
 
 COMMAND=
 COMPILER=dmd
@@ -1062,6 +1078,8 @@ binexec_for_dub_compiler() {
 }
 
 write_env_vars() {
+    ROOT_ABS="$(abspath "$ROOT")"
+
     local -r binpath=$(binpath_for_compiler "$1")
     case $1 in
         dmd*)
@@ -1124,14 +1142,14 @@ write_env_vars() {
     if [ -n "$libpath" ] ; then
         echo "_OLD_D_LIBRARY_PATH=\"\${LIBRARY_PATH:-}\""
         echo "_OLD_D_LD_LIBRARY_PATH=\"\${LD_LIBRARY_PATH:-}\""
-        echo "export LIBRARY_PATH=\"$ROOT/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}\""
-        echo "export LD_LIBRARY_PATH=\"$ROOT/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}\""
+        echo "export LIBRARY_PATH=\"$ROOT_ABS/$1/$libpath\${LIBRARY_PATH:+:}\${LIBRARY_PATH:-}\""
+        echo "export LD_LIBRARY_PATH=\"$ROOT_ABS/$1/$libpath\${LD_LIBRARY_PATH:+:}\${LD_LIBRARY_PATH:-}\""
     fi
 
     echo "_OLD_D_PATH=\"\${PATH:-}\""
     echo "_OLD_D_PS1=\"\${PS1:-}\""
     echo "export PS1=\"($1)\${PS1:-}\""
-    echo "export PATH=\"${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT/$1/$binpath\${PATH:+:}\${PATH:-}\""
+    echo "export PATH=\"${DUB_BIN_PATH}${DUB_BIN_PATH:+:}$ROOT_ABS/$1/$binpath\${PATH:+:}\${PATH:-}\""
 
     if [ -n "$dmd" ] ; then
         echo "export DMD=$dmd"
@@ -1168,13 +1186,13 @@ write_env_vars() {
     echo "set -g _OLD_D_PATH \$PATH"
     echo "set -g _OLD_D_PS1 \$PS1"
     echo
-    echo "set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT/$1/$binpath' \$PATH"
+    echo "set -gx PATH ${DUB_BIN_PATH:+\'}${DUB_BIN_PATH}${DUB_BIN_PATH:+\' }'$ROOT_ABS/$1/$binpath' \$PATH"
 
     if [ -n "$libpath" ] ; then
         echo "set -g _OLD_D_LIBRARY_PATH \$LIBRARY_PATH"
         echo "set -g _OLD_D_LD_LIBRARY_PATH \$LD_LIBRARY_PATH"
-        echo "set -gx LIBRARY_PATH '$ROOT/$1/$libpath' \$LIBRARY_PATH"
-        echo "set -gx LD_LIBRARY_PATH '$ROOT/$1/$libpath' \$LD_LIBRARY_PATH"
+        echo "set -gx LIBRARY_PATH '$ROOT_ABS/$1/$libpath' \$LIBRARY_PATH"
+        echo "set -gx LD_LIBRARY_PATH '$ROOT_ABS/$1/$libpath' \$LD_LIBRARY_PATH"
     fi
 
     if [ -n "$dmd" ] ; then
