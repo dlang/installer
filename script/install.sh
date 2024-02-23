@@ -1334,6 +1334,7 @@ Switching to x86_64 architecture (requires Rosetta).
 LDC has builds for macOS on aarch64/arm64 architecture since ldc-1.25.0.
 If you are installing an earlier version and get a download error,
 try '--arch x86_64' to install the x86_64 version instead (requires Rosetta).
+Use '--arch universal' to install the universal LDC package that can target arm64 (native) and x86_64 (Rosetta).
 "
         ARCH=arm64
     fi
