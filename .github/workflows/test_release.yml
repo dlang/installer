@@ -38,7 +38,7 @@ jobs:
           - host: ubuntu-latest
             os: linux
             build: dmd.${{ github.base_ref || github.ref_name }}.linux.tar.xz
-          - host: macos-12
+          - host: ubuntu-latest
             os: freebsd
             build: dmd.${{ github.base_ref || github.ref_name }}.freebsd-64.tar.xz
 
@@ -68,11 +68,12 @@ jobs:
 
       - name: Check ${{ matrix.os }} artifacts in a VM
         if: ${{ matrix.os == 'freebsd' }}
-        uses: cross-platform-actions/action@v0.21.1
+        uses: cross-platform-actions/action@v0.23.0
         with:
           operating_system: freebsd
           hypervisor: qemu
-          memory: 8G
+          memory: 12G
+          cpu_count: 4
           version: '12.2'
           environment_variables: OS BUILD
           shell: bash
