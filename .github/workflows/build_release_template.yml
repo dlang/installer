@@ -131,7 +131,7 @@ jobs:
           - os: windows-2019
             target: windows
           # FreeBSD is built on an additional VM
-          - os: macos-12
+          - os: ubuntu-latest
             target: freebsd
 
     steps:
@@ -266,11 +266,12 @@ jobs:
       #
       - name: Run build_all.d for FreeBSD in a dedicated VM
         if: matrix.target == 'freebsd'
-        uses: cross-platform-actions/action@v0.22.0
+        uses: cross-platform-actions/action@v0.23.0
         with:
           operating_system: freebsd
           hypervisor: qemu
-          memory: 8G
+          memory: 12G
+          cpu_count: 4
           version: '13.2'
           shell: bash
           run: |
