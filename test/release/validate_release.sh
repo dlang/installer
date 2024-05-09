@@ -17,7 +17,7 @@ if [ "$OS" == "windows" ]
 then
 	7z x -y $BUILD -o"$GEN/"
 
-	TARGETS="-m32 -m32mscoff -m32omf -m64"
+	TARGETS="-m32 -m32mscoff -m64"
 	EXE=".exe"
 else
 	tar xf $BUILD --directory="$GEN/"
