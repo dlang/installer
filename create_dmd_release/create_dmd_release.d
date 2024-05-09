@@ -373,23 +373,6 @@ void buildAll(Bits bits, string branch)
     changeDir(cloneDir~"/phobos");
     run(msvcVars~makecmd~pic);
 
-    version(Windows) if (is32)
-    {
-        const makecmd_omf = makecmd.replace(makeModel, " MODEL=32omf");
-
-        info("Building Druntime 32omf");
-        changeDir(cloneDir~"/dmd/druntime");
-        run(makecmd_omf);
-
-        info("Building OMF import libraries");
-        changeDir(cloneDir~"/dmd/druntime/def");
-        run(make~jobs);
-
-        info("Building Phobos 32omf");
-        changeDir(cloneDir~"/phobos");
-        run(makecmd_omf);
-    }
-
     // Build docs
     if(!skipDocs)
     {
@@ -497,9 +480,6 @@ void createRelease(string branch)
         if(do32Bit)
         {
             copyFile(cloneDir~"/phobos/phobos32mscoff.lib", osDir~"/lib32mscoff/phobos32mscoff.lib");
-            // OMF:
-            copyFile(cloneDir~"/phobos/phobos.lib", osDir~"/lib/phobos.lib");
-            copyDir(cloneDir~"/dmd/druntime/def/", osDir~"/lib/", file => file.endsWith(".lib"));
         }
         if(do64Bit)
         {

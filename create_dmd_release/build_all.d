@@ -577,7 +577,6 @@ int main(string[] args)
     enum optlink = "optlink.zip";
     enum libC = "snn.lib";
     enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
-    enum omflibs = "omflibs-winsdk-10.0.16299.15.zip";
     enum mingwtag = "mingw-libs-8.0.0";
     enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"8c1619234ca8370b742a08a30b13bf9bdb333f842ed0ea02cafe9054c68adc97";
     enum lld = "lld-link-9.0.0-seh.zip";              enum lld_sha   = hexString!"ffde2eb0e0410e6985bbbb44c200b21a2b2dd34d3f8c3411f5ca5beb7f67ba5b";
@@ -603,7 +602,6 @@ int main(string[] args)
         fetchFile("http://ftp.digitalmars.com/"~optlink, cacheDir~"/"~optlink);
         fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
         fetchFile("https://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
-        fetchFile("https://downloads.dlang.org/other/"~omflibs, cacheDir~"/"~omflibs, verifySignature);
         fetchFile("https://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
         fetchFile("https://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
         fetchFile("https://github.com/dlang/installer/releases/download/"~mingwtag~"/"~mingwlibs, cacheDir~"/"~mingwlibs, verifySignature, mingw_sha);
@@ -638,8 +636,6 @@ int main(string[] args)
         copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
         // add libcurl build for windows
         extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
-        // add updated OMF import libraries
-        extract(cacheDir~"/"~omflibs, workDir~"/windows/extraBins/dmd2/windows/lib/");
         // add mingw coff libraries
         extract(cacheDir~"/"~mingwlibs, workDir~"/windows/extraBins/");
         // add lld linker
