@@ -22,12 +22,12 @@ jobs:
       LLVM_VER: 9.0.0
       ARCH: ${{ matrix.arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - shell: cmd
         run: call windows\build_lld.bat || exit /b
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: lld-${{ matrix.arch }}
           path: artifacts/
@@ -42,12 +42,12 @@ jobs:
       MINGW_VER: 8.0.0
       D_VERSION: 2.077.1
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - shell: cmd
         run: call windows\build_mingw.bat || exit /b
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: mingw-libs
           path: artifacts/
@@ -63,12 +63,12 @@ jobs:
       ZLIB_VER: 1.2.11
       PEXPORTS_VER: 0.47
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - shell: cmd
         run: call windows\build_curl.bat || exit /b
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: curl
           path: artifacts/
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: Clone repos
@@ -94,7 +94,7 @@ jobs:
           set -eux
           mkdir -p work/docs
           zip -r work/docs/docs.zip work/dlang.org/web
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: docs
           path: work/docs
@@ -108,11 +108,11 @@ jobs:
       LDC_VSDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
       HOST_LDC_VERSION: 1.23.0
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: Download docs artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: docs
           path: docs/
@@ -162,7 +162,7 @@ jobs:
           cd .. || exit /b
           mkdir artifacts || exit /b
           copy windows\*.exe artifacts || exit /b
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: win_release
           path: artifacts/
