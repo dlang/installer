@@ -227,24 +227,9 @@ jobs:
           # Determine installed LDC version
           LDC=$(head -n 1 < <(ldc2 --version) | cut -d'(' -f2 | cut -d')' -f1)
 
-          # WINDOWS: Fetch additional DM tools
+          # Windows: set LDC_VSDIR
           if [[ "${{ matrix.target }}" == "windows" ]]
           then
-
-            # Fetch DMC (incl. DM make and sppn.exe)
-            curl https://downloads.dlang.org/other/dm857c.zip -o dmc.zip
-            7z x dmc.zip
-            curl http://ftp.digitalmars.com/sppn.zip -o sppn.zip
-            7z x -odm/bin sppn.zip
-
-            # Fetch implib
-            curl http://ftp.digitalmars.com/bup.zip -o bup.zip
-            7z x bup.zip dm/bin/implib.exe
-
-            # Add DM binaries to the path
-            export PATH="$PWD/dm/bin;$PATH"
-
-            # Export VS dir
             export LDC_VSDIR='C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise'
           fi
 
