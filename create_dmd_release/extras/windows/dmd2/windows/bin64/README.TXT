@@ -1,5 +1,5 @@
 
-Win32 files
+Win64 files
 -----------
 
 dmd.exe		D compiler			http://dlang.org/dmd-windows.html

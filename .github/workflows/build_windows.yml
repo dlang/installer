@@ -123,12 +123,6 @@ jobs:
           powershell -command "& { iwr https://github.com/ldc-developers/ldc/releases/download/v$HOST_LDC_VERSION/ldc2-$HOST_LDC_VERSION-windows-multilib.7z -OutFile ldc.7z }"
           7z x ldc.7z
           mv ldc2-$HOST_LDC_VERSION-windows-multilib ldc2
-          powershell -command "& { iwr https://downloads.dlang.org/other/dm857c.zip -OutFile dmc.zip }"
-          7z x dmc.zip
-          powershell -command "& { iwr http://ftp.digitalmars.com/sppn.zip -OutFile sppn.zip }"
-          7z x -odm/bin sppn.zip
-          powershell -command "& { iwr http://ftp.digitalmars.com/bup.zip -OutFile bup.zip }"
-          7z x bup.zip dm/bin/implib.exe
           powershell -command "& { iwr https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip -OutFile inetc.zip }"
           7z x inetc.zip -y -bb1 '-oc:\Program Files (x86)\NSIS'
       - name: Unzip docs
