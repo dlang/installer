@@ -16,8 +16,6 @@ Prerequisites to Run:
   Examples:
     set LDC_VSDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
 - Windows: A GNU make, found in PATH as mingw32-make (to avoid DM make.exe bundled with DMC).
-- Windows: A version of OPTLINK with the /LA[RGEADDRESSAWARE] flag:
-    <https://github.com/DigitalMars/optlink/commit/475bc5c1fa28eaf899ba4ac1dcfe2ab415db16c6>
 - Windows: Microsoft's HTML Help Workshop on the PATH.
 
 Typical Usage:
@@ -523,13 +521,6 @@ void createRelease(string branch)
     if(do64Bit)
     {
         copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
-        version(Windows)
-        {
-            // patch sc.ini to point to optlink.exe in bin folder
-            auto sc_ini = cast(string)std.file.read(cloneDir~"/dmd/compiler/ini/windows/bin/sc.ini");
-            sc_ini = sc_ini.replace(`%@P%\optlink.exe`, `%@P%\..\bin\optlink.exe`);
-            std.file.write(releaseBin64Dir~"/sc.ini", sc_ini);
-        }
         copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
         copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         if (codesign)
