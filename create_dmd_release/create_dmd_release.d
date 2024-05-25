@@ -521,6 +521,8 @@ void createRelease(string branch)
     if(do64Bit)
     {
         copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/64/dmd"~exe, releaseBin64Dir~"/dmd"~exe);
+        version(Windows)
+            copyFile(cloneDir~"/dmd/compiler/ini/windows/bin/sc.ini", releaseBin64Dir~"/sc.ini");
         copyDir(cloneDir~"/tools/generated/"~osDirName~"/64", releaseBin64Dir, file => !file.endsWith(obj));
         copyFile(cloneDir~"/dub/bin/dub64"~exe, releaseBin64Dir~"/dub"~exe);
         if (codesign)
