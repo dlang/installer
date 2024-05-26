@@ -275,8 +275,8 @@ void init(string branch)
     releaseLib32Dir = osDir ~ "/lib" ~ suffix32;
     releaseBin64Dir = osDir ~ "/bin" ~ suffix64;
     releaseLib64Dir = osDir ~ "/lib" ~ suffix64;
-    allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
-    osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
+    allExtrasDir = origDir ~ "/extras/all";
+    osExtrasDir  = origDir ~ "/extras/" ~ osDirName;
 }
 
 void cleanAll(string branch)
