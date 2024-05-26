@@ -650,7 +650,7 @@ int main(string[] args)
             scp(toCopy, "default:");
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
-            scp("create_dmd_release.d common.d", "default:");
+            scp("create_dmd_release.d common.d extras", "default:");
             version (CodeSign) if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 
