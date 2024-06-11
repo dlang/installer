@@ -109,7 +109,7 @@ jobs:
           for REPO in dmd phobos
           do
             REV=$( git -C $REPO rev-parse HEAD )
-            echo "::set-output name=$REPO-revision::$REV"
+            echo "$REPO-revision=$REV" >> $GITHUB_OUTPUT
           done
 
     runs-on: ubuntu-latest
