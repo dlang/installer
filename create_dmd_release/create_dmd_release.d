@@ -8,10 +8,8 @@ Prerequisites to Run:
 - Git
 - Posix: Working gcc toolchain, including GNU make which is not installed on
   FreeBSD by default. On OSX, you can install the gcc toolchain through Xcode.
-- Windows: Working DMC (incl. sppn.exe and implib.exe) and 32/64-bit MSVC
-  toolchains. dmc.exe, DM lib.exe, sppn.exe and implib.exe must be found in PATH,
-  so it's recommended to set the DMC bin dir as *first* dir in PATH.
-  Also, this environment variable must be set:
+- Windows: Working 32/64-bit MSVC toolchains. Also, this environment variable
+  must be set:
     LDC_VSDIR: Visual Studio directory containing the MSVC toolchains
   Examples:
     set LDC_VSDIR="C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\"
@@ -277,8 +275,8 @@ void init(string branch)
     releaseLib32Dir = osDir ~ "/lib" ~ suffix32;
     releaseBin64Dir = osDir ~ "/bin" ~ suffix64;
     releaseLib64Dir = osDir ~ "/lib" ~ suffix64;
-    allExtrasDir = cloneDir ~ "/installer/create_dmd_release/extras/all";
-    osExtrasDir  = cloneDir ~ "/installer/create_dmd_release/extras/" ~ osDirName;
+    allExtrasDir = origDir ~ "/extras/all";
+    osExtrasDir  = origDir ~ "/extras/" ~ osDirName;
 }
 
 void cleanAll(string branch)
@@ -510,6 +508,8 @@ void createRelease(string branch)
         if(do32Bit)
         {
             copyFile(cloneDir~"/dmd/generated/"~osDirName~"/release/32/dmd"~exe, releaseBin32Dir~"/dmd"~exe);
+            version(Windows)
+                copyFile(cloneDir~"/dmd/compiler/ini/windows/bin/sc.ini", releaseBin32Dir~"/sc.ini");
             copyDir(cloneDir~"/tools/generated/"~osDirName~"/32", releaseBin32Dir, file => !file.endsWith(obj));
             copyFile(cloneDir~"/dub/bin/dub32"~exe, releaseBin32Dir~"/dub"~exe);
             if (codesign)

@@ -41,14 +41,10 @@
 ; Visual D
 !define VersionVisualD "1.3.1"
 
-; DMC
-!define VersionDMC "857"
-
 ; Update Rarely Needed
 ; --------------------
 ; Files
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
-!define DmcFilename "dmc-${VersionDMC}.exe"
 !define VS2013Filename "vs_community2013.exe"
 !define VS2017Filename "vs_community2017.exe"
 !define VS2017BTFilename "vs_BuildTools2017.exe"
@@ -58,14 +54,9 @@
 !define VCRedistx64Filename "vcredist_x64.exe"
 
 ; URLs
-!define BaseURL "https://downloads.dlang.org"
-!define BaseURLAlt "http://ftp.digitalmars.com"
 !define VisualDBaseURL "https://github.com/dlang/visuald/releases/download"
 
 !define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}"
-
-!define DmcUrl  "${BaseURL}/other/${DmcFilename}"
-!define DmcAltUrl "${BaseURLAlt}/${DmcFilename}"
 
 !define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
 !define VS2017Url "https://download.visualstudio.microsoft.com/download/pr/100404311/045b56eb413191d03850ecc425172a7d/vs_Community.exe"
@@ -316,11 +307,6 @@ SectionGroupEnd
 SectionGroup /e "Extras"
   Section /o "Download Visual D" VisualDDownload
     !insertmacro DownloadAndRun ${VisualDFilename} ${VisualDUrl} ""
-  SectionEnd
-
-
-  Section /o "Download DMC" DmcDownload
-    !insertmacro DownloadAndRun ${DmcFilename} ${DmcUrl} ${DmcAltUrl}
   SectionEnd
 SectionGroupEnd
 

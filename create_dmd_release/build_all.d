@@ -574,7 +574,6 @@ int main(string[] args)
     immutable isPreRelease = isBranch || !verMatch.captures[4].empty;
     immutable dubTag = isBranch ? gitTag : getDubTag(isPreRelease);
 
-    enum libC = "snn.lib";
     enum libCurl = "libcurl-7.68.0-WinSSL-zlib-x86-x64.zip";
     enum mingwtag = "mingw-libs-8.0.0";
     enum mingwlibs = mingwtag ~ ".zip";               enum mingw_sha = hexString!"8c1619234ca8370b742a08a30b13bf9bdb333f842ed0ea02cafe9054c68adc97";
@@ -598,7 +597,6 @@ int main(string[] args)
     const hasWindows = platforms.any!(p => p.os == OS.windows);
     if (hasWindows)
     {
-        fetchFile("http://ftp.digitalmars.com/"~libC, cacheDir~"/"~libC);
         fetchFile("https://downloads.dlang.org/other/"~libCurl, cacheDir~"/"~libCurl, verifySignature);
         fetchFile("https://downloads.dlang.org/other/"~lld, cacheDir~"/"~lld, verifySignature, lld_sha);
         fetchFile("https://downloads.dlang.org/other/"~lld64, cacheDir~"/"~lld64, verifySignature, lld64_sha);
@@ -626,10 +624,6 @@ int main(string[] args)
 
     if (hasWindows)
     {
-        if (exists(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe"))
-            remove(workDir~"/windows/extraBins/dmd2/windows/bin/link.exe");
-        // add latest dmc libC (snn.lib)
-        copyFile(cacheDir~"/"~libC, workDir~"/windows/extraBins/dmd2/windows/lib/"~libC);
         // add libcurl build for windows
         extract(cacheDir~"/"~libCurl, workDir~"/windows/extraBins/");
         // add mingw coff libraries
@@ -656,7 +650,7 @@ int main(string[] args)
             scp(toCopy, "default:");
             if (os != OS.linux && !skipDocs) scp(workDir~"/docs", "default:");
             // copy create_dmd_release.d and dependencies
-            scp("create_dmd_release.d common.d", "default:");
+            scp("create_dmd_release.d common.d extras", "default:");
             version (CodeSign) if (!isBranch)
                 scp(workDir~"/codesign codesign", "default:");
 

@@ -109,7 +109,7 @@ jobs:
           for REPO in dmd phobos
           do
             REV=$( git -C $REPO rev-parse HEAD )
-            echo "::set-output name=$REPO-revision::$REV"
+            echo "$REPO-revision=$REV" >> $GITHUB_OUTPUT
           done
 
     runs-on: ubuntu-latest
@@ -217,7 +217,7 @@ jobs:
           set -euox pipefail
 
           # Fetch GPG key used to sign the generated binaries
-          curl https://dlang.org/d-keyring.gpg -o d-keyring.gpg
+          curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
           gpg --import d-keyring.gpg
 
           # Compile release builder
@@ -227,39 +227,32 @@ jobs:
           # Determine installed LDC version
           LDC=$(head -n 1 < <(ldc2 --version) | cut -d'(' -f2 | cut -d')' -f1)
 
-          # WINDOWS: Fetch additional DM tools
+          # Windows: set LDC_VSDIR
           if [[ "${{ matrix.target }}" == "windows" ]]
           then
-
-            # Fetch DMC (incl. DM make and sppn.exe)
-            curl https://downloads.dlang.org/other/dm857c.zip -o dmc.zip
-            7z x dmc.zip
-            curl http://ftp.digitalmars.com/sppn.zip -o sppn.zip
-            7z x -odm/bin sppn.zip
-
-            # Fetch implib
-            curl http://ftp.digitalmars.com/bup.zip -o bup.zip
-            7z x bup.zip dm/bin/implib.exe
-
-            # Add DM binaries to the path
-            export PATH="$PWD/dm/bin;$PATH"
-
-            # Export VS dir
             export LDC_VSDIR='C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise'
-          fi
-
-          # Workaround: Provide ldmd2 as dmd replacement as some tools assume DMD is present:
-          mkdir .pathext
-          ln -s "$(which ldmd2)" .pathext/dmd
-          if [[ "${{ matrix.target }}" == "windows" ]]
-          then
-            PATH="$PATH;$PWD/.pathext"
-          else
-            PATH="$PATH:$PWD/.pathext"
           fi
 
           # Build the release
           ./build_all --targets=${{ matrix.target }} "v$LDC" ${{ inputs.release_branch }}
+
+      - name: 'Windows: Build NSIS installer'
+        if: matrix.target == 'windows'
+        shell: cmd
+        run: |
+          :: install NSIS plugin from https://nsis.sourceforge.io/Inetc_plug-in
+          curl -fsSL https://nsis.sourceforge.io/mediawiki/images/c/c9/Inetc.zip -o inetc.zip || exit /b
+          7z x inetc.zip -y -bb1 "-oc:\Program Files (x86)\NSIS" || exit /b
+
+          :: unpack release .7z generated in previous step
+          7z x create_dmd_release\build\dmd.${{ inputs.release_branch }}.windows.7z -odmd.windows || exit /b
+
+          @echo on
+          "c:\Program Files (x86)\NSIS\makensis" /version
+          for /f %%v in (dmd.windows\dmd2\src\VERSION) do set ver=%%v
+          cd windows || exit /b
+          "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%ver% /DEmbedD2Dir=..\dmd.windows\dmd2 d2-installer.nsi || exit /b
+          copy dmd-*.exe ..\create_dmd_release\build || exit /b
 
       #################################################################
       # FREEBSD: Build for the current target using build_all.d from installer
@@ -280,11 +273,11 @@ jobs:
             sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm
 
             # Import key used to sign binaries
-            curl https://dlang.org/d-keyring.gpg -o d-keyring.gpg
+            curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
             gpg d-keyring.gpg
 
             # Install ldc
-            curl https://dlang.org/install.sh -o install.sh
+            curl -fsS https://dlang.org/install.sh -o install.sh
             bash install.sh ldc -p .
 
             # Use absolute paths because activate doesn't work correctly
@@ -310,8 +303,8 @@ jobs:
         with:
           name: dmd-release-${{ matrix.target }}
           path: |
-            ${{ github.workspace }}/create_dmd_release/build/*
-            !${{ github.workspace }}/create_dmd_release/build/*.zip
+            create_dmd_release/build/*
+            !create_dmd_release/build/*.zip
           retention-days: 1
           if-no-files-found: error
 
