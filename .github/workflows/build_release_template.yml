@@ -252,6 +252,7 @@ jobs:
           for /f %%v in (dmd.windows\dmd2\src\VERSION) do set ver=%%v
           cd windows || exit /b
           "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%ver% /DEmbedD2Dir=..\dmd.windows\dmd2 d2-installer.nsi || exit /b
+          ren dmd-%ver%.exe dmd-${{ inputs.release_branch }}.exe || exit /b
           copy dmd-*.exe ..\create_dmd_release\build || exit /b
 
       #################################################################
