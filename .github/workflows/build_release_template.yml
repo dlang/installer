@@ -126,7 +126,7 @@ jobs:
         include:
           - os: ubuntu-20.04
             target: linux
-          - os: macos-12
+          - os: macos-13
             target: osx
           - os: windows-2019
             target: windows

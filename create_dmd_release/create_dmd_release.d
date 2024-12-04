@@ -340,13 +340,19 @@ void buildAll(Bits bits, string branch)
     const jobs = " -j4";
     const dmdEnv = ` "DMD=`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
     const isRelease = " ENABLE_RELEASE=1";
-    //Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
+
+    // Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
+    // OSX is disabled "temporarily" due to https://github.com/dlang/installer/actions/runs/12156929210/job/33901843249?pr=588#step:6:660
+    //  wherein OSX with LTO timeTraceProfiler a TLS variable gets put into LTO layout which asserts out in ldc.
     version (FreeBSD)
         const ltoOption = " ENABLE_LTO=0";
     else version (linux)
         const ltoOption = " ENABLE_LTO=" ~ (is32 ? "0" : "1");
+    else version(OSX)
+        const ltoOption = " ENABLE_LTO=0";
     else
         const ltoOption = " ENABLE_LTO=1";
+
     const latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
