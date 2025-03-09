@@ -126,7 +126,7 @@ jobs:
         include:
           - os: ubuntu-20.04
             target: linux
-          - os: macos-12
+          - os: macos-13
             target: osx
           - os: windows-2019
             target: windows
@@ -252,6 +252,7 @@ jobs:
           for /f %%v in (dmd.windows\dmd2\src\VERSION) do set ver=%%v
           cd windows || exit /b
           "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%ver% /DEmbedD2Dir=..\dmd.windows\dmd2 d2-installer.nsi || exit /b
+          ren dmd-%ver%.exe dmd-${{ inputs.release_branch }}.exe || exit /b
           copy dmd-*.exe ..\create_dmd_release\build || exit /b
 
       #################################################################
