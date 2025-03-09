@@ -31,7 +31,7 @@ dmd.${VERSION}.dmg: dmd.${VERSION}.osx.zip
 	rm -rf dmd
 	mkdir -p dmd
 	unzip -q dmd.${VERSION}.osx.zip -d dmd/
-	mv $(addprefix dmd/dmd2/,html license.txt man README.TXT samples src osx/bin osx/lib) dmd/
+	mv $(addprefix dmd/dmd2/,html license.txt man README.TXT src osx/bin osx/lib) dmd/
 	rm -rf dmd/dmd2/
 	cp dmd.conf dmd/bin/dmd.conf
 	rm -rf dmg/

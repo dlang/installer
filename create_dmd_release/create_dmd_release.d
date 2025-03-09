@@ -455,7 +455,6 @@ void createRelease(string branch)
             ( a.endsWith(".html") || a.startsWith("css/", "images/", "js/") );
         // copy docs from linux build
         copyDir(origDir~"/docs", releaseDir~"/dmd2/html/d", a => dlangFilter(a));
-        copyDirVersioned(cloneDir~"/dmd/compiler", "samples", releaseDir~"/dmd2/samples/d");
         version (Windows) {} else
         {
             copyDirVersioned(cloneDir~"/tools", "man", releaseDir~"/dmd2/man");

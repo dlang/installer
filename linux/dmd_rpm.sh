@@ -201,9 +201,8 @@ do
 		rm -rf usr/include/dmd/phobos/etc/c/zlib
 
 
-		# install samples and HTML
+		# install HTML
 		mkdir -p usr/share/dmd/
-		cp -Rf ../$UNZIPDIR/samples/ usr/share/dmd
 		cp -Rf ../$UNZIPDIR/html/ usr/share/dmd
 
 
@@ -244,7 +243,7 @@ do
 		;
 		; The special name %@P% is replaced with the path to this file
 		;
-		
+
 		[Environment32]
 		DFLAGS=-I/usr/include/dmd/phobos -I/usr/include/dmd/druntime/import -L-L/usr/lib -L--export-dynamic -fPIC
 		' | sed 's/^\t\t//' > etc/dmd.conf
