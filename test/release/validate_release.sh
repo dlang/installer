@@ -61,8 +61,11 @@ done
 
 for DUB in $GEN/dmd2/$OS/bin*/dub$EXE
 do
-	$DUB run -n --arch=x86_64 --single $DIR/dub_example.d
-	rm -rf $DIR/.dub $DIR/dub_example$EXE
+	# FIXME: https://github.com/dlang/dub/issues/3030
+	if [ "$OS" != "windows" ]; then
+		$DUB run -n --arch=x86_64 --single $DIR/dub_example.d
+		rm -rf $DIR/.dub $DIR/dub_example$EXE
+	fi
 done
 
 ###############################################################################
