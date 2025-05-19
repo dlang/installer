@@ -96,8 +96,6 @@ string mkdtemp()
 // templated so that we don't drag in libcurl unnecessarily
 template fetchFile()
 {
-    pragma(lib, "curl");
-
     void fetchFile(string url, string path, bool verify = false, string sha = null)
     {
         import std.array, std.datetime, std.exception, std.net.curl,

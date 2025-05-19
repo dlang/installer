@@ -124,7 +124,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             target: linux
           - os: macos-13
             target: osx
@@ -271,7 +271,7 @@ jobs:
           run: |
             set -eux
 
-            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm
+            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm15
 
             # Import key used to sign binaries
             curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
