@@ -323,13 +323,13 @@ void buildAll(Bits bits, string branch)
     version (Windows)
     {
         // Setup MSVC environment for x64/x86 native builds
-        const vcVars = quote(buildPath(environment["LDC_VSDIR"], `VC\Auxiliary\Build\vcvarsall.bat`));
+        const vcVars = quote(buildPath(environment["LDC_VSDIR"], `Common7\Tools\VsDevCmd.bat`));
         version (Win64)
-            enum arch32 = "amd64_x86";
+            enum hostArch = " -host_arch=x64";
         else
-            enum arch32 = "x86";
+            enum hostArch = null;
 
-        const msvcVars = vcVars~" "~(is32 ? arch32 : "x64")~" && ";
+        const msvcVars = vcVars~" -arch="~(is32 ? "x86" : "x64")~hostArch~" && ";
     }
     else
         enum msvcVars = "";

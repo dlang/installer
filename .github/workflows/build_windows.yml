@@ -14,10 +14,10 @@ jobs:
       matrix:
         arch: [x86, x64]
     name: Build LLD ${{ matrix.arch }}
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 120
     env:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
+      VSINSTALLDIR: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
       # NB: update windows/build_lld.sha256sums as well
       LLVM_VER: 9.0.0
       ARCH: ${{ matrix.arch }}
@@ -34,10 +34,10 @@ jobs:
 
   build_mingw_libs:
     name: Build MinGW-based libs
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 120
     env:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
+      VSINSTALLDIR: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
       # NB: update windows/build_mingw.sha256sums as well
       MINGW_VER: 8.0.0
       D_VERSION: 2.077.1
@@ -54,10 +54,10 @@ jobs:
 
   build_curl:
     name: Build curl
-    runs-on: windows-2019
+    runs-on: windows-2022
     timeout-minutes: 120
     env:
-      VSINSTALLDIR: C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\
+      VSINSTALLDIR: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
       # NB: update windows/build_curl.sha256sums as well
       CURL_VER: 7.68.0
       ZLIB_VER: 1.2.11
