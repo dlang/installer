@@ -271,7 +271,7 @@ jobs:
           run: |
             set -eux
 
-            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm15
+            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm19
 
             # Import key used to sign binaries
             curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
