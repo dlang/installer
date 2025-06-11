@@ -128,7 +128,7 @@ jobs:
             target: linux
           - os: macos-13
             target: osx
-          - os: windows-2019
+          - os: windows-2022
             target: windows
           # FreeBSD is built on an additional VM
           - os: ubuntu-latest
@@ -230,7 +230,7 @@ jobs:
           # Windows: set LDC_VSDIR
           if [[ "${{ matrix.target }}" == "windows" ]]
           then
-            export LDC_VSDIR='C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise'
+            export LDC_VSDIR='C:\Program Files\Microsoft Visual Studio\2022\Enterprise'
           fi
 
           # Build the release
@@ -271,7 +271,7 @@ jobs:
           run: |
             set -eux
 
-            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm15
+            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm19
 
             # Import key used to sign binaries
             curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg

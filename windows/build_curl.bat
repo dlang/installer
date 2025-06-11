@@ -43,7 +43,7 @@ SET ZLIB_PATH=%ROOT%\zlib
 :: --------------------------------------------------------------------
 :: Build x64 DLL and import libs
 
-call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
+call "%VSINSTALLDIR%\Common7\Tools\VsDevCmd.bat" -arch=x64
 @echo on
 cd %ROOT%
 
@@ -63,7 +63,7 @@ mingw32-make -C curl\lib -f Makefile.m32 clean
 :: --------------------------------------------------------------------
 :: Build x86 DLL and import libs
 
-call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x86
+call "%VSINSTALLDIR%\Common7\Tools\VsDevCmd.bat" -arch=x86
 @echo on
 cd %ROOT%
 set PATH=%ROOT%\mingw32\bin;%PATH%

@@ -12,7 +12,7 @@ REM Stop early if the artifact already exists
 powershell -Command "Invoke-WebRequest downloads.dlang.org/other/%ARTIFACT% -OutFile %ARTIFACTPATH%" && exit /B 0
 
 
-call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
+call "%VSINSTALLDIR%\Common7\Tools\VsDevCmd.bat" -arch=%ARCH%
 @echo on
 cd %ROOT%
 
