@@ -384,6 +384,19 @@ FunctionEnd
 Function DetectVC
     ClearErrors
 
+    StrCpy $0 "$PROGRAMFILES\Microsoft Visual Studio\Installer\vswhere.exe"
+
+    IfFileExists "$0" 0 no_vswhere
+        nsExec::ExecToStack '"$0" -products * -prerelease  -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath'
+        Pop $1 ; stdout: path
+        Pop $0 ; result code
+        StrCmp $0 0 no_vswhere
+        StrCmp $1 "" no_vswhere
+        StrCpy $VCVer "VC2017+" ; value not used, but only checked if empty
+        StrCpy $VCPath $1
+        Goto done
+    no_vswhere:
+
     Call DetectVS2019_InstallationFolder
     StrCpy $1 "VC2019"
     StrCmp $0 "" not_vc2019 vs2019
