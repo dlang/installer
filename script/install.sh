@@ -125,6 +125,7 @@ download_without_verify() {
     download "$1" 0 "${@:2}"
 }
 
+FORCE=
 # urls...
 fetch() {
     local mirrors path
@@ -390,6 +391,7 @@ parse_args() {
     local _installAction=
     local _getPathAction=
     local _autoInstallFlag=
+    local _force=
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -414,6 +416,10 @@ parse_args() {
                     fatal "$1 conflicts with --${_installAction}"
                 fi
                 _installAction="activate"
+                ;;
+
+            -f | --force)
+                _force=1
                 ;;
 
             --arch)
@@ -480,6 +486,10 @@ parse_args() {
             command_help $COMMAND
             exit 1
         fi
+    fi
+    if [ -n "$_force" ] ; then
+        logE "WARNING: Skipping key signature verification."
+        FORCE=1
     fi
     if [ -n "$_autoInstallFlag" ] ; then
         if [ "$command_" == "get-path" ]; then
@@ -659,15 +669,21 @@ install_dlang_installer() {
     )
 
     mkdir -p "$ROOT"
-    log "Downloading https://dlang.org/d-keyring.gpg"
-    if [ ! -f "$ROOT/d-keyring.gpg" ]; then
-        download_without_verify "$tmp/d-keyring.gpg" "${keyring_mirrors[@]}"
-    else
-        download_with_verify "$tmp/d-keyring.gpg" "${keyring_mirrors[@]}"
+    if [ ! -n "$FORCE" ]; then
+        log "Downloading https://dlang.org/d-keyring.gpg"
+        if [ ! -f "$ROOT/d-keyring.gpg" ]; then
+            download_without_verify "$tmp/d-keyring.gpg" "${keyring_mirrors[@]}"
+        else
+            download_with_verify "$tmp/d-keyring.gpg" "${keyring_mirrors[@]}"
+        fi
+        mv "$tmp/d-keyring.gpg" "$ROOT/d-keyring.gpg"
     fi
-    mv "$tmp/d-keyring.gpg" "$ROOT/d-keyring.gpg"
     log "Downloading ${mirrors[0]}"
-    download_with_verify "$tmp/install.sh" "${mirrors[@]}"
+    if [ -n "$FORCE" ]; then
+        download_without_verify "$tmp/install.sh" "${mirrors[@]}"
+    else
+        download_with_verify "$tmp/install.sh" "${mirrors[@]}"
+    fi
     mv "$tmp/install.sh" "$ROOT/install.sh"
     rmdir "$tmp"
     chmod +x "$ROOT/install.sh"
@@ -804,7 +820,11 @@ install_compiler() {
             )
         fi
 
-        download_and_unpack_with_verify "$ROOT/$compiler" "${mirrors[@]}"
+        if [ -n "$FORCE" ]; then
+            download_and_unpack_without_verify "$ROOT/$compiler" "${mirrors[@]}"
+        else
+            download_and_unpack_with_verify "$ROOT/$compiler" "${mirrors[@]}"
+        fi
 
     # dmd-2015-11-20, dmd-feature_branch-2016-10-20
     elif [[ $1 =~ ^dmd(-(.*))?-[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
@@ -820,7 +840,11 @@ install_compiler() {
         test $OS = windows && ext=.7z || ext=.tar.xz
         local url="https://downloads.dlang.org/nightlies/$1/$basename$ext"
 
-        download_and_unpack_with_verify "$ROOT/$compiler" "$url"
+        if [ -n "$FORCE" ]; then
+            download_and_unpack_without_verify "$ROOT/$compiler" "$url"
+        else
+            download_and_unpack_with_verify "$ROOT/$compiler" "$url"
+        fi
 
     # Nightlies uploaded to the DMD repo
     elif [[ $1 == dmd-nightly ]]; then
