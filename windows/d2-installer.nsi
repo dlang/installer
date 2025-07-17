@@ -39,7 +39,7 @@
 ; Routinely Update
 ; ----------------
 ; Visual D
-!define VersionVisualD "1.3.1"
+!define VersionVisualD "1.4.1"
 
 ; Update Rarely Needed
 ; --------------------
