@@ -55,6 +55,7 @@ jobs:
         with:
           repository: 'dlang/dmd'
           ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
           path: 'dmd'
 
       - name: Clone phobos
@@ -62,6 +63,7 @@ jobs:
         with:
           repository: 'dlang/phobos'
           ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
           path: 'phobos'
 
       - name: Clone dlang.org
@@ -69,6 +71,7 @@ jobs:
         with:
           repository: 'dlang/dlang.org'
           ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
           path: 'dlang.org'
 
       # Fetch host compiler
