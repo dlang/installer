@@ -18,12 +18,6 @@ TARGET_DIR=data
 # TARGET_SITE=erdani.com
 # TARGET_DIR=d
 
-MAKER:=$(shell \
-if [ -f /Developer/usr/bin/packagemaker ];\
-	then echo /Developer/usr/bin/packagemaker;\
-	else echo /Applications/PackageMaker.app/Contents/MacOS/PackageMaker;\
-fi)
-
 all: dmd.${VERSION}.dmg
 	rsync -az $< ${TARGET_SITE}:${TARGET_DIR}/dmd.${VERSION}.dmg
 
@@ -37,7 +31,10 @@ dmd.${VERSION}.dmg: dmd.${VERSION}.osx.zip
 	rm -rf dmg/
 	mkdir -p dmg/DMD2
 	cp uninstall.command dmg/DMD2/
-	${MAKER} -d dmd.pmdoc -o dmg/DMD2/DMD2.pkg --target 10.5
+	pkgbuild --root dmd/ \
+		--version ${VERSION} --identifier org.dlang.dmd.dmd2 \
+		--install-location /Library/D/dmd --scripts scripts/ \
+		--min-os-version 10.5 dmg/DMD2/DMD2.pkg
 	hdiutil create -srcfolder dmg/DMD2 $@
 
 clean:
