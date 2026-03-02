@@ -329,18 +329,25 @@ void runBuild(ref Box box, string ver, bool isBranch, bool skipDocs, string ldcV
         break;
 
     case OS.windows:
-        with (box.shell())
+        version (NoVagrant)
         {
-            cmd(`cd clones\installer\windows`);
-            cmd(`&'C:\Program Files (x86)\NSIS\makensis'`~
-                ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~ver~`.windows\dmd2'`~
-                ` '/DVersion2=`~ver~`' d2-installer.nsi`);
-            cmd(`move dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
-            // sign installer
-            version (CodeSign)
-                cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
+            // Migrated to GHA build_release_template.yml
         }
-        box.scp("default:dmd-"~ver~".exe", "build/");
+        else
+        {
+            with (box.shell())
+            {
+                cmd(`cd clones\installer\windows`);
+                cmd(`&'C:\Program Files (x86)\NSIS\makensis'`~
+                    ` '/DEmbedD2Dir=C:\Users\vagrant\dmd.`~ver~`.windows\dmd2'`~
+                    ` '/DVersion2=`~ver~`' d2-installer.nsi`);
+                cmd(`move dmd-`~ver~`.exe C:\Users\vagrant\dmd-`~ver~`.exe`);
+                // sign installer
+                version (CodeSign)
+                    cmd(`&C:\Users\vagrant\codesign\sign.ps1 C:\Users\vagrant\codesign\win.pfx C:\Users\vagrant\codesign\win.fingerprint C:\Users\vagrant\codesign\win.pass C:\Users\vagrant\dmd-`~ver~`.exe`);
+            }
+            box.scp("default:dmd-"~ver~".exe", "build/");
+        }
         break;
 
     case OS.osx:
