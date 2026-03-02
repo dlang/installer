@@ -636,9 +636,12 @@ int main(string[] args)
     immutable ver = gitTag.chompPrefix("v");
     mkdirRecurse("build");
 
-    version (NoVagrant) version(linux) {} else
-        if (!skipDocs)
+    version (NoVagrant)
+    {
+        version(linux) {}
+        else if (!skipDocs)
             copyDirectory("docs", workDir);
+    }
 
     foreach (p; platforms)
     {
