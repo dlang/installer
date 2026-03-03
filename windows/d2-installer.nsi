@@ -52,6 +52,7 @@
 !define VS2019BTFilename "vs_BuildTools2019.exe"
 !define VCRedistx86Filename "vcredist_x86.exe"
 !define VCRedistx64Filename "vcredist_x64.exe"
+!define VS2022Filename "vs_community2022.exe"
 
 ; URLs
 !define VisualDBaseURL "https://github.com/dlang/visuald/releases/download"
@@ -63,6 +64,7 @@
 !define VS2017BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/100404314/e64d79b40219aea618ce2fe10ebd5f0d/vs_BuildTools.exe"
 !define VS2019Url "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/8cc1a4ebd138b5d0c2b97501a198f5eacdc434daa8a5c6564c8e23fdaaad3619/vs_Community.exe"
 !define VS2019BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/cfffd18469d936d6cb9dff55fd4ae538035e7f247f1756c5a31f3e03751d7ee7/vs_BuildTools.exe"
+!define VS2022Url "https://c2rsetup.officeapps.live.com/c2r/downloadVS.aspx?sku=community&channel=Release&version=VS2022"
 
 ; see https://stackoverflow.com/questions/12206314/detect-if-visual-c-redistributable-for-visual-studio-2012-is-installed/14878248
 ; selecting VC2010
@@ -210,8 +212,8 @@ SetCompressorDictSize 112
 !define MUI_WELCOMEFINISHPAGE_BITMAP "d2-installer-image.bmp"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
-!insertmacro MUI_PAGE_DIRECTORY
 Page custom VCInstallPage VCInstallPageValidate
+!insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
@@ -330,7 +332,7 @@ FunctionEnd
 Function VCInstallPageValidate
 
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 2" "State"
-  StrCmp $0 1 install_vs2013
+  StrCmp $0 1 install_vs2022
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 3" "State"
   StrCmp $0 1 install_vs2019
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 4" "State"
@@ -339,21 +341,29 @@ Function VCInstallPageValidate
   StrCmp $0 1 install_vc2010
   goto done_vc
 
-  install_vs2013:
-    !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
-    goto done_vc
+  install_vs2022:
+    ; check whether installed externally
+    Call DetectVC
+    StrCmp $VCVer "" 0 done_vc
+    !insertmacro DownloadAndRun ${VS2022Filename} ${VS2022Url} ""
+    goto check_vc
 
   install_vs2019:
     !insertmacro DownloadAndRun ${VS2019Filename} ${VS2019Url} ""
-    goto done_vc
+    goto check_vc
 
   install_bt2019:
     !insertmacro DownloadAndRun ${VS2019BTFilename} ${VS2019BuildToolsUrl} ""
-    goto done_vc
+    goto check_vc
 
   install_vc2010:
     Call InstallVCRedistributable
     goto done_vc
+
+  check_vc:
+    Call DetectVC
+    StrCmp $VCVer "" 0 done_vc
+    Abort
 
   done_vc:
 
