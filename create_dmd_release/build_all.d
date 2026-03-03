@@ -139,7 +139,13 @@ struct Box
             if (src.startsWith("default:"))
                 src = _tmpdir ~ "/" ~ src[8..$];
             else if (src.startsWith("'default:"))
-                src = "'" ~ _tmpdir ~ "/" ~ src[9..$];
+            {
+                // Expand 'default:path/*.ext'
+                src = _tmpdir ~ "/" ~ src[9..$-1];
+                src = dirEntries(dirName(src), baseName(src), SpanMode.shallow)
+                    .map!(f => f.name)
+                    .join(" ");
+            }
             if (tgt.startsWith("default:"))
                 tgt = _tmpdir ~ "/" ~ tgt[8..$];
 
