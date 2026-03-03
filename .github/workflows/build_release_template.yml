@@ -248,14 +248,17 @@ jobs:
           7z x inetc.zip -y -bb1 "-oc:\Program Files (x86)\NSIS" || exit /b
 
           :: unpack release .7z generated in previous step
-          7z x create_dmd_release\build\dmd.${{ inputs.release_branch }}.windows.7z -odmd.windows || exit /b
+          :: chomp off the "v" prefix if there is one, as this is what build_all does
+          set release=${{ inputs.release_branch }}
+          if "%release:~0,1%"=="v" set release=%release:~1%
+          7z x create_dmd_release\build\dmd.%release%.windows.7z -odmd.windows || exit /b
 
           @echo on
           "c:\Program Files (x86)\NSIS\makensis" /version
           for /f %%v in (dmd.windows\dmd2\src\VERSION) do set ver=%%v
           cd windows || exit /b
           "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%ver% /DEmbedD2Dir=..\dmd.windows\dmd2 d2-installer.nsi || exit /b
-          ren dmd-%ver%.exe dmd-${{ inputs.release_branch }}.exe || exit /b
+          ren dmd-%ver%.exe dmd-%release%.exe || exit /b
           copy dmd-*.exe ..\create_dmd_release\build || exit /b
 
       #################################################################
