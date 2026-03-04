@@ -74,7 +74,7 @@ jobs:
           hypervisor: qemu
           memory: 12G
           cpu_count: 4
-          version: '12.2'
+          version: '13.2'
           environment_variables: OS BUILD
           shell: bash
           run: source ./installer/test/release/validate_release.sh
