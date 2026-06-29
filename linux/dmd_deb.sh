@@ -207,7 +207,7 @@ else
 
 	# install include
 	mkdir -p usr/include/dmd/{phobos,druntime}
-	cp -Rf ../$UNZIPDIR/src/phobos/{std,etc} usr/include/dmd/phobos/
+	cp -Rf ../$UNZIPDIR/src/phobos/{std,etc,phobos} usr/include/dmd/phobos/
 	cp -Rf ../$UNZIPDIR/src/druntime/import/ usr/include/dmd/druntime/
 	# remove unneeded folder
 	rm -rf usr/include/dmd/phobos/etc/c/zlib
