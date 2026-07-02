@@ -45,32 +45,28 @@
 ; --------------------
 ; Files
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
-!define VS2013Filename "vs_community2013.exe"
-!define VS2017Filename "vs_community2017.exe"
-!define VS2017BTFilename "vs_BuildTools2017.exe"
-!define VS2019Filename "vs_community2019.exe"
-!define VS2019BTFilename "vs_BuildTools2019.exe"
-!define VCRedistx86Filename "vcredist_x86.exe"
-!define VCRedistx64Filename "vcredist_x64.exe"
+!define VS2026Filename "vs_community2026.exe"
+!define VS2026BTFilename "vs_BuildTools2026.exe"
+!define VCRedistx86Filename "vc_redist.x86.exe"
+!define VCRedistx64Filename "vc_redist.x64.exe"
 
 ; URLs
 !define VisualDBaseURL "https://github.com/dlang/visuald/releases/download"
 
 !define VisualDUrl "${VisualDBaseURL}/v${VersionVisualD}/${VisualDFilename}"
 
-!define VS2013Url "http://go.microsoft.com/fwlink/?LinkId=517284"
-!define VS2017Url "https://download.visualstudio.microsoft.com/download/pr/100404311/045b56eb413191d03850ecc425172a7d/vs_Community.exe"
-!define VS2017BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/100404314/e64d79b40219aea618ce2fe10ebd5f0d/vs_BuildTools.exe"
-!define VS2019Url "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/8cc1a4ebd138b5d0c2b97501a198f5eacdc434daa8a5c6564c8e23fdaaad3619/vs_Community.exe"
-!define VS2019BuildToolsUrl "https://download.visualstudio.microsoft.com/download/pr/8ab6eab3-e151-4f4d-9ca5-07f8434e46bb/cfffd18469d936d6cb9dff55fd4ae538035e7f247f1756c5a31f3e03751d7ee7/vs_BuildTools.exe"
+!define VS2026Url "https://aka.ms/vs/stable/vs_community.exe"
+!define VS2026BuildToolsUrl "https://aka.ms/vs/stable/vs_buildtools.exe"
 
-; see https://stackoverflow.com/questions/12206314/detect-if-visual-c-redistributable-for-visual-studio-2012-is-installed/14878248
-; selecting VC2010
-!define VCRedistx86Url "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x86.exe"
-!define VCRedistx64Url "https://download.microsoft.com/download/1/6/5/165255E7-1014-4D0A-B094-B6A430A6BFFC/vcredist_x64.exe"
+; Latest supported Visual C++ v14 Redistributable, shared by VS 2017-2026 and
+; containing the Universal C Runtime (UCRT). The aka.ms links redirect to the
+; current package; inetc::get follows HTTP redirects, so the permalinks are fine.
+!define VCRedistx86Url "https://aka.ms/vc14/vc_redist.x86.exe"
+!define VCRedistx64Url "https://aka.ms/vc14/vc_redist.x64.exe"
 
-!define VCRedistx86RegKey "SOFTWARE\Classes\Installer\Products\1926E8D15D0BCE53481466615F760A7F"
-!define VCRedistx64RegKey "SOFTWARE\Classes\Installer\Products\1D5E3C0FEDA1E123187686FED06E995A"
+; Registry keys written by the installed VC++ v14 Redistributable runtimes
+!define VCRedistx86RegKey "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X86"
+!define VCRedistx64RegKey "SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64"
 
 ; ----------------
 ; Publishing Details
@@ -255,6 +251,8 @@ SectionGroup /e "D2"
     FileOpen $0 "$INSTDIR\dmd2vars32.bat" w
     FileWrite $0 "@echo.$\n"
     FileWrite $0 "@echo Setting up 32-bit environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
+    FileWrite $0 "@echo.$\n"
+    FileWrite $0 "@echo Generated programs link against the Universal C Runtime (UCRT) included with Windows.$\n"
     FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
     FileClose $0
 
@@ -264,6 +262,7 @@ SectionGroup /e "D2"
     FileWrite $0 "@echo Setting up 64-bit environment for using DMD 2 from %~dp0dmd2\windows\bin.$\n"
     FileWrite $0 "@echo.$\n"
     FileWrite $0 "@echo dmd must still be called with -m64 in order to generate 64-bit code.$\n"
+    FileWrite $0 "@echo Generated programs link against the Universal C Runtime (UCRT) included with Windows.$\n"
     FileWrite $0 "@echo This command prompt adds the path of extra 64-bit DLLs so generated programs$\n"
     FileWrite $0 "@echo which use the extra DLLs (notably libcurl) can be executed.$\n"
     FileWrite $0 "@set PATH=%~dp0dmd2\windows\bin;%PATH%$\n"
@@ -321,7 +320,7 @@ Function VCInstallPage
   Abort
   ask_vs:
 
-  !insertmacro MUI_HEADER_TEXT "Choose Visual Studio Installation" "Choose the Visual C runtime to link against"
+  !insertmacro MUI_HEADER_TEXT "Install Microsoft C/C++ Build Tools" "Install the build tools required to compile and link D programs"
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "vcinstall.ini"
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "vcinstall.ini"
 
@@ -330,25 +329,19 @@ FunctionEnd
 Function VCInstallPageValidate
 
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 2" "State"
-  StrCmp $0 1 install_vs2013
+  StrCmp $0 1 install_vs2026
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 3" "State"
-  StrCmp $0 1 install_vs2019
+  StrCmp $0 1 install_bt2026
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 4" "State"
-  StrCmp $0 1 install_bt2019
-  !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 5" "State"
   StrCmp $0 1 install_vc2010
   goto done_vc
 
-  install_vs2013:
-    !insertmacro DownloadAndRun ${VS2013Filename} ${VS2013Url} ""
+  install_vs2026:
+    !insertmacro DownloadAndRun ${VS2026Filename} ${VS2026Url} ""
     goto done_vc
 
-  install_vs2019:
-    !insertmacro DownloadAndRun ${VS2019Filename} ${VS2019Url} ""
-    goto done_vc
-
-  install_bt2019:
-    !insertmacro DownloadAndRun ${VS2019BTFilename} ${VS2019BuildToolsUrl} ""
+  install_bt2026:
+    !insertmacro DownloadAndRun ${VS2026BTFilename} ${VS2026BuildToolsUrl} ""
     goto done_vc
 
   install_vc2010:
@@ -365,19 +358,23 @@ FunctionEnd
 
 Function InstallVCRedistributable
 
-    SetRegView 64 ; look at the 64-bit registry hive if available
+    ; The x86 runtime registers under the 32-bit registry view
+    SetRegView 32
     ClearErrors
-    ReadRegStr $0 HKLM "${VCRedistx86RegKey}" "ProductName"
-    IfErrors 0 vcredistx86_installed
+    ReadRegDWORD $0 HKLM "${VCRedistx86RegKey}" "Installed"
+    ${If} $0 != 1
         !insertmacro DownloadAndRun ${VCRedistx86Filename} ${VCRedistx86Url} ""
-    vcredistx86_installed:
+    ${EndIf}
 
+    ; The x64 runtime registers under the 64-bit registry view
+    SetRegView 64
     ClearErrors
-    ReadRegStr $0 HKLM "${VCRedistx64RegKey}" "ProductName"
-    IfErrors 0 vcredistx64_installed
+    ReadRegDWORD $0 HKLM "${VCRedistx64RegKey}" "Installed"
+    ${If} $0 != 1
         !insertmacro DownloadAndRun ${VCRedistx64Filename} ${VCRedistx64Url} ""
-    vcredistx64_installed:
-    SetRegView 32 ; retore default
+    ${EndIf}
+
+    SetRegView 32 ; restore default
 
 FunctionEnd
 
@@ -396,6 +393,26 @@ Function DetectVC
         StrCpy $VCPath $1
         Goto done
     no_vswhere:
+
+    Call DetectVS2026_InstallationFolder
+    StrCpy $1 "VC2026"
+    StrCmp $0 "" not_vc2026 vs2026
+    vs2026:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2026
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2026:
+
+    Call DetectVS2022_InstallationFolder
+    StrCpy $1 "VC2022"
+    StrCmp $0 "" not_vc2022 vs2022
+    vs2022:
+        ${LineRead} "$0\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" "1" $2
+        IfErrors not_vc2022
+        StrCpy $0 "$0\VC\Tools\MSVC\$2"
+        Goto done_vs
+    not_vc2022:
 
     Call DetectVS2019_InstallationFolder
     StrCpy $1 "VC2019"
@@ -440,22 +457,8 @@ Function DetectVC
     ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\14.0\Setup\VC" "ProductDir"
     StrCpy $1 "VC2015"
     IfErrors 0 done_vs
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\12.0\Setup\VC" "ProductDir"
-    StrCpy $1 "VC2013"
-    IfErrors 0 done_vs
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\11.0\Setup\VC" "ProductDir"
-    StrCpy $1 "VC2012"
-    IfErrors 0 done_vs
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\10.0\Setup\VC" "ProductDir"
-    StrCpy $1 "VC2010"
-    IfErrors 0 done_vs
-    ClearErrors
-    ReadRegStr $0 HKLM "Software\Microsoft\VisualStudio\9.0\Setup\VC" "ProductDir"
-    StrCpy $1 "VC2008"
-    IfErrors done done_vs
+
+    Goto done
 
     done_vs:
     StrCpy $VCPath $0
@@ -597,7 +600,7 @@ Function un.onInit
 FunctionEnd
 
 ;--------------------------------------------------------
-; VS 2017/2019 detection functions
+; VS 2017/2019/2022/2026 detection functions
 ;
 ; returns path to VS (not VC) in $0
 ;--------------------------------------------------------
@@ -613,11 +616,70 @@ Function DetectVS2017BuildTools_InstallationFolder
         StrCmp $2 "Visual Studio Build Tools 2017" 0 NotVS2017BT
             ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
             IfErrors NoInstallLocation
-                ; MessageBox MB_YESNO|MB_ICONQUESTION "$2$\n$\nMore?" IDYES 0 IDNO done
                 StrCpy $0 "$2\\"
                 return
             NoInstallLocation:
         NotVS2017BT:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
+FunctionEnd
+
+Function DetectVS2026_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCpy $3 $2 14
+        StrCmp $3 "Visual Studio " 0 NotVS2026
+        StrCpy $3 $2 12 -12
+        StrCmp $3 "2026 Preview" IsVS2026
+        StrCpy $3 $2 4 -4
+        StrCmp $3 "2026" IsVS2026 NotVS2026
+        IsVS2026:
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2026:
+    NoDisplayName:
+    IntOp $0 $0 + 1
+    Goto loop
+  done:
+  StrCpy $0 ""
+
+FunctionEnd
+
+Function DetectVS2022_InstallationFolder
+
+  ClearErrors
+  StrCpy $0 0
+  loop:
+    EnumRegKey $1 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall $0
+    StrCmp $1 "" done
+    ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 DisplayName
+    IfErrors NoDisplayName
+        StrCpy $3 $2 14
+        StrCmp $3 "Visual Studio " 0 NotVS2022
+        StrCpy $3 $2 12 -12
+        StrCmp $3 "2022 Preview" IsVS2022
+        StrCpy $3 $2 4 -4
+        StrCmp $3 "2022" IsVS2022 NotVS2022
+        IsVS2022:
+            ReadRegStr $2 HKLM SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$1 InstallLocation
+            IfErrors NoInstallLocation
+                StrCpy $0 "$2\\"
+                return
+            NoInstallLocation:
+        NotVS2022:
     NoDisplayName:
     IntOp $0 $0 + 1
     Goto loop
