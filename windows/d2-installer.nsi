@@ -47,6 +47,7 @@
 !define VisualDFilename "VisualD-v${VersionVisualD}.exe"
 !define VS2026Filename "vs_community2026.exe"
 !define VS2026BTFilename "vs_BuildTools2026.exe"
+!define VS2019BTFilename "vs_BuildTools2019.exe"
 !define VCRedistx86Filename "vc_redist.x86.exe"
 !define VCRedistx64Filename "vc_redist.x64.exe"
 
@@ -57,6 +58,11 @@
 
 !define VS2026Url "https://aka.ms/vs/stable/vs_community.exe"
 !define VS2026BuildToolsUrl "https://aka.ms/vs/stable/vs_buildtools.exe"
+
+; VS 2019 (channel 16) is the last release that installs on 32-bit Windows, since
+; VS 2022 and later require a 64-bit host. Its Build Tools are offered for 32-bit
+; machines. This evergreen permalink resolves to the latest 16.x servicing build.
+!define VS2019BuildToolsUrl "https://aka.ms/vs/16/release/vs_buildtools.exe"
 
 ; Latest supported Visual C++ v14 Redistributable, shared by VS 2017-2026 and
 ; containing the Universal C Runtime (UCRT). The aka.ms links redirect to the
@@ -322,6 +328,21 @@ Function VCInstallPage
 
   !insertmacro MUI_HEADER_TEXT "Install Microsoft C/C++ Build Tools" "Install the build tools required to compile and link D programs"
   !insertmacro MUI_INSTALLOPTIONS_EXTRACT "vcinstall.ini"
+
+  ${If} ${RunningX64}
+    ; The VS 2019 Build Tools option (Field 4) only makes sense on 32-bit Windows,
+    ; since VS 2022 and later require a 64-bit host. Disable it on 64-bit systems.
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "vcinstall.ini" "Field 4" "Flags" "DISABLED"
+  ${Else}
+    ; VS 2022 and later require a 64-bit host, so the VS 2026 options (Fields 2 and 3)
+    ; cannot be installed on 32-bit Windows. Gray them out and make the VS 2019 Build
+    ; Tools the default selection instead.
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "vcinstall.ini" "Field 2" "Flags" "DISABLED"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "vcinstall.ini" "Field 3" "State" "0"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "vcinstall.ini" "Field 3" "Flags" "DISABLED"
+    !insertmacro MUI_INSTALLOPTIONS_WRITE "vcinstall.ini" "Field 4" "State" "1"
+  ${EndIf}
+
   !insertmacro MUI_INSTALLOPTIONS_DISPLAY "vcinstall.ini"
 
 FunctionEnd
@@ -333,7 +354,9 @@ Function VCInstallPageValidate
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 3" "State"
   StrCmp $0 1 install_bt2026
   !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 4" "State"
-  StrCmp $0 1 install_vc2010
+  StrCmp $0 1 install_bt2019
+  !insertmacro MUI_INSTALLOPTIONS_READ $0 "vcinstall.ini" "Field 5" "State"
+  StrCmp $0 1 install_vcredist
   goto done_vc
 
   install_vs2026:
@@ -344,7 +367,11 @@ Function VCInstallPageValidate
     !insertmacro DownloadAndRun ${VS2026BTFilename} ${VS2026BuildToolsUrl} ""
     goto done_vc
 
-  install_vc2010:
+  install_bt2019:
+    !insertmacro DownloadAndRun ${VS2019BTFilename} ${VS2019BuildToolsUrl} ""
+    goto done_vc
+
+  install_vcredist:
     Call InstallVCRedistributable
     goto done_vc
 
