@@ -264,42 +264,44 @@ jobs:
       #################################################################
       # FREEBSD: Build for the current target using build_all.d from installer
       #
-      - name: Run build_all.d for FreeBSD in a dedicated VM
+      - name: Setup FreeBSD VM
         if: matrix.target == 'freebsd'
         uses: cross-platform-actions/action@v0.23.0
         with:
           operating_system: freebsd
-          hypervisor: qemu
           memory: 12G
           cpu_count: 4
-          version: '13.2'
-          shell: bash
-          run: |
-            set -eux
+          version: '14.4'
 
-            sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm19
+      - name: Run build_all.d for FreeBSD in a dedicated VM
+        if: matrix.target == 'freebsd'
+        shell: cpa.sh {0}
+        run: |
+          set -eux
 
-            # Import key used to sign binaries
-            curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
-            gpg d-keyring.gpg
+          sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm19
 
-            # Install ldc
-            curl -fsS https://dlang.org/install.sh -o install.sh
-            bash install.sh ldc -p .
+          # Import key used to sign binaries
+          curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
+          gpg d-keyring.gpg
 
-            # Use absolute paths because activate doesn't work correctly
-            LDC_BIN=$PWD/ldc-*/bin
+          # Install ldc
+          curl -fsS https://dlang.org/install.sh -o install.sh
+          bash install.sh ldc -p .
 
-            # Determine installed LDC version
-            LDC=$($LDC_BIN/ldc2 --version | head -n 1 | cut -d'(' -f2 | cut -d')' -f1)
+          # Use absolute paths because activate doesn't work correctly
+          LDC_BIN=$PWD/ldc-*/bin
 
-            # Determine additional linker flags to make -lcurl work
-            EXTRA_FLAGS="-L$(pkg-config --libs-only-L libcurl)"
+          # Determine installed LDC version
+          LDC=$($LDC_BIN/ldc2 --version | head -n 1 | cut -d'(' -f2 | cut -d')' -f1)
 
-            # Actually build the release
-            cd create_dmd_release
-            $LDC_BIN/ldmd2 -g -m64 --link-defaultlib-debug -version=NoVagrant -i build_all.d $EXTRA_FLAGS
-            ./build_all --targets=${{ matrix.target }} "v$LDC" ${{ inputs.release_branch }}
+          # Determine additional linker flags to make -lcurl work
+          EXTRA_FLAGS="-L$(pkg-config --libs-only-L libcurl)"
+
+          # Actually build the release
+          cd create_dmd_release
+          $LDC_BIN/ldmd2 -g -m64 --link-defaultlib-debug -version=NoVagrant -i build_all.d $EXTRA_FLAGS
+          ./build_all --targets=${{ matrix.target }} "v$LDC" ${{ inputs.release_branch }}
 
       #################################################################
       # Save the target-specific release as a artifact s.t. the next
