@@ -266,7 +266,7 @@ jobs:
       #
       - name: Setup FreeBSD VM
         if: matrix.target == 'freebsd'
-        uses: cross-platform-actions/action@v0.23.0
+        uses: cross-platform-actions/action@v1.3.0
         with:
           operating_system: freebsd
           memory: 12G
