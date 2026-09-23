@@ -1,0 +1,3 @@
+More heavily optimized official compiler release binaries
+
+The compiler is now built with profile-guided (except 32-bit Linux) and link-time optimizations.

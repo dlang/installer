@@ -341,18 +341,6 @@ void buildAll(Bits bits, string branch)
     const dmdEnv = ` "DMD=`~cloneDir~`/dmd/generated/`~osDirName~`/release/`~bitsStr~`/dmd`~exe~`"`;
     const isRelease = " ENABLE_RELEASE=1";
 
-    // Enable lto for everything except FreeBSD - the generated dmd segfaults immediatly.
-    // OSX is disabled "temporarily" due to https://github.com/dlang/installer/actions/runs/12156929210/job/33901843249?pr=588#step:6:660
-    //  wherein OSX with LTO timeTraceProfiler a TLS variable gets put into LTO layout which asserts out in ldc.
-    version (FreeBSD)
-        const ltoOption = " ENABLE_LTO=0";
-    else version (linux)
-        const ltoOption = " ENABLE_LTO=" ~ (is32 ? "0" : "1");
-    else version(OSX)
-        const ltoOption = " ENABLE_LTO=0";
-    else
-        const ltoOption = " ENABLE_LTO=1";
-
     const latest = " LATEST="~branch;
     // PIC libraries on amd64 for PIE-by-default distributions, see Bugzilla 16794
     version (linux)
@@ -363,17 +351,36 @@ void buildAll(Bits bits, string branch)
     // common make arguments
     const makecmd = make~jobs~makeModel~dmdEnv~isRelease~latest;
 
-    info("Building DMD "~bitsDisplay);
-    changeDir(cloneDir~"/dmd");
-    run(msvcVars~makecmd~ltoOption~" HOST_DMD="~hostDMD~" dmd");
+    bool usePGO = true;
+    version (linux)
+    {
+        // the LDC Linux multilib package doesn't have any 32-bit compiler-rt libs
+        if (is32)
+            usePGO = false;
+    }
 
-    info("Building Druntime "~bitsDisplay);
-    changeDir(cloneDir~"/dmd/druntime");
-    run(msvcVars~makecmd~pic);
+    if (usePGO)
+    {
+        string pgoDflags;
+        version (OSX)
+        {
+            // As of September 2026 (with LDC v1.43), there are 15 warnings about profile
+            // mismatches ('function control flow change detected (hash mismatch)').
+            // No idea why on Mac only; don't treat them as errors.
+            // (Enabling LTO for the instrumented compiler reduces them to 4 warnings.)
+            pgoDflags = " HOST_DFLAGS=-wi";
+        }
 
-    info("Building Phobos "~bitsDisplay);
-    changeDir(cloneDir~"/phobos");
-    run(msvcVars~makecmd~pic);
+        info("Building PGO+LTO'd dmd "~bitsDisplay~", incl. Druntime and Phobos");
+        changeDir(cloneDir~"/dmd");
+        run(msvcVars~makecmd~pic~" HOST_DMD="~hostDMD~pgoDflags~" dmd-pgo");
+    }
+    else
+    {
+        info("Building LTO'd dmd "~bitsDisplay~", incl. Druntime and Phobos");
+        changeDir(cloneDir~"/dmd");
+        run(msvcVars~makecmd~pic~" HOST_DMD="~hostDMD~" ENABLE_LTO=1 all phobos");
+    }
 
     // Build docs
     if(!skipDocs)
