@@ -136,8 +136,26 @@ jobs:
           # FreeBSD is built on an additional VM
           - os: ubuntu-latest
             target: freebsd
+            vm_os: freebsd
+            vm_os_version: '14.4'
+
+    defaults:
+      run:
+        # cpa.sh comes with cross-platform-actions and delegates to the VM.
+        # Use it by default for all `run` steps below, i.e., run them in the VM (with a bash shell).
+        shell: ${{ matrix.vm_os && 'cpa.sh {0}' || 'bash' }}
 
     steps:
+
+      - name: Start VM
+        if: matrix.vm_os
+        uses: cross-platform-actions/action@v1.5.0
+        with:
+          operating_system: ${{ matrix.vm_os }}
+          version: ${{ matrix.vm_os_version }}
+          shell: bash
+          memory: 12G
+          cpu_count: 4
 
       #################################################################
       # Install the system dependencies required to build and run
@@ -148,7 +166,6 @@ jobs:
       #
       - name: Install dependencies for linux
         if: matrix.target == 'linux'
-        shell: bash
         run: |
           set -euox pipefail
 
@@ -181,13 +198,17 @@ jobs:
           # Save some space
           sudo apt clean
 
+      - name: Install dependencies for FreeBSD
+        if: matrix.vm_os == 'freebsd'
+        run: sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm19
+
       #################################################################
       # Install latest LDC used to compile the release scripts and to
       # determine the currently available version number
       #
       - uses: dlang-community/setup-dlang@v1
-        name: Install latest LDC
-        if: matrix.target != 'freebsd'
+        name: 'Non-VM: Install latest LDC'
+        if: '!matrix.vm_os'
         with:
           compiler: ldc-latest
 
@@ -214,14 +235,18 @@ jobs:
       #
       - name: Fetch common resources and run build_all.d for ${{ matrix.target }}
         id: build
-        if: matrix.target != 'freebsd'
-        shell: bash
         run: |
           set -euox pipefail
 
           # Fetch GPG key used to sign the generated binaries
           curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
           gpg --import d-keyring.gpg
+
+          # VM: install and activate latest ldc
+          if ${{ matrix.vm_os && 'true' || 'false' }}; then
+            curl -fsS https://dlang.org/install.sh -o install.sh
+            source "$(bash install.sh ldc --activate)"
+          fi
 
           # Compile release builder
           cd create_dmd_release
@@ -260,48 +285,6 @@ jobs:
           "c:\Program Files (x86)\NSIS\makensis" /DVersion2=%ver% /DEmbedD2Dir=..\dmd.windows\dmd2 d2-installer.nsi || exit /b
           ren dmd-%ver%.exe dmd-%release%.exe || exit /b
           copy dmd-*.exe ..\create_dmd_release\build || exit /b
-
-      #################################################################
-      # FREEBSD: Build for the current target using build_all.d from installer
-      #
-      - name: Setup FreeBSD VM
-        if: matrix.target == 'freebsd'
-        uses: cross-platform-actions/action@v1.3.0
-        with:
-          operating_system: freebsd
-          memory: 12G
-          cpu_count: 4
-          version: '14.4'
-
-      - name: Run build_all.d for FreeBSD in a dedicated VM
-        if: matrix.target == 'freebsd'
-        shell: cpa.sh {0}
-        run: |
-          set -eux
-
-          sudo pkg install -y curl curlpp git gmake pkgconf gnupg rsync llvm19
-
-          # Import key used to sign binaries
-          curl -fsS https://dlang.org/d-keyring.gpg -o d-keyring.gpg
-          gpg d-keyring.gpg
-
-          # Install ldc
-          curl -fsS https://dlang.org/install.sh -o install.sh
-          bash install.sh ldc -p .
-
-          # Use absolute paths because activate doesn't work correctly
-          LDC_BIN=$PWD/ldc-*/bin
-
-          # Determine installed LDC version
-          LDC=$($LDC_BIN/ldc2 --version | head -n 1 | cut -d'(' -f2 | cut -d')' -f1)
-
-          # Determine additional linker flags to make -lcurl work
-          EXTRA_FLAGS="-L$(pkg-config --libs-only-L libcurl)"
-
-          # Actually build the release
-          cd create_dmd_release
-          $LDC_BIN/ldmd2 -g -m64 --link-defaultlib-debug -version=NoVagrant -i build_all.d $EXTRA_FLAGS
-          ./build_all --targets=${{ matrix.target }} "v$LDC" ${{ inputs.release_branch }}
 
       #################################################################
       # Save the target-specific release as a artifact s.t. the next

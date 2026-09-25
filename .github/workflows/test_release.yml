@@ -40,6 +40,8 @@ jobs:
             build: dmd.${{ github.base_ref || github.ref_name }}.linux.tar.xz
           - host: ubuntu-latest
             os: freebsd
+            vm_os: freebsd
+            vm_os_version: '14.4'
             build: dmd.${{ github.base_ref || github.ref_name }}.freebsd-64.tar.xz
 
     runs-on: ${{ matrix.host }}
@@ -47,6 +49,12 @@ jobs:
     env:
       OS: ${{ matrix.os }}
       BUILD: ${{ matrix.build }}
+
+    defaults:
+      run:
+        # cpa.sh comes with cross-platform-actions and delegates to the VM.
+        # Use it by default for all `run` steps below, i.e., run them in the VM (with a bash shell).
+        shell: ${{ matrix.vm_os && 'cpa.sh {0} --environment-variables OS BUILD' || 'bash' }}
 
     steps:
       - name: Download generated releases from the artifacts
@@ -60,24 +68,19 @@ jobs:
         with:
           path: installer
 
-      - name: Check ${{ matrix.os }} artifacts
-        id: check
-        if: ${{ matrix.os != 'freebsd' }}
-        shell: bash
-        run: source ./installer/test/release/validate_release.sh
-
-      - name: Check ${{ matrix.os }} artifacts in a VM
-        if: ${{ matrix.os == 'freebsd' }}
-        uses: cross-platform-actions/action@v1.3.0
+      - name: Start VM
+        if: matrix.vm_os
+        uses: cross-platform-actions/action@v1.5.0
         with:
-          operating_system: freebsd
-          hypervisor: qemu
+          operating_system: ${{ matrix.vm_os }}
+          version: ${{ matrix.vm_os_version }}
+          shell: bash
           memory: 12G
           cpu_count: 4
-          version: '14.4'
-          environment_variables: OS BUILD
-          shell: bash
-          run: source ./installer/test/release/validate_release.sh
+
+      - name: Check ${{ matrix.os }} artifacts
+        id: check
+        run: source ./installer/test/release/validate_release.sh
 
   validate_build_metadata:
     name: Validate outputs of build_release_template.yml
