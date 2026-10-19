@@ -107,7 +107,7 @@ set -euo pipefail
 trap 'echo -e "\e[1;31mInner script failed at line \$LINENO.\e[0m"' ERR
 set -x
 
-zypper --quiet --non-interactive removerepo repo-non-oss repo-update-non-oss
+zypper --quiet --non-interactive removerepo repo-non-oss repo-update-non-oss 2>/dev/null || true
 zypper --quiet --non-interactive install curl findutils >/dev/null
 zypper --quiet --non-interactive --no-gpg-checks install $SUSE_RPM >/dev/null
 curl --version >/dev/null

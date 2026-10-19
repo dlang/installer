@@ -14,9 +14,9 @@ ferror(){
 }
 
 
-# check if in debian like system
-if test ! -f /etc/debian_version && test ! -f /etc/redhat-release ; then
-	ferror "RPMs must be build on a debian or redhat-like system" "Exiting..."
+# check if in debian, redhat, or suse like system
+if test ! -f /etc/debian_version && test ! -f /etc/redhat-release && test ! -f /etc/os-release ; then
+	ferror "RPMs must be built on a debian, redhat, or suse-like system" "Exiting..."
 fi
 
 
@@ -89,7 +89,10 @@ fcheck gzip
 fcheck unzip
 fcheck curl
 fcheck rpmbuild
-fcheck fakeroot
+FAKEROOT=""
+if command -v fakeroot 1>/dev/null 2>&1 ; then
+	FAKEROOT="fakeroot"
+fi
 if [ $E -eq 1 ]; then
     ferror "Missing commands on Your system:" "$LIST"
 fi
@@ -262,18 +265,27 @@ do
 		chmod 0755 usr/bin/{dmd,rdmd,ddemangle,dustmite,dub}
 
 
-		# find deb package dependencies
-		if test "$DNAME" = "fedora" ;then
-			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl($FARCH)"
-		elif test "$DNAME" = "openSUSE" ;then
-			DEPEND="glibc-devel($FARCH), gcc($FARCH), libcurl4($FARCH)"
-		fi
+		# find rpm package dependencies (compatible across Fedora, RHEL/Rocky, and openSUSE)
+		DEPEND="glibc-devel($FARCH), gcc($FARCH), (libcurl($FARCH) or libcurl4($FARCH)), (libgcc($FARCH) or libgcc_s1($FARCH))"
+		RECOMMENDS=""
 		if test "$ARCH" = "x86_64" ; then
-			if test "$DNAME" = "fedora" ;then
-				DEPEND=$DEPEND", glibc-devel(x86-32), libgcc(x86-32), libcurl(x86-32)"
-			elif test "$DNAME" = "openSUSE" ;then
-				DEPEND=$DEPEND", glibc-devel-32bit(x86-32), gcc-32bit($FARCH), libcurl4-32bit(x86-32)"
-			fi
+			RECOMMENDS="Recommends: (glibc-devel(x86-32) or glibc-devel-32bit), (libgcc(x86-32) or libgcc_s1-32bit), (libcurl(x86-32) or libcurl4-32bit)"
+		fi
+
+		DUB_VER=""
+		if test -x usr/bin/dub ; then
+			DUB_VER=$(./usr/bin/dub --version 2>/dev/null | awk '{print $3}' | tr -d ',' || true)
+		fi
+		if test -z "$DUB_VER" ; then
+			DUB_VER="$VERSION"
+		fi
+		PROVIDES_EXTRA=", phobos-devel = $VERSION-$REVISION, phobos-devel($FARCH) = $VERSION-$REVISION, phobos-devel-static = $VERSION-$REVISION, phobos-devel-static($FARCH) = $VERSION-$REVISION, dub = $DUB_VER-$REVISION, dub($FARCH) = $DUB_VER-$REVISION"
+		OBSOLETES_EXTRA="Obsoletes: phobos-devel < $VERSION-$REVISION, phobos-devel-static < $VERSION-$REVISION, dub < $DUB_VER-$REVISION, libphobos2-0_109 < $VERSION-$REVISION"
+
+		# exclude bundled 32-bit phobos from generating 32-bit requirements on 64-bit packages
+		SPEC_EXCLUDE_REQ_FROM=""
+		if test "$ARCH" = "x86_64" ; then
+			SPEC_EXCLUDE_REQ_FROM="%global __requires_exclude_from ^/usr/lib/libphobos2\\\\.so.*$"
 		fi
 
 
@@ -291,9 +303,12 @@ do
 
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
-		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION', '$SO_LIB.$SO_VERSION'
+		'$RECOMMENDS'
+		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION', '$SO_LIB.$SO_VERSION''$PROVIDES_EXTRA'
+		'$OBSOLETES_EXTRA'
 
 		%global __requires_exclude ^libphobos2\\.so.*$
+		'$SPEC_EXCLUDE_REQ_FROM'
 
 		%description
 		D is a systems programming language. Its focus is on combining the power and
@@ -339,7 +354,7 @@ do
 		echo "%define _rpmdir $RPMDIR" >> dmd.spec
 
 		# create rpm file
-		fakeroot rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH --define '_binary_payload w9.xzdio' dmd.spec
+		$FAKEROOT rpmbuild --quiet --buildroot=$TEMPDIR/$DMDDIR -bb --target $ARCH --define "_topdir $RPMDIR" --define '_binary_payload w9.xzdio' --define '_tmppath /tmp' dmd.spec
 
 
 		# disable pushd
