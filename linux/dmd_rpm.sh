@@ -15,8 +15,16 @@ ferror(){
 
 
 # check if in debian, redhat, or suse like system
-if test ! -f /etc/debian_version && test ! -f /etc/redhat-release && test ! -f /etc/os-release ; then
-	ferror "RPMs must be built on a debian, redhat, or suse-like system" "Exiting..."
+if test ! -f /etc/debian_version && test ! -f /etc/redhat-release ; then
+	if test -f /etc/os-release ; then
+		. /etc/os-release
+		case " ${ID:-} ${ID_LIKE:-} " in
+			*debian*|*rhel*|*fedora*|*suse*|*centos*|*rocky*|*alma*) ;;
+			*) ferror "RPMs must be built on a debian, redhat, or suse-like system" "Exiting..." ;;
+		esac
+	else
+		ferror "RPMs must be built on a debian, redhat, or suse-like system" "Exiting..."
+	fi
 fi
 
 
@@ -267,20 +275,25 @@ do
 
 		# find rpm package dependencies (compatible across Fedora, RHEL/Rocky, and openSUSE)
 		DEPEND="glibc-devel($FARCH), gcc($FARCH), (libcurl($FARCH) or libcurl4($FARCH)), (libgcc($FARCH) or libgcc_s1($FARCH))"
-		RECOMMENDS=""
+		SUGGESTS=""
 		if test "$ARCH" = "x86_64" ; then
-			RECOMMENDS="Recommends: (glibc-devel(x86-32) or glibc-devel-32bit), (libgcc(x86-32) or libgcc_s1-32bit), (libcurl(x86-32) or libcurl4-32bit)"
+			SUGGESTS="Suggests: (glibc-devel(x86-32) or glibc-devel-32bit), (libgcc(x86-32) or libgcc_s1-32bit), (libcurl(x86-32) or libcurl4-32bit)"
 		fi
 
-		DUB_VER=""
+		# derive shared library package name from SO_VERSION (e.g. libphobos2-0_113)
+		PHOBOS_LIB_PKG="libphobos2-$(echo $SO_VERSION | tr . _)"
+		PROVIDES_EXTRA=", phobos-devel = $VERSION-$REVISION, phobos-devel($FARCH) = $VERSION-$REVISION, phobos-devel-static = $VERSION-$REVISION, phobos-devel-static($FARCH) = $VERSION-$REVISION, $PHOBOS_LIB_PKG = $VERSION-$REVISION, $PHOBOS_LIB_PKG($FARCH) = $VERSION-$REVISION"
+		OBSOLETES_EXTRA="Obsoletes: phobos-devel <= $VERSION-$REVISION, phobos-devel-static <= $VERSION-$REVISION, $PHOBOS_LIB_PKG <= $VERSION-$REVISION"
+
 		if test -x usr/bin/dub ; then
 			DUB_VER=$(./usr/bin/dub --version 2>/dev/null | awk '{print $3}' | tr -d ',' || true)
+			if test -n "$DUB_VER" ; then
+				PROVIDES_EXTRA="$PROVIDES_EXTRA, dub = $DUB_VER-$REVISION, dub($FARCH) = $DUB_VER-$REVISION"
+				OBSOLETES_EXTRA="$OBSOLETES_EXTRA, dub <= $DUB_VER-$REVISION"
+			else
+				PROVIDES_EXTRA="$PROVIDES_EXTRA, dub, dub($FARCH)"
+			fi
 		fi
-		if test -z "$DUB_VER" ; then
-			DUB_VER="$VERSION"
-		fi
-		PROVIDES_EXTRA=", phobos-devel = $VERSION-$REVISION, phobos-devel($FARCH) = $VERSION-$REVISION, phobos-devel-static = $VERSION-$REVISION, phobos-devel-static($FARCH) = $VERSION-$REVISION, dub = $DUB_VER-$REVISION, dub($FARCH) = $DUB_VER-$REVISION"
-		OBSOLETES_EXTRA="Obsoletes: phobos-devel < $VERSION-$REVISION, phobos-devel-static < $VERSION-$REVISION, dub < $DUB_VER-$REVISION, libphobos2-0_109 < $VERSION-$REVISION"
 
 		# exclude bundled 32-bit phobos from generating 32-bit requirements on 64-bit packages
 		SPEC_EXCLUDE_REQ_FROM=""
@@ -303,7 +316,7 @@ do
 
 		ExclusiveArch: '$ARCH'
 		Requires: '$DEPEND'
-		'$RECOMMENDS'
+		'$SUGGESTS'
 		Provides: dmd = '$VERSION-$REVISION', dmd('$FARCH') = '$VERSION-$REVISION', '$SO_LIB.$SO_VERSION''$PROVIDES_EXTRA'
 		'$OBSOLETES_EXTRA'
 

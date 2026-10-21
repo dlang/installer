@@ -17,7 +17,7 @@ Works with dmd 2.063 and newer.
 ============
 Script to create rpm packages for fedora or openSUSE.
 Run it with dmd version and model as argument and you'll get two rpm packages in the current directory.
-Resulting package should be installable on fedora/rhel/centos/rocky or openSUSE systems.
+Resulting package should be installable on Fedora, RHEL/Rocky/CentOS 8+, or openSUSE systems.
 If "dmd.x.xxx.zip" already exist in the current folder will be used, otherwise will try to download first.
 If "dmd-completion" file is in the script folder, will be included in the package.
 Works with dmd 2.063 and newer.
