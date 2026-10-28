@@ -59,9 +59,8 @@ jobs:
     env:
       VSINSTALLDIR: C:\Program Files\Microsoft Visual Studio\2022\Enterprise\
       # NB: update windows/build_curl.sha256sums as well
-      CURL_VER: 7.68.0
-      ZLIB_VER: 1.2.11
-      PEXPORTS_VER: 0.47
+      CURL_VER: 8.23.0
+      ZLIB_VER: 1.3.2
     steps:
       - uses: actions/checkout@v4
         with:
