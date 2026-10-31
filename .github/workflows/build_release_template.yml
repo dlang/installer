@@ -122,6 +122,8 @@ jobs:
     name: Build release for ${{ matrix.target }}  on ${{ matrix.os }}
     needs: build-docs
     timeout-minutes: 60
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '14.0'
 
     strategy:
       fail-fast: false
